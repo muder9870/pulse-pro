@@ -83,17 +83,9 @@ def blog_update():
 
 @blog_bp.post("/api/blog/publish")
 def blog_publish():
-    db = SessionLocal()
-    try:
-        repo = BlogRepository(db)
-        payload = request.json or {}
-        blog_post_id = int(payload.get("blog_post_id"))
-        platform = str(payload.get("platform"))
-        published = bool(payload.get("published", False))
-
-        post = repo.get_post(blog_post_id)
-        if not post: return jsonify({"error": "Not found"}), 404
-
-        return jsonify({"status": "success", "info": "Post queued for publishing"}), 200
-    finally:
-        db.close()
+    """Blog publishing route - implementation in progress."""
+    return jsonify({
+        "status": "not_implemented",
+        "error": "Blog publishing will be implemented in next phase. Use simulation mode or schedule manual posts.",
+        "docs": "See /api/docs for current blog capabilities"
+    }), 501
