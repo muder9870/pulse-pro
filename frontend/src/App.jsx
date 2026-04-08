@@ -95,6 +95,7 @@ function AppContent() {
   } = useBulkSelection(stories, 'id');
   
   const [pipelineRunning, setPipelineRunning] = useState(false);
+  const [pipelineElapsed, setPipelineElapsed] = useState(0);
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleLoading, setScheduleLoading] = useState(false);
@@ -228,53 +229,64 @@ function AppContent() {
     queryClient.invalidateQueries(['stories']);
   };
 
-  const waitForPipeline = async (timeoutMs = 30 * 60 * 1000) => {
-    const start = Date.now();
-    while (true) {
-      const res = await fetch('/api/pipeline/status');
-      if (!res.ok) throw new Error('Failed to read pipeline status');
-      const data = await res.json();
-
-      if (!data.running) {
-        if (data.last_error === "stage_errors" && data.partial_success === true) {
-          return data;
-        }
-        if (data.last_error) throw new Error(data.last_error);
-        return data;
-      }
-
-      if (Date.now() - start > timeoutMs) throw new Error('Pipeline timed out');
-      await sleep(2000);
-    }
-  };
-
   const handleRunPipeline = async () => {
-    setPipelineRunning(true);
+    const TIMEOUT_SECONDS = 5 * 60;  // 5 minutes
+    const POLL_INTERVAL = 2000;  // 2 seconds
+    const TOTAL_ATTEMPTS = Math.floor(TIMEOUT_SECONDS / (POLL_INTERVAL / 1000));
+    
     try {
-      const res = await fetch('/api/pipeline/run', { method: 'POST' });
-      if (!res.ok) throw new Error('Pipeline failed to start');
-
-      console.log('Pipeline started successfully. This may take 20-30 minutes...');
-
-      const pipelineResult = await waitForPipeline();
-
-      if (pipelineResult && pipelineResult.last_error === "stage_errors") {
-        console.log('Pipeline completed with some errors. Data fetched successfully.');
-        toast.success('Pipeline completed with some errors. Data fetched successfully.');
-      } else {
-        console.log('Pipeline completed successfully!');
-        toast.success('Pipeline completed successfully!');
-      }
-    } catch (err) {
-      console.error("Pipeline error:", err);
-      const errorMsg = err.message || 'Unknown error';
-      if (errorMsg.includes('timed out')) {
-        alert("Pipeline is taking longer than expected. It may still be running in the background. Check the logs or wait a few minutes and refresh.");
-      } else {
-        alert(`Failed to run pipeline: ${errorMsg}. Check console for details.`);
-      }
-    } finally {
-      setPipelineRunning(false);
+        const response = await fetch('/api/pipeline/run', { method: 'POST' });
+        if (!response.ok) {
+            toast.error('Failed to start pipeline');
+            return;
+        }
+        
+        setPipelineRunning(true);
+        setPipelineElapsed(0);
+        
+        let attempts = 0;
+        
+        while (attempts < TOTAL_ATTEMPTS) {
+            const elapsedSeconds = Math.floor((attempts * POLL_INTERVAL) / 1000);
+            setPipelineElapsed(elapsedSeconds);
+            
+            const statusResp = await fetch('/api/pipeline/status');
+            if (!statusResp.ok) {
+                toast.error('Failed to fetch pipeline status');
+                setPipelineRunning(false);
+                return;
+            }
+            
+            const data = await statusResp.json();
+            const status = data.status || (data.running ? 'running' : 'idle');
+            const lastError = data.last_error || data.error;
+            
+            if (status === 'done' || status === 'success' || (!data.running && lastError == null)) {
+                setPipelineRunning(false);
+                if (data.partial_success && lastError === 'stage_errors') {
+                    toast.success('Pipeline completed with some errors. Data fetched successfully.');
+                } else {
+                    toast.success('Pipeline completed successfully');
+                }
+                return;
+            }
+            
+            if (status === 'error' || (lastError && data.running === false)) {
+                setPipelineRunning(false);
+                toast.error(`Pipeline failed: ${lastError || 'Unknown error'}`);
+                return;
+            }
+            
+            await sleep(POLL_INTERVAL);
+            attempts++;
+        }
+        
+        setPipelineRunning(false);
+        toast.error(`Pipeline timed out after ${TIMEOUT_SECONDS} seconds. Check logs for details. Lock may need manual reset.`);
+        
+    } catch (error) {
+        setPipelineRunning(false);
+        toast.error(`Pipeline error: ${error.message}`);
     }
   };
 
@@ -1170,9 +1182,12 @@ function AppContent() {
           <div className="flex items-center gap-4 ml-8">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${pipelineRunning ? 'bg-orange-50 border-orange-100' : 'bg-indigo-50 border-indigo-100'}`}>
               <Zap className={`w-3.5 h-3.5 ${pipelineRunning ? 'text-orange-600 animate-pulse' : 'text-indigo-600'}`} />
-              <span className={`text-[9px] font-black uppercase tracking-wider ${pipelineRunning ? 'text-orange-700' : 'text-indigo-700'}`}>
-                {pipelineRunning ? 'Syncing' : 'Ready'}
+              <span className={`text-[9px] font-black uppercase tracking-wider flex items-center ${pipelineRunning ? 'text-orange-700' : 'text-indigo-700'}`}>
+                {pipelineRunning ? `Syncing... (${pipelineElapsed}s / 300s)` : 'Ready'}
               </span>
+              {pipelineRunning && (
+                <progress className="w-16 h-1.5 ml-2 accent-orange-500 rounded-full bg-orange-200" value={pipelineElapsed} max={300}></progress>
+              )}
             </div>
 
             <button
