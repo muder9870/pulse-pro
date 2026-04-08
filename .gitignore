@@ -46,3 +46,6 @@ dist/
 *.crt
 .DS_Store
 *.log
+
+# analytics.json is obsolete, use /api/analytics endpoint instead
+analytics.json

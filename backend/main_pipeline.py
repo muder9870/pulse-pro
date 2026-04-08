@@ -4,6 +4,9 @@ from backend.db.session import SessionLocal
 from backend.agents.orchestrator import MultiAgentOrchestrator
 from backend.metrics import metrics
 
+# NOTE: analytics.json is DEPRECATED
+# Data is available via GET /api/analytics endpoint
+# File can be safely deleted
 def run_daily_pipeline() -> dict:
     """
     End-to-end pipeline driven by Multi-Agent Orchestrator.
