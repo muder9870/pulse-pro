@@ -30,32 +30,22 @@ def run():
       429:
         description: Rate limit exceeded (2 per minute)
     """
-    # Acquire the lock non-blocking — if already held, a pipeline is running.
-    acquired = pipeline_lock.acquire(blocking=False)
-    if not acquired:
+    from backend.api.state import pipeline_state
+    
+    if pipeline_state.get("running"):
         return jsonify({
             "status": "already_running",
             "message": "Pipeline is already running. Please wait for it to finish."
         }), 409
 
-    def run_and_release():
-        try:
-            run_daily_pipeline()
-        finally:
-            # Always release — even if run_daily_pipeline raises an unhandled exception.
-            # Without this, a crash permanently deadlocks the pipeline until restart.
-            pipeline_lock.release()
-
     try:
-        thread = threading.Thread(target=run_and_release, daemon=True)
+        thread = threading.Thread(target=run_daily_pipeline, daemon=True)
         thread.start()
         return jsonify({
             "status": "started",
             "message": "Pipeline execution started"
         }), 200
     except Exception as e:
-        # Thread failed to start — release the lock immediately
-        pipeline_lock.release()
         return jsonify({
             "status": "error",
             "message": str(e)

@@ -18,9 +18,22 @@ class MultiAgentOrchestrator:
         self.creative = CreativeAgent(db)
 
     def run_full_pipeline(self, sources: list[str] = None):
-        start_time = time.monotonic()
-        self.log_status("start", "Multi-Agent Pipeline starting...")
+        from backend.api.state import pipeline_lock, pipeline_state
+        from datetime import datetime, timezone
         
+        start_time = time.monotonic()
+        self.log_status("start", "Pipeline starting...")
+        
+        # Acquire lock
+        acquired = pipeline_lock.acquire(timeout=1)
+        if not acquired:
+            return {"success": False, "error": "Another pipeline is already running"}
+            
+        with pipeline_lock:
+            pipeline_state["running"] = True
+            pipeline_state["last_error"] = None
+            pipeline_state["last_started_at"] = datetime.now(timezone.utc).isoformat()
+            
         try:
             # 1. Ingestion
             self.log_status("fetch", "Agents fetching content from sources...")
@@ -69,6 +82,10 @@ class MultiAgentOrchestrator:
             self.log_status("done", "Multi-Agent Pipeline completed successfully!")
             
             duration = time.monotonic() - start_time
+            with pipeline_lock:
+                pipeline_state["last_finished_at"] = datetime.now(timezone.utc).isoformat()
+                pipeline_state["running"] = False
+            
             return {
                 "success": True,
                 "duration_seconds": round(duration, 2),
@@ -77,9 +94,28 @@ class MultiAgentOrchestrator:
                 "summary": summary
             }
         except Exception as e:
-            logger.error(f"Pipeline Orchestrator error: {e}")
-            self.log_status("error", f"Pipeline failed: {str(e)}")
-            return {"success": False, "error": str(e)}
+            error_msg = f"{type(e).__name__}: {str(e)}"
+            logger.error(f"Pipeline error: {error_msg}", exc_info=True)
+            
+            with pipeline_lock:
+                pipeline_state["last_error"] = error_msg
+                pipeline_state["last_finished_at"] = datetime.now(timezone.utc).isoformat()
+                pipeline_state["running"] = False
+            
+            self.log_status("error", f"Pipeline failed: {error_msg}")
+            
+            return {
+                "success": False,
+                "error": error_msg,
+                "duration_seconds": round(time.monotonic() - start_time, 2)
+            }
+        finally:
+            # ALWAYS release lock, even on exception
+            try:
+                pipeline_lock.release()
+                logger.info("Pipeline lock released by orchestrator")
+            except Exception as e:
+                logger.error(f"Failed to release pipeline lock: {e}")
 
     def log_status(self, stage: str, message: str):
         logger.info(f"stage={stage} msg={message}")
