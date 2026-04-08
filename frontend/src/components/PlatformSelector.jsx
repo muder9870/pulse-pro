@@ -2,9 +2,9 @@ import React from 'react';
 import { Clock } from 'lucide-react';
 
 const PLATFORMS = [
-  { id: 'twitter', label: 'Twitter / X', implemented: true },
+  { id: 'twitter', label: 'Twitter / X', implemented: false },  // Coming Soon
   { id: 'threads', label: 'Threads', implemented: false },
-  { id: 'linkedin', label: 'LinkedIn', implemented: true },
+  { id: 'linkedin', label: 'LinkedIn', implemented: false },  // Coming Soon
   { id: 'reddit', label: 'Reddit', implemented: false },
   { id: 'facebook', label: 'Facebook', implemented: false },
   { id: 'instagram', label: 'Instagram', implemented: false },
