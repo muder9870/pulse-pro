@@ -11,7 +11,8 @@ const DashboardStats = React.memo(({ activeTheme }) => {
     generatedContent: 0,
     avgQualityScore: 0,
     deepDiveAnalyzed: 0,
-    loading: true
+    loading: true,
+    loadError: null
   });
 
   useEffect(() => {
@@ -21,28 +22,40 @@ const DashboardStats = React.memo(({ activeTheme }) => {
   const fetchStats = async () => {
     try {
       const res = await fetch('/api/stats/dashboard');
-      if (res.ok) {
-        const data = await res.json();
-        setStats({
-          totalArticles: data.total_articles || 0,
-          processedArticles: data.processed_articles || 0,
-          generatedContent: data.generated_content || 0,
-          avgQualityScore: data.avg_priority_score || 0,
-          deepDiveAnalyzed: data.deep_dive_analyzed || 0,
-          loading: false
-        });
-      } else {
-        await fetchStatsIndividually();
+      if (!res.ok) {
+        throw new Error(`Status ${res.status}`);
       }
+      const data = await res.json();
+      setStats({
+        totalArticles: data.total_articles || 0,
+        processedArticles: data.processed_articles || 0,
+        generatedContent: data.generated_content || 0,
+        avgQualityScore: data.avg_priority_score || 0,
+        deepDiveAnalyzed: data.deep_dive_analyzed || 0,
+        loading: false,
+        loadError: null
+      });
     } catch (err) {
       console.error('Failed to fetch stats', err);
-      await fetchStatsIndividually();
+      setStats(prev => ({
+        ...prev,
+        loading: false,
+        loadError: `Could not load stats: ${err.message}`,
+        totalArticles: 0,
+        processedArticles: 0,
+        generatedContent: 0,
+        avgQualityScore: 0,
+        deepDiveAnalyzed: 0
+      }));
     }
   };
 
   const fetchStatsIndividually = async () => {
     try {
       const storiesRes = await fetch('/api/stories?limit=all');
+      if (!storiesRes.ok) {
+        throw new Error(`Failed to fetch stories: ${storiesRes.status}`);
+      }
       const stories = await storiesRes.json();
 
       const totalArticles = Array.isArray(stories) ? stories.length : 0;
@@ -52,18 +65,27 @@ const DashboardStats = React.memo(({ activeTheme }) => {
       const deepDiveAnalyzed = Array.isArray(stories)
         ? stories.filter(s => s.has_deep_analysis).length
         : 0;
+      // Count actual generated content instead of multiplying
+      const generatedContent = Array.isArray(stories)
+        ? stories.filter(s => s.posts && s.posts.length > 0).length
+        : 0;
 
       setStats({
         totalArticles,
         processedArticles,
-        generatedContent: processedArticles * 3, // Estimate
+        generatedContent,
         avgQualityScore: 0,
         deepDiveAnalyzed,
-        loading: false
+        loading: false,
+        loadError: null
       });
     } catch (err) {
       console.error('Failed to fetch individual stats', err);
-      setStats(prev => ({ ...prev, loading: false }));
+      setStats(prev => ({ 
+        ...prev, 
+        loading: false,
+        loadError: `Could not load stats: ${err.message}`
+      }));
     }
   };
 
@@ -71,12 +93,12 @@ const DashboardStats = React.memo(({ activeTheme }) => {
     return <SkeletonStats count={4} className="mb-12" />;
   }
 
-  if (stats.error) {
+  if (stats.loadError) {
     return (
       <div className="mb-12 p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
         <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
           <AlertTriangle className="w-5 h-5" />
-          <span className="font-medium">Failed to load dashboard stats</span>
+          <span className="font-medium">{stats.loadError}</span>
         </div>
         <button 
           onClick={fetchStats}
