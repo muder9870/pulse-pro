@@ -5,15 +5,20 @@ import {
 } from 'recharts';
 import {
   TrendingUp, FileText, Sparkles, Target, Calendar,
-  ArrowLeft, Activity, BarChart2, Shield, Zap, Info
+  ArrowLeft, Activity, BarChart2, Shield, Zap, Info, AlertTriangle
 } from 'lucide-react';
 
 export default function EnhancedAnalytics({ onBack }) {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
   const [timelineData, setTimelineData] = useState([]);
   const [sourceData, setSourceData] = useState([]);
   const [scoreData, setScoreData] = useState([]);
+  const [dataEstimates, setDataEstimates] = useState({
+    timeline: false,
+    scores: false
+  });
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -21,8 +26,12 @@ export default function EnhancedAnalytics({ onBack }) {
 
   const fetchAnalyticsData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/analytics');
+      if (!res.ok) {
+        throw new Error(`Failed to fetch analytics: ${res.status}`);
+      }
       const data = await res.json();
 
       setStats({
@@ -40,9 +49,11 @@ export default function EnhancedAnalytics({ onBack }) {
         .slice(0, 6);
       setSourceData(sourceChartData);
 
-      // Process timeline data
-      if (data.daily_distribution) {
+      // Process timeline data - track if estimated
+      const hasRealTimeline = data.daily_distribution && data.daily_distribution.length > 0;
+      if (hasRealTimeline) {
         setTimelineData(data.daily_distribution);
+        setDataEstimates(prev => ({ ...prev, timeline: false }));
       } else {
         // Fallback to heuristic if backend doesn't provide it
         const last7d = data.recent_activity?.last_7d || 0;
@@ -63,13 +74,16 @@ export default function EnhancedAnalytics({ onBack }) {
           });
         }
         setTimelineData(timelineChartData);
+        setDataEstimates(prev => ({ ...prev, timeline: true }));
       }
 
-      // Process score distribution
-      if (data.score_distribution) {
+      // Process score distribution - track if estimated
+      const hasRealScores = data.score_distribution && data.score_distribution.length > 0;
+      if (hasRealScores) {
         setScoreData(data.score_distribution);
+        setDataEstimates(prev => ({ ...prev, scores: false }));
       } else {
-        // Fallback
+        // Fallback - mark as estimated
         const totalProcessed = data.processed_articles || 0;
         const scoreChartData = [
           { range: '90-100', count: Math.round(totalProcessed * 0.15), label: 'Excellent' },
@@ -78,10 +92,12 @@ export default function EnhancedAnalytics({ onBack }) {
           { range: '0-49', count: Math.round(totalProcessed * 0.15), label: 'Low' }
         ];
         setScoreData(scoreChartData);
+        setDataEstimates(prev => ({ ...prev, scores: true }));
       }
 
     } catch (err) {
       console.error('Failed to fetch analytics', err);
+      setError(`Could not load analytics: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -120,6 +136,25 @@ export default function EnhancedAnalytics({ onBack }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="h-[400px] bg-white/5 rounded-[2rem] animate-pulse border border-white/5" />
           <div className="h-[400px] bg-white/5 rounded-[2rem] animate-pulse border border-white/5" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in py-8">
+        <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl">
+          <div className="flex items-center gap-3 mb-3">
+            <AlertTriangle className="w-5 h-5 text-red-400" />
+            <span className="font-black text-red-300">{error}</span>
+          </div>
+          <button
+            onClick={fetchAnalyticsData}
+            className="mt-3 text-sm font-black text-red-400 hover:text-red-200 transition-colors"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -190,7 +225,12 @@ export default function EnhancedAnalytics({ onBack }) {
                 <TrendingUp className="w-6 h-6 text-indigo-400" />
               </div>
               <div>
-                <h3 className="text-xl font-black text-white tracking-tight">Vibrancy Timeline</h3>
+                <h3 className="text-xl font-black text-white tracking-tight">
+                  Vibrancy Timeline
+                  {dataEstimates.timeline && (
+                    <span className="text-xs text-orange-400 ml-2 font-bold">[ESTIMATED]</span>
+                  )}
+                </h3>
                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Daily Article Throughput</p>
               </div>
             </div>
@@ -303,7 +343,12 @@ export default function EnhancedAnalytics({ onBack }) {
               <Zap className="w-7 h-7 text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-white tracking-tight">Quality Spectrum</h3>
+              <h3 className="text-2xl font-black text-white tracking-tight">
+                Quality Spectrum
+                {dataEstimates.scores && (
+                  <span className="text-sm text-orange-400 ml-2 font-bold">[ESTIMATED]</span>
+                )}
+              </h3>
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Impact score distribution across database</p>
             </div>
           </div>
