@@ -15,6 +15,19 @@
 
 ---
 
+## 🧩 FIX SHEET WORKFLOW RULES
+
+- **Use `fix-execution-sheet` only for fix sheet work.** No unrelated refactors or legacy cleanup.
+- **Treat `docs/FIX_EXECUTION_SHEET.md` as the source of truth.** Update the sheet before implementing changes.
+- **Keep commits focused.** One logical change per commit with a clear message.
+- **Test every fix immediately.** Add or update tests in `tests/unit/` or `tests/e2e/` as appropriate.
+- **Document decisions and assumptions.** Add short notes in the sheet for why a change was made.
+- **Keep the repo root clean.** Maintenance scripts belong in `scripts/maintenance/`.
+- **Validate before push.** Confirm branch status, run tests, and ensure no secrets or local data are included.
+- **Rebase or merge often.** Keep the branch from drifting too far from `main`.
+
+---
+
 ## ⏱️ PHASE 1: Kill All Illusions (Days 1-2)
 
 ### Goal
@@ -326,10 +339,18 @@ const fetchAnalyticsWithLabel = async () => {
 ---
 
 **END OF PHASE 1**
-- [ ] Test blog publish returns 501
-- [ ] Test blog validate with fake key (should fail)
-- [ ] Test dashboard shows error, not fake numbers
-- [ ] Test analytics labels show [ESTIMATED] when needed
+- [x] Test blog publish returns 501
+- [x] Test blog validate with fake key (should fail)
+- [x] Test dashboard shows error, not fake numbers
+- [x] Test analytics labels show [ESTIMATED] when needed
+
+**PHASE 1 STATUS: ✅ COMPLETE**
+
+**Commits:**
+1. `fix: blog publish returns honest 501 status` — Removed fake success, returns honest "not implemented" status
+2. `fix: blog credential validation actually tests APIs` — Validates Dev.to, Medium, WordPress credentials by calling their actual APIs
+3. `fix: dashboard removes multiplier false data` — Removed x3 multiplier, counts actual generated content
+4. `fix: analytics labels estimated data, doesnt hide it` — Added [ESTIMATED] labels when using heuristics, shows errors instead of fake data
 
 ---
 
