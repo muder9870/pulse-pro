@@ -213,10 +213,10 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setPublishLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/blog/publish', {
+      const res = await fetch(`/api/blog/publish/${post.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blog_post_id: post.id, platform: 'devto', published }),
+        body: JSON.stringify({ platform: 'devto', published }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Publish failed');
@@ -234,10 +234,10 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setPublishLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/blog/publish', {
+      const res = await fetch(`/api/blog/publish/${post.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blog_post_id: post.id, platform: 'medium', published }),
+        body: JSON.stringify({ platform: 'medium', published }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Publish failed');
@@ -255,10 +255,10 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setPublishLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/blog/publish', {
+      const res = await fetch(`/api/blog/publish/${post.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blog_post_id: post.id, platform: 'wordpress', published }),
+        body: JSON.stringify({ platform: 'wordpress', published }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Publish failed');
@@ -276,10 +276,10 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setPublishLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/blog/publish', {
+      const res = await fetch(`/api/blog/publish/${post.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blog_post_id: post.id, platform: 'local', published: false }),
+        body: JSON.stringify({ platform: 'local', published: false }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Publish failed');

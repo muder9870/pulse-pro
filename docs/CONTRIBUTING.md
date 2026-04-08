@@ -193,6 +193,15 @@ npm run test
 - [ ] Works in both light and dark mode
 - [ ] Responsive on mobile and desktop
 
+## Fix Sheet Workflow
+
+- Use the `fix-execution-sheet` branch only for work tied to the fix execution sheet.
+- Keep `docs/FIX_EXECUTION_SHEET.md` current; update it before writing code.
+- Make small, logical commits with clear messages.
+- Add test coverage for every behavior change.
+- Avoid unrelated cleanup or archive changes in the same branch.
+- Validate the branch locally before pushing: run tests, inspect `git status`, and confirm secrets are not included.
+
 ## Development Tips
 
 ### Useful Routes

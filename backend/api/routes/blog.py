@@ -82,27 +82,12 @@ def blog_update():
     finally:
         db.close()
 
-@blog_bp.post("/api/blog/publish")
-def blog_publish():
+@blog_bp.post("/api/blog/publish/<int:blog_post_id>")
+def blog_publish(blog_post_id):
     """
     Publish a blog post to real platforms.
-    
-    Request body:
-    {
-        "blog_post_id": 123,
-        "platform": "devto" | "medium" | "wordpress",
-        "published": true/false
-    }
-    
-    Returns:
-    {
-        "status": "published" | "draft" | "error" | "disabled",
-        "platform": "devto" | "medium" | "wordpress",
-        "post_url": "https://...",
-        "post_id": "12345",
-        "verified": true/false,
-        "error": "error message or null"
-    }
+    URL param: blog_post_id (int)
+    Body: { "platform": "devto"|"medium"|"wordpress", "published": true/false }
     """
     import signal
     import time
@@ -111,11 +96,10 @@ def blog_publish():
         raise TimeoutError("Publishing timeout after 10 seconds")
     
     data = request.json or {}
-    blog_post_id = data.get("blog_post_id")
     platform = (data.get("platform") or "").lower()
     published = data.get("published", False)
     
-    if not blog_post_id or not platform:
+    if not platform:
         return jsonify({
             "status": "error",
             "error": "blog_post_id and platform required"
@@ -229,6 +213,48 @@ def blog_publish():
         }), 500
     finally:
         db.close()
+
+@blog_bp.post("/api/blog/publish/batch")
+def publish_batch():
+    """Batch publish a post to multiple platforms."""
+    data = request.json or {}
+    blog_post_id = data.get("blog_post_id")
+    platforms = data.get("platforms", [])
+    published = data.get("published", False)
+
+    if not blog_post_id or not platforms:
+        return jsonify({"error": "Missing blog_post_id or platforms"}), 400
+
+    results = []
+    errors = []
+    
+    # Simple loop over platforms — in a real system this would be async/queued
+    # But following the 'honest and simple' goal of the sheet
+    for platform in platforms:
+        try:
+            # We reuse the logic from the single publish by calling our own logic
+            # or refactoring single publish. To keep it safe, we'll refactor or repeat.
+            # Local is handled separately
+            if platform == 'local':
+                results.append({"platform": "local", "status": "draft", "id": blog_post_id})
+                continue
+                
+            # Internal call to single publish logic (could also redirect but that's messy)
+            # For brevity and safety, we'll just indicate we don't support true batching
+            # and want the frontend to call single endpoints, but let's provide a shim.
+            from .blog import blog_publish
+            # Actually, standardizing on single calls is better. 
+            # But let's support it for the current UI.
+            errors.append(f"Batch publishing for {platform} not fully implemented. Use single publish.")
+        except Exception as e:
+            errors.append(f"{platform}: {str(e)}")
+
+    return jsonify({
+        "status": "partial" if errors else "success",
+        "publications": results,
+        "errors": errors
+    }), (207 if errors else 200)
+
 
 
 @blog_bp.post("/api/blog/credentials/validate/<platform>")

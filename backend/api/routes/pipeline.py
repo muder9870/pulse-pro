@@ -30,21 +30,48 @@ def run():
       429:
         description: Rate limit exceeded (2 per minute)
     """
-    from backend.api.state import pipeline_state
-    
+    from backend.api.state import pipeline_state, pipeline_lock
+    from datetime import datetime, timezone
+    import threading
+
     if pipeline_state.get("running"):
         return jsonify({
             "status": "already_running",
-            "message": "Pipeline is already running. Please wait for it to finish."
+            "message": "Pipeline already in progress"
         }), 409
 
+    def run_wrapper():
+
+        started_at = datetime.now(timezone.utc).isoformat()
+        with pipeline_lock:
+            pipeline_state["running"] = True
+            pipeline_state["last_started_at"] = started_at
+            pipeline_state["last_error"] = None
+            pipeline_state["last_result"] = None
+
+        try:
+            result = run_daily_pipeline()
+            with pipeline_lock:
+                pipeline_state["last_result"] = result
+        except Exception as e:
+            import logging
+            logging.getLogger("pipeline").error(f"Manual pipeline run failed: {e}")
+            with pipeline_lock:
+                pipeline_state["last_error"] = str(e)
+        finally:
+            finished_at = datetime.now(timezone.utc).isoformat()
+            with pipeline_lock:
+                pipeline_state["running"] = False
+                pipeline_state["last_finished_at"] = finished_at
+
     try:
-        thread = threading.Thread(target=run_daily_pipeline, daemon=True)
+        thread = threading.Thread(target=run_wrapper, daemon=True)
         thread.start()
         return jsonify({
             "status": "started",
             "message": "Pipeline execution started"
         }), 200
+
     except Exception as e:
         return jsonify({
             "status": "error",

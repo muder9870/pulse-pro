@@ -76,24 +76,32 @@ def get_metrics_endpoint():
 @system_bp.get("/api/pipeline/status")
 def pipeline_status():
     with pipeline_lock:
-        is_locked = pipeline_state.get("running", False)
-        status_val = "running" if is_locked else (
-            "success" if pipeline_state.get("last_error") is None and pipeline_state.get("last_finished_at") else "idle"
-        )
-        if not is_locked and pipeline_state.get("last_error"):
+        is_running = pipeline_state.get("running", False)
+        last_error = pipeline_state.get("last_error")
+        last_finished_at = pipeline_state.get("last_finished_at")
+
+        if is_running:
+            status_val = "running"
+        elif last_error:
             status_val = "error"
-            
+        elif last_finished_at:
+            status_val = "success"
+        else:
+            status_val = "idle"
+
         response_data = {
-            "running": is_locked,
+            "running": is_running,
             "status": status_val,
             "last_started_at": pipeline_state.get("last_started_at"),
-            "last_finished_at": pipeline_state.get("last_finished_at"),
-            "last_error": pipeline_state.get("last_error"),
+            "last_finished_at": last_finished_at,
+            "last_error": last_error,
             "message": pipeline_state.get("last_message", ""),
             "progress": pipeline_state.get("progress", {"current": 0, "total": 0}),
             "partial_success": pipeline_state.get("partial_success", False)
         }
         return jsonify(response_data), 200
+
+
 
 @system_bp.get("/api/scheduler/status")
 @system_bp.get("/api/schedule")

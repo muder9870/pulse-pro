@@ -231,59 +231,71 @@ function AppContent() {
 
   const handleRunPipeline = async () => {
     const TIMEOUT_SECONDS = 5 * 60;  // 5 minutes
-    const POLL_INTERVAL = 2000;  // 2 seconds
-    const TOTAL_ATTEMPTS = Math.floor(TIMEOUT_SECONDS / (POLL_INTERVAL / 1000));
-    
+    const POLL_INTERVAL = 2000;      // 2 seconds
+
     try {
         const response = await fetch('/api/pipeline/run', { method: 'POST' });
         if (!response.ok) {
             toast.error('Failed to start pipeline');
             return;
         }
-        
+
         setPipelineRunning(true);
         setPipelineElapsed(0);
-        
-        let attempts = 0;
-        
-        while (attempts < TOTAL_ATTEMPTS) {
-            const elapsedSeconds = Math.floor((attempts * POLL_INTERVAL) / 1000);
+
+        const startTime = Date.now();
+
+        const poll = async () => {
+            const elapsedMs = Date.now() - startTime;
+            const elapsedSeconds = Math.floor(elapsedMs / 1000);
             setPipelineElapsed(elapsedSeconds);
-            
-            const statusResp = await fetch('/api/pipeline/status');
-            if (!statusResp.ok) {
-                toast.error('Failed to fetch pipeline status');
+
+            if (elapsedSeconds >= TIMEOUT_SECONDS) {
                 setPipelineRunning(false);
+                toast.error(`Pipeline timed out after ${TIMEOUT_SECONDS} seconds. Check logs for details.`);
                 return;
             }
-            
-            const data = await statusResp.json();
-            const status = data.status || (data.running ? 'running' : 'idle');
-            const lastError = data.last_error || data.error;
-            
-            if (status === 'done' || status === 'success' || (!data.running && lastError == null)) {
-                setPipelineRunning(false);
-                if (data.partial_success && lastError === 'stage_errors') {
-                    toast.success('Pipeline completed with some errors. Data fetched successfully.');
-                } else {
-                    toast.success('Pipeline completed successfully');
+
+            try {
+                const statusResp = await fetch('/api/pipeline/status');
+                if (!statusResp.ok) {
+                    toast.error('Failed to fetch pipeline status');
+                    setPipelineRunning(false);
+                    return;
                 }
-                return;
-            }
-            
-            if (status === 'error' || (lastError && data.running === false)) {
+
+                const data = await statusResp.json();
+                const status = data.status;
+                const lastError = data.last_error;
+
+                if (status === 'success') {
+                    setPipelineRunning(false);
+                    if (data.partial_success) {
+                        toast.success('Pipeline completed with some errors. Data fetched successfully.');
+                    } else {
+                        toast.success('Pipeline completed successfully');
+                    }
+                    return;
+                }
+
+                if (status === 'error') {
+                    setPipelineRunning(false);
+                    toast.error(`Pipeline failed: ${lastError || 'Unknown error'}`);
+                    return;
+                }
+
+                // Still running — schedule next poll
+                setTimeout(poll, POLL_INTERVAL);
+
+            } catch (pollError) {
                 setPipelineRunning(false);
-                toast.error(`Pipeline failed: ${lastError || 'Unknown error'}`);
-                return;
+                toast.error(`Pipeline status check failed: ${pollError.message}`);
             }
-            
-            await sleep(POLL_INTERVAL);
-            attempts++;
-        }
-        
-        setPipelineRunning(false);
-        toast.error(`Pipeline timed out after ${TIMEOUT_SECONDS} seconds. Check logs for details. Lock may need manual reset.`);
-        
+        };
+
+        // Start first poll after initial interval
+        setTimeout(poll, POLL_INTERVAL);
+
     } catch (error) {
         setPipelineRunning(false);
         toast.error(`Pipeline error: ${error.message}`);
