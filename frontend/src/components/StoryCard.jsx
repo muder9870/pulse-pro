@@ -78,6 +78,18 @@ const StoryCard = React.memo(({
     .map(normalizeHashtag)
     .filter(Boolean);
 
+  // Frontend note: StoryCard must fetch complete data separately
+  // See backend/API_SCHEMA.md for details
+  // Example implementation pattern:
+  // const fetchCompleteStory = async (storyId) => {
+  //     const [story, content, quality] = await Promise.all([
+  //         fetch(`/api/stories/${storyId}`),
+  //         fetch(`/api/content/${storyId}/twitter`),
+  //         fetch(`/api/quality/${storyId}/twitter`)
+  //     ]);
+  //     // ... combine results
+  // };
+
   // --- Logic remain unchanged to ensure stability ---
   const fetchContent = async (platform) => {
     if (generatedContent[platform]) return;
