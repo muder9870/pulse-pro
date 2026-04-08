@@ -22,7 +22,7 @@
 **Environment Variables (.env):**
 ```env
 LLM_PROVIDER=groq
-GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GROQ_API_KEY=your_groq_api_key_here
 GROQ_MODEL=llama-3.3-70b-versatile
 CONTENT_PLATFORMS=twitter,linkedin,instagram,facebook,reddit,threads,youtube,blog
 ```

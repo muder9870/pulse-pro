@@ -5,14 +5,14 @@
 2. Click "Sign Up" or login
 3. Navigate to "API Keys" in dashboard
 4. Click "Create New Key"
-5. Copy the key (starts with "sk-or-v1-")
-6. Replace in .env file
+5. Copy the key from the dashboard
+6. Replace in `.env` file
 
 ## Key Format:
-OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxx
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 
 ## Common Issues:
-- Keys must start with "sk-or-v1-" prefix
+- Make sure you copied the new key exactly
 - Free tier has daily/monthly limits
 - Account may need verification
 

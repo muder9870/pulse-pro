@@ -195,9 +195,9 @@ These 4 files have already been written and given to you. **Download and replace
 1. Go to: [https://console.groq.com](https://console.groq.com)
 2. Sign up (free, no credit card needed)
 3. Click "Create API Key"
-4. Copy the key — it starts with `gsk_`
+4. Copy the key from the dashboard
 5. Open your `.env` file
-6. Replace `GROQ_API_KEY=your_groq_api_key_here` with `GROQ_API_KEY=gsk_xxxx...` (your real key)
+4. Replace `GROQ_API_KEY=your_groq_api_key_here` with your actual Groq API key in the `.env` file.
 
 ---
 
@@ -255,7 +255,7 @@ docker-compose up --build
 | Error | Cause | Fix |
 |---|---|---|
 | `ModuleNotFoundError: ollama` | Old ollama import still in main.py | Apply Task 8 — replace ollama check |
-| `GROQ_API_KEY not set` | .env not updated with real key | Edit .env → paste your real gsk_ key |
+| `GROQ_API_KEY not set` | .env not updated with real key | Edit `.env` → paste your actual Groq API key |
 | `circuit_breaker_tripped` | LLM calls failing repeatedly | Check GROQ_API_KEY is valid |
 | No articles in feed | Pipeline not run yet | Click Run Pipeline in dashboard |
 | Blog posts not generating | 'blog' not in PLATFORM_CONFIGS | Apply Task 6 — add blog entry |

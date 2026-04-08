@@ -5,16 +5,16 @@
 2. Login with your email or Google/GitHub
 3. Navigate to "API Keys" section
 4. Click "Create New Key"
-5. Copy the key (starts with "csk-")
-6. Replace in .env file
+5. Copy the key from the dashboard
+6. Replace in `.env` file
 
 ## Key Format:
-CEREBRAS_API_KEY=csk-xxxxxxxxxxxxxxxxxxxxxxxxxxx
+CEREBRAS_API_KEY=your_cerebras_api_key_here
 
 ## Common Issues:
 - Keys can expire if not used
 - Free tier has usage limits
-- Key must start with "csk-" prefix
+- Make sure you copied the new key exactly
 
 ## Test Key:
 After updating, restart backend:
