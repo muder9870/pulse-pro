@@ -1,0 +1,113 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Fault Condition** - Partial Success Incorrectly Reported as Complete Failure
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the bug exists
+  - **Scoped PBT Approach**: Scope the property to concrete failing cases: pipeline with stage_errors, RSS bulk add with partial success
+  - Test Case 1: Pipeline with stage_errors - successfully fetches data but has processing failures
+    - Mock pipeline result with `last_error = "stage_errors"` and `last_result` containing fetched articles
+    - Call `waitForPipeline` and verify it throws an error (current buggy behavior)
+    - Expected behavior: Should NOT throw, should return data for success message with warning
+  - Test Case 2: RSS bulk add partial success - some feeds succeed, some fail
+    - Mock `bulk_add_feeds` to return 19 added out of 35 attempted
+    - Call `addDefaultFeeds` and verify response only shows success count without failure details
+    - Expected behavior: Should show "Added 19 out of 35 feeds. 16 feeds failed" with failure details
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+  - Document counterexamples found to understand root cause
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Complete Success and Failure Handling Unchanged
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-buggy inputs (complete success or complete failure)
+  - Test Case 1: Complete pipeline success (no errors)
+    - Mock pipeline result with no `last_error` and successful `last_result`
+    - Observe that `waitForPipeline` returns normally and success message displays
+    - Write property: for all pipeline results with no errors, behavior matches unfixed code
+  - Test Case 2: Complete pipeline failure (no data fetched)
+    - Mock pipeline result with `last_error` (not "stage_errors") and no successful data
+    - Observe that `waitForPipeline` throws error and error message displays
+    - Write property: for all pipeline results with complete failure, behavior matches unfixed code
+  - Test Case 3: Complete RSS success (all feeds added)
+    - Mock `bulk_add_feeds` to return count equal to attempted (e.g., 35 out of 35)
+    - Observe that success message displays "Added 35 default RSS feeds"
+    - Write property: for all RSS operations with 100% success, behavior matches unfixed code
+  - Test Case 4: Pipeline status API structure
+    - Call `/api/pipeline/status` and observe response structure
+    - Write property: API response structure remains unchanged after fix
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+
+- [x] 3. Fix for partial success error reporting
+
+  - [x] 3.1 Implement backend changes to track and return failure details
+    - Modify `backend/fetchers/rss_fetcher.py` `bulk_add_feeds` method (line 151)
+      - Track failures: Create `failures` list to store `{'url': url, 'error': str(e)}` for each failed feed
+      - Change return type from `int` to `Dict[str, Any]`
+      - Return dictionary: `{'added': added, 'failed': len(failures), 'failures': failures}`
+    - Update `backend/main.py` `rss_add_defaults` endpoint (line 2051)
+      - Update response to include `failed` count and `failures` list from `bulk_add_feeds` result
+      - Adjust message to indicate partial success when `failed > 0`
+    - Add partial success flag to pipeline state in `backend/main.py` (line 194-220)
+      - Add `pipeline_state["partial_success"]` boolean field
+      - Set to `True` when `last_error == "stage_errors"` and `last_result` contains successful data
+      - Keep `last_error` for backward compatibility
+    - _Bug_Condition: isBugCondition(input) where input.hasSuccesses AND input.hasFailures AND input.reportedAsCompleteFailure_
+    - _Expected_Behavior: Return detailed failure information and set partial_success flag_
+    - _Preservation: Pipeline state structure and API response format remain compatible_
+    - _Requirements: 2.1, 2.2, 3.1, 3.2_
+
+  - [x] 3.2 Implement frontend changes to handle partial success
+    - Modify `frontend/src/App.jsx` `waitForPipeline` function (line 138)
+      - Check if `data.last_error === "stage_errors"` AND `data.partial_success === true`
+      - For partial success: return data normally (don't throw error)
+      - For complete failure: throw error as before
+      - Change from `return;` to `return data;` to pass result details to caller
+    - Update `frontend/src/App.jsx` `handleRunPipeline` function (line 150+)
+      - Check returned data for `last_error === "stage_errors"`
+      - Display success message with warning: "Pipeline completed with some errors. Data fetched successfully."
+      - Ensure data refresh happens automatically
+    - Modify `frontend/src/components/RSSManager.jsx` `addDefaultFeeds` function (line 136)
+      - Parse response to check if `data.failed > 0`
+      - Display appropriate message based on outcome:
+        - All success: "Added X default RSS feeds"
+        - Partial success: "Added X out of Y feeds. Z feeds failed."
+        - Complete failure: "Failed to add default feeds"
+      - Optionally log failure details for user action
+    - _Bug_Condition: isBugCondition(input) where partial success scenarios exist_
+    - _Expected_Behavior: Display success message with warnings, show failure details, refresh data automatically_
+    - _Preservation: Complete success and complete failure handling unchanged_
+    - _Requirements: 2.3, 2.4, 3.3, 3.4, 3.5_
+
+  - [x] 3.3 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Partial Success Correctly Reported
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - Verify pipeline with stage_errors returns data without throwing
+    - Verify RSS partial success displays correct message with failure details
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+  - [x] 3.4 Verify preservation tests still pass
+    - **Property 2: Preservation** - Complete Success and Failure Handling Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - Verify complete pipeline success still works as before
+    - Verify complete pipeline failure still works as before
+    - Verify complete RSS success still works as before
+    - Verify pipeline status API structure unchanged
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all tests still pass after fix (no regressions)
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

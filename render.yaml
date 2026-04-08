@@ -1,0 +1,29 @@
+services:
+  # Backend Service
+  - type: web
+    name: backend
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn backend.wsgi:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: LLM_PROVIDER
+        value: local # Default to local, user can change to paid_api in dashboard env vars
+    disk:
+      name: pulse_data
+      mountPath: /app/data
+      sizeGB: 1
+
+  # Frontend Service
+  - type: web
+    name: frontend
+    runtime: docker
+    dockerContext: frontend
+    envVars:
+      - key: PORT
+        value: 80

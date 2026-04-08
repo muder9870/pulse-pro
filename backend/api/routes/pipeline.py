@@ -1,0 +1,102 @@
+from flask import Blueprint, Response, stream_with_context, jsonify
+import queue
+import json
+import threading
+
+from backend.utils.event_emitter import pipeline_emitter
+from backend.api.state import pipeline_lock
+from backend.api.limiter import limiter
+from backend.main_pipeline import run_daily_pipeline
+
+
+pipeline_bp = Blueprint("pipeline_v2", __name__, url_prefix="/api/pipeline")
+
+
+# =========================
+# 🔥 RUN PIPELINE ENDPOINT
+# =========================
+@pipeline_bp.route("/run", methods=["POST", "GET"])
+@limiter.limit("2 per minute")
+def run():
+    """Start the full pipeline (fetch → analyze → generate → schedule).
+    ---
+    tags:
+      - Pipeline
+    responses:
+      200:
+        description: Pipeline started successfully
+      409:
+        description: Pipeline is already running
+      429:
+        description: Rate limit exceeded (2 per minute)
+    """
+    # Acquire the lock non-blocking — if already held, a pipeline is running.
+    acquired = pipeline_lock.acquire(blocking=False)
+    if not acquired:
+        return jsonify({
+            "status": "already_running",
+            "message": "Pipeline is already running. Please wait for it to finish."
+        }), 409
+
+    def run_and_release():
+        try:
+            run_daily_pipeline()
+        finally:
+            # Always release — even if run_daily_pipeline raises an unhandled exception.
+            # Without this, a crash permanently deadlocks the pipeline until restart.
+            pipeline_lock.release()
+
+    try:
+        thread = threading.Thread(target=run_and_release, daemon=True)
+        thread.start()
+        return jsonify({
+            "status": "started",
+            "message": "Pipeline execution started"
+        }), 200
+    except Exception as e:
+        # Thread failed to start — release the lock immediately
+        pipeline_lock.release()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+# =========================
+# 🔥 SSE STREAM ENDPOINT
+# =========================
+@pipeline_bp.route("/stream")
+def stream():
+    def event_stream():
+        q = pipeline_emitter.subscribe()
+
+        try:
+            # Initial connection message
+            yield f"data: {json.dumps({'type': 'connected', 'message': 'SSE connected'})}\n\n"
+
+            while True:
+                try:
+                    msg = q.get(timeout=15)
+
+                    # Ensure JSON-safe
+                    # `pipeline_emitter` already queues a JSON string, so don't double-encode it.
+                    yield f"data: {msg}\n\n"
+
+                except queue.Empty:
+                    # Keep connection alive
+                    yield ": heartbeat\n\n"
+
+                except Exception as e:
+                    yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+        except GeneratorExit:
+            pipeline_emitter.unsubscribe(q)
+
+    return Response(
+        stream_with_context(event_stream()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+        }
+    )

@@ -1,0 +1,48 @@
+# Environment
+.env
+.env.local
+
+# Auth — never commit real credentials
+frontend/.htpasswd
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Docker
+docker-compose.override.yml
+
+# Logs and data
+logs/
+data/
+postgres_data/
+ollama_data/
+
+# Environment
+.env*
+!.env.example
+
+# Editor and IDE
+.vscode/
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Build artifacts
+dist/
+
+# Secrets and certificates
+*.pem
+*.key
+*.crt
+.DS_Store
+*.log

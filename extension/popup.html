@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            width: 300px;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            background-color: #f8fafc;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 8px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #1e293b;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #f1f5f9;
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 16px;
+            border: 1px solid #e2e8f0;
+            word-break: break-all;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #2563eb;
+        }
+
+        .btn:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        #message {
+            margin-top: 12px;
+            font-size: 12px;
+            text-align: center;
+            display: none;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="logo"></div>
+        <h2>Pulse Pro</h2>
+    </div>
+    <div id="status" class="status">
+        Ready to capture article...
+    </div>
+    <button id="captureBtn" class="btn">Save to Dashboard</button>
+    <div id="message"></div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
