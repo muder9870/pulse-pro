@@ -892,53 +892,42 @@ function AppContent() {
       return;
     }
 
-    // List of all platforms to check (Requirement 8.2)
     const platforms = [
       'twitter', 'threads', 'linkedin', 'reddit',
       'facebook', 'instagram', 'medium',
       'telegram', 'discord'
     ];
 
-    // Track progress
-    let totalMarked = 0;
-    let failedArticles = [];
-    const totalCount = articleIds.length;
-
-    // Show loading overlay with progress (Requirements 10.1, 10.2)
     setBulkOperationState({
       isActive: true,
       operationName: 'Marking as Posted',
       current: 0,
-      total: totalCount
+      total: articleIds.length
     });
 
+    const results = {
+      succeeded: [],
+      failed: [],
+    };
+
     try {
-      // Process each article (Requirement 8.1)
       for (let i = 0; i < articleIds.length; i++) {
         const articleId = articleIds[i];
         
-        // Update progress (Requirement 10.2)
         setBulkOperationState(prev => ({
           ...prev,
           current: i + 1
         }));
         
-        let articleMarkedCount = 0;
-        let articleErrors = [];
-
-        // Check each platform for generated content and mark as posted (Requirement 8.2)
         for (const platform of platforms) {
           try {
-            // First, check if this article has generated content for this platform
             const checkResponse = await fetch(`/api/content/${articleId}/${platform}`);
             if (!checkResponse.ok) continue;
 
             const contentData = await checkResponse.json();
             
-            // Only mark as posted if content exists and is not already posted (Requirement 8.2)
             if (contentData.content && !contentData.posted) {
-              // Call /api/content/posted endpoint (Requirement 8.1)
-              const postResponse = await fetch('/api/content/posted', {
+              const res = await fetch('/api/content/posted', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -947,74 +936,72 @@ function AppContent() {
                   posted: true
                 })
               });
-
-              if (postResponse.ok) {
-                articleMarkedCount++;
+              
+              if (res.ok) {
+                results.succeeded.push(`${articleId}/${platform}`);
               } else {
-                const errorData = await postResponse.json().catch(() => ({}));
-                articleErrors.push({ platform, error: errorData.error || 'Failed to mark posted' });
+                const errorData = await res.json().catch(() => ({}));
+                results.failed.push({
+                  article_id: articleId,
+                  platform,
+                  error: errorData.error || `HTTP ${res.status}`
+                });
               }
             }
-          } catch (error) {
-            // Silently continue if a platform check fails (likely no content exists)
-            console.debug(`No content or error checking ${platform} for article ${articleId}:`, error);
+          } catch(e) {
+            results.failed.push({
+              article_id: articleId,
+              platform,
+              error: e.message
+            });
           }
-        }
-
-        if (articleMarkedCount > 0) {
-          totalMarked += articleMarkedCount;
-        }
-
-        if (articleErrors.length > 0) {
-          // Get article title for better error display
-          const article = stories.find(s => s.id === articleId);
-          failedArticles.push({ 
-            id: articleId, 
-            title: article?.title,
-            error: `Failed to mark ${articleErrors.length} platform(s): ${articleErrors.map(e => e.platform).join(', ')}`
-          });
         }
       }
 
-      // Refresh article data after completion (Task 8.2)
       await fetchStories();
 
-      // Show completion feedback (Requirements 8.3, 8.5, 10.3, 10.4, 10.5)
-      if (failedArticles.length === 0 && totalMarked > 0) {
-        toast.success(`Successfully marked ${totalMarked} platform${totalMarked > 1 ? 's' : ''} as posted across ${totalCount} article${totalCount > 1 ? 's' : ''}!`);
-      } else if (totalMarked > 0 && failedArticles.length > 0) {
-        // Show success toast for successful operations
-        toast.success(`Marked ${totalMarked} platform${totalMarked > 1 ? 's' : ''} as posted`);
-        // Show error component with details of failed articles (Requirements 10.3, 10.4, 10.5)
-        setBulkOperationError({
-          isVisible: true,
-          operationName: 'Mark as Posted',
-          failedArticles: failedArticles,
-          retryHandler: () => {
-            setBulkOperationError({ isVisible: false, operationName: '', failedArticles: [], retryHandler: null });
-            handleBulkMarkPosted(failedArticles.map(a => a.id));
-          }
-        });
-      } else if (totalMarked === 0 && failedArticles.length === 0) {
-        toast.info('No generated content found to mark as posted for the selected articles.');
-      } else {
-        // All articles failed - show error component (Requirements 10.3, 10.4, 10.5)
-        setBulkOperationError({
-          isVisible: true,
-          operationName: 'Mark as Posted',
-          failedArticles: failedArticles,
-          retryHandler: () => {
-            setBulkOperationError({ isVisible: false, operationName: '', failedArticles: [], retryHandler: null });
-            handleBulkMarkPosted(failedArticles.map(a => a.id));
-          }
-        });
+      // Show accurate results
+      if (results.failed.length === 0 && results.succeeded.length > 0) {
+          toast.success(`✓ All ${results.succeeded.length} articles marked as posted`);
+      } else if (results.succeeded.length === 0 && results.failed.length > 0) {
+          toast.error(
+              `✗ Failed to mark ${results.failed.length} articles. See details below.`
+          );
+      } else if (results.succeeded.length > 0 && results.failed.length > 0) {
+          toast.warning(
+              `⚠ ${results.succeeded.length} succeeded, ${results.failed.length} failed. See details.`
+          );
+      } else if (results.succeeded.length === 0 && results.failed.length === 0) {
+          toast.info('No generated content found to mark as posted for the selected articles.');
+      }
+      
+      // Show details in expandable section
+      if (results.failed.length > 0) {
+          const failedArticlesForState = results.failed.map(f => {
+            const article = stories.find(s => s.id === f.article_id);
+            return {
+              id: f.article_id,
+              title: article?.title,
+              error: `Platform ${f.platform}: ${f.error}`
+            };
+          });
+          
+          setBulkOperationError({
+            isVisible: true,
+            operationName: 'Mark as Posted',
+            failedArticles: failedArticlesForState,
+            retryHandler: () => {
+              setBulkOperationError({ isVisible: false, operationName: '', failedArticles: [], retryHandler: null });
+              const uniqueFailedIds = [...new Set(results.failed.map(f => f.article_id))];
+              handleBulkMarkPosted(uniqueFailedIds);
+            }
+          });
       }
 
     } catch (error) {
       console.error('Bulk mark posted error:', error);
       toast.error(`Bulk mark posted failed: ${error.message}`);
     } finally {
-      // Hide loading overlay (Requirement 10.1)
       setBulkOperationState({
         isActive: false,
         operationName: '',
