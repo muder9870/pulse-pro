@@ -119,7 +119,27 @@ class SmartLLMRouter:
                 access_count = self.cache.incr(access_key)
                 ttl = min(86400, 3600 * (1 + access_count))
                 self.cache.expire(cache_key, ttl)
+                self.log.info(f"CACHE HIT redis key={cache_key[:8]}...")
                 return LLMResponse(content=cached.decode(), provider="redis_cache")
+                
+        # Check SQLite (fallback)
+        from backend.db.session import SessionLocal
+        from backend.db.models import LLMCache
+        db = SessionLocal()
+        try:
+            sqlite_cached = db.query(LLMCache).filter_by(prompt_hash=cache_key).first()
+            if sqlite_cached:
+                self.log.info(f"CACHE HIT sqlite key={cache_key[:8]}...")
+                # Reload into Redis
+                if self.cache:
+                    self.cache.set(cache_key, sqlite_cached.response, ex=1800)
+                return LLMResponse(content=sqlite_cached.response, provider="sqlite_cache")
+        except Exception as e:
+            self.log.error(f"SQLite cache check failed: {e}")
+        finally:
+            db.close()
+            
+        self.log.info(f"CACHE MISS key={cache_key[:8]}... calling LLM")
         
         provider_chain = TASK_ROUTING.get(task, ["groq", "cerebras", "openrouter"])
         self.log.info(f"Starting generation for task {task.value}, prompt length: {len(prompt)} chars")
@@ -154,6 +174,22 @@ class SmartLLMRouter:
                     access_count = self.cache.incr(f"access:{cache_key}")
                     ttl = min(86400, 3600 * (1 + access_count))
                     self.cache.setex(cache_key, ttl, result)
+                    
+                # Store in SQLite
+                db_write = SessionLocal()
+                try:
+                    existing = db_write.query(LLMCache).filter_by(prompt_hash=cache_key).first()
+                    if not existing:
+                        db_write.add(LLMCache(
+                            prompt_hash=cache_key,
+                            response=result
+                        ))
+                        db_write.commit()
+                except Exception as e:
+                    db_write.rollback()
+                    self.log.error(f"Failed to write to sqlite cache: {e}")
+                finally:
+                    db_write.close()
                 
                 return LLMResponse(content=result, provider=provider)
                 
