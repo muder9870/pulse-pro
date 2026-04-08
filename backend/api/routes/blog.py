@@ -84,12 +84,151 @@ def blog_update():
 
 @blog_bp.post("/api/blog/publish")
 def blog_publish():
-    """Blog publishing route - implementation in progress."""
-    return jsonify({
-        "status": "not_implemented",
-        "error": "Blog publishing will be implemented in next phase. Use simulation mode or schedule manual posts.",
-        "docs": "See /api/docs for current blog capabilities"
-    }), 501
+    """
+    Publish a blog post to real platforms.
+    
+    Request body:
+    {
+        "blog_post_id": 123,
+        "platform": "devto" | "medium" | "wordpress",
+        "published": true/false
+    }
+    
+    Returns:
+    {
+        "status": "published" | "draft" | "error" | "disabled",
+        "platform": "devto" | "medium" | "wordpress",
+        "post_url": "https://...",
+        "post_id": "12345",
+        "verified": true/false,
+        "error": "error message or null"
+    }
+    """
+    import signal
+    import time
+    
+    def timeout_handler(signum, frame):
+        raise TimeoutError("Publishing timeout after 10 seconds")
+    
+    data = request.json or {}
+    blog_post_id = data.get("blog_post_id")
+    platform = (data.get("platform") or "").lower()
+    published = data.get("published", False)
+    
+    if not blog_post_id or not platform:
+        return jsonify({
+            "status": "error",
+            "error": "blog_post_id and platform required"
+        }), 400
+    
+    db = SessionLocal()
+    try:
+        repo = BlogRepository(db)
+        blog_post = repo.get_post(blog_post_id)
+        
+        if not blog_post:
+            return jsonify({
+                "status": "error",
+                "error": f"Blog post {blog_post_id} not found"
+            }), 404
+        
+        title = blog_post.get("title", "Untitled")
+        content = blog_post.get("content", "")
+        
+        # Set timeout and call appropriate publisher
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        try:
+            signal.alarm(10)  # 10 second timeout
+            
+            if platform == "devto":
+                from backend.generators.blog_publishers import devto_publisher
+                tags = blog_post.get("tags", "").split(",") if blog_post.get("tags") else []
+                result = devto_publisher.publish_markdown(
+                    title=title,
+                    body_markdown=content,
+                    tags=tags,
+                    published=published
+                )
+                
+                return jsonify({
+                    "status": result.status,
+                    "platform": "devto",
+                    "post_url": result.url,
+                    "post_id": result.platform_post_id,
+                    "verified": result.status in ("published", "draft"),
+                    "error": result.error
+                }), (200 if result.status in ("published", "draft") else 400)
+            
+            elif platform == "medium":
+                from backend.generators.blog_publishers import medium_publisher
+                tags = blog_post.get("tags", "").split(",") if blog_post.get("tags") else []
+                result = medium_publisher.publish_markdown(
+                    title=title,
+                    body_markdown=content,
+                    tags=tags,
+                    published=published
+                )
+                
+                return jsonify({
+                    "status": result.status,
+                    "platform": "medium",
+                    "post_url": result.url,
+                    "post_id": result.platform_post_id,
+                    "verified": result.status in ("published", "draft"),
+                    "error": result.error
+                }), (200 if result.status in ("published", "draft") else 400)
+            
+            elif platform == "wordpress":
+                from backend.generators.blog_publishers import wordpress_publisher
+                cred = repo.get_credential("wordpress") or {}
+                site_url = cred.get("site_url")
+                
+                if not site_url:
+                    return jsonify({
+                        "status": "error",
+                        "platform": "wordpress",
+                        "error": "WordPress site_url not configured"
+                    }), 400
+                
+                result = wordpress_publisher.publish_markdown(
+                    title=title,
+                    body_markdown=content,
+                    site_url=site_url,
+                    published=published
+                )
+                
+                return jsonify({
+                    "status": result.status,
+                    "platform": "wordpress",
+                    "post_url": result.url,
+                    "post_id": result.platform_post_id,
+                    "verified": result.status in ("published", "draft"),
+                    "error": result.error
+                }), (200 if result.status in ("published", "draft") else 400)
+            
+            else:
+                return jsonify({
+                    "status": "error",
+                    "error": f"Unknown platform: {platform}. Supported: devto, medium, wordpress"
+                }), 400
+        
+        finally:
+            signal.alarm(0)  # Cancel alarm
+            signal.signal(signal.SIGALRM, old_handler)
+    
+    except TimeoutError as e:
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 408
+    except Exception as e:
+        logger.error(f"Blog publish error: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "error": f"Publishing error: {str(e)}"
+        }), 500
+    finally:
+        db.close()
 
 
 @blog_bp.post("/api/blog/credentials/validate/<platform>")
