@@ -18,17 +18,18 @@ class MultiAgentOrchestrator:
         self.creative = CreativeAgent(db)
 
     def run_full_pipeline(self, sources: list[str] = None):
-        from backend.api.state import pipeline_lock, pipeline_state
         from datetime import datetime, timezone
         
         start_time = time.monotonic()
         self.log_status("start", "Pipeline starting...")
         
-        # Acquire lock
-        acquired = pipeline_lock.acquire(timeout=1)
-        if not acquired:
+        # Check if already running before acquiring lock
+        from backend.api.state import pipeline_lock, pipeline_state
+        from datetime import datetime, timezone
+
+        if pipeline_state.get("running"):
             return {"success": False, "error": "Another pipeline is already running"}
-            
+
         with pipeline_lock:
             pipeline_state["running"] = True
             pipeline_state["last_error"] = None

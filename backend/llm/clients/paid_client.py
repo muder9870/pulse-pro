@@ -24,7 +24,10 @@ class PaidApiLLMClient:
                 )
                 res.raise_for_status()
                 data = res.json()
-                response = data["choices"][0]["message"]["content"]
+                try:
+                    response = data["choices"][0]["message"]["content"]
+                except (KeyError, IndexError) as ke:
+                    raise RuntimeError(f"Malformed OpenAI response: {ke}") from ke
                 health_monitor.log_success("llm", int((time.monotonic() - start_time) * 1000))
                 return response
 
@@ -46,7 +49,10 @@ class PaidApiLLMClient:
                 )
                 res.raise_for_status()
                 data = res.json()
-                response = data["content"][0]["text"]
+                try:
+                    response = data["content"][0]["text"]
+                except (KeyError, IndexError) as ke:
+                    raise RuntimeError(f"Malformed Anthropic response: {ke}") from ke
                 health_monitor.log_success("llm", int((time.monotonic() - start_time) * 1000))
                 return response
 

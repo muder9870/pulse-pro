@@ -1,5 +1,6 @@
 import logging
 import time
+import concurrent.futures
 from enum import Enum
 from typing import List, Dict, Optional
 from .clients.groq_client import GroqClient, GroqRateLimitError
@@ -7,6 +8,9 @@ from .clients.ollama_client import LocalOllamaClient
 from .clients.paid_client import PaidApiLLMClient
 from .clients.cerebras_client import CerebrasClient
 from .clients.openrouter_client import OpenRouterClient
+from .clients.gemini_client import GeminiClient
+from .clients.mistral_client import MistralClient
+from .clients.pollinations_text_client import PollinationsTextClient
 from .circuit_breaker import CircuitBreaker
 from backend.config import settings
 import hashlib
@@ -16,23 +20,27 @@ from pybreaker import CircuitBreaker as PyBreaker
 class Task(Enum):
     ANALYSIS = "analysis"
     TAGGING = "tagging"
-    SOCIAL_SHORT = "social_short"  # Twitter, Threads
-    SOCIAL_LONG = "social_long"    # LinkedIn, Blog, YouTube
+    SOCIAL_SHORT = "social_short"
+    SOCIAL_LONG = "social_long"
     VIDEO_SCRIPT = "video_script"
     RESEARCH = "research"
     DEEP_ANALYSIS = "deep_analysis"
     DECISION = "decision"
+    BLOG = "blog"
+    AUDIO_SCRIPT = "audio_script"
 
 # Task-specific routing with fallback chains
 TASK_ROUTING: Dict[Task, List[str]] = {
-    Task.ANALYSIS: ["cerebras", "groq", "openrouter"],
-    Task.TAGGING: ["cerebras", "groq", "openrouter"],
-    Task.SOCIAL_SHORT: ["groq", "cerebras", "openrouter"],
-    Task.SOCIAL_LONG: ["groq", "cerebras", "openrouter"],
-    Task.VIDEO_SCRIPT: ["groq", "cerebras", "openrouter"],
-    Task.RESEARCH: ["openrouter", "groq", "cerebras"],
-    Task.DEEP_ANALYSIS: ["openrouter", "groq", "cerebras"],
-    Task.DECISION: ["groq", "cerebras", "openrouter"]
+    Task.ANALYSIS:      ["cerebras", "groq", "gemini", "openrouter", "mistral", "pollinations_text"],
+    Task.TAGGING:       ["cerebras", "groq", "gemini", "openrouter", "mistral", "pollinations_text"],
+    Task.SOCIAL_SHORT:  ["groq", "cerebras", "gemini", "openrouter", "mistral", "pollinations_text"],
+    Task.SOCIAL_LONG:   ["groq", "cerebras", "gemini", "openrouter", "mistral"],
+    Task.VIDEO_SCRIPT:  ["groq", "cerebras", "gemini", "openrouter", "mistral"],
+    Task.RESEARCH:      ["openrouter", "gemini", "groq", "cerebras", "mistral"],
+    Task.DEEP_ANALYSIS: ["openrouter", "gemini", "groq", "cerebras"],
+    Task.DECISION:      ["groq", "cerebras", "gemini", "openrouter", "mistral"],
+    Task.BLOG:          ["openrouter", "gemini", "groq", "cerebras", "mistral"],
+    Task.AUDIO_SCRIPT:  ["groq", "cerebras", "gemini", "openrouter", "mistral"],
 }
 
 # Response format for consistency
@@ -90,7 +98,10 @@ class SmartLLMRouter:
             "local": LocalOllamaClient,
             "paid_api": PaidApiLLMClient,
             "cerebras": CerebrasClient,
-            "openrouter": OpenRouterClient
+            "openrouter": OpenRouterClient,
+            "gemini": GeminiClient,
+            "mistral": MistralClient,
+            "pollinations_text": PollinationsTextClient,
         }
         
         for name, client_class in client_configs.items():
@@ -110,7 +121,7 @@ class SmartLLMRouter:
         self._validate_inputs(prompt, max_tokens)
         
         # Check cache first
-        cache_key = hashlib.md5(f"{task.value}:{prompt}".encode()).hexdigest()
+        cache_key = hashlib.md5(f"{task.value}:{max_tokens}:{prompt}".encode()).hexdigest()
         if self.cache:
             cached = self.cache.get(cache_key)
             if cached:
@@ -206,43 +217,16 @@ class SmartLLMRouter:
         """Validate input parameters."""
         if not prompt or not prompt.strip():
             raise ValueError("Prompt cannot be empty")
-        
-        if len(prompt) > 50000:  # Reasonable limit
+        if len(prompt) > 50000:
             raise ValueError(f"Prompt too long: {len(prompt)} chars (max 50000)")
-        
-        if max_tokens < 1 or max_tokens > 8000:
-            raise ValueError(f"Invalid max_tokens: {max_tokens} (must be 1-8000)")
+        if max_tokens < 1 or max_tokens > 32000:
+            raise ValueError(f"Invalid max_tokens: {max_tokens} (must be 1-32000)")
     
     def _call_with_timeout(self, func, *args, timeout: int = 10, **kwargs):
-        """Wrap function call with timeout."""
-        import threading
-        import queue
-        
-        result_queue = queue.Queue()
-        exception_queue = queue.Queue()
-        
-        def target():
-            try:
-                result = func(*args, **kwargs)
-                result_queue.put(result)
-            except Exception as e:
-                exception_queue.put(e)
-        
-        thread = threading.Thread(target=target)
-        thread.daemon = True
-        thread.start()
-        thread.join(timeout)
-        
-        if thread.is_alive():
-            raise TimeoutError(f"LLM call timed out after {timeout}s")
-        
-        if not exception_queue.empty():
-            raise exception_queue.get()
-        
-        if not result_queue.empty():
-            return result_queue.get()
-        
-        raise RuntimeError("Unexpected timeout condition")
+        """Wrap function call with timeout using ThreadPoolExecutor — no thread leaks."""
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(func, *args, **kwargs)
+            return future.result(timeout=timeout)
     
     def route(self, task: str, prompt: str, max_tokens: int = 512) -> str:
         """Legacy method for backward compatibility."""
@@ -255,23 +239,30 @@ class SmartLLMRouter:
         return self.generate(prompt, max_tokens, task_enum).content
     
     def get_status(self) -> Dict:
-        """Get current router status for debugging."""
+        """Get current router status — checks actual key configuration."""
+        key_map = {
+            "groq": getattr(settings, "GROQ_API_KEY", None),
+            "local": True,  # Ollama needs no key
+            "paid_api": getattr(settings, "OPENAI_API_KEY", None) or getattr(settings, "ANTHROPIC_API_KEY", None),
+            "cerebras": getattr(settings, "CEREBRAS_API_KEY", None),
+            "openrouter": getattr(settings, "OPENROUTER_API_KEY", None),
+        }
         status = {
             "initialized_clients": list(self.clients.keys()),
-            "available_providers": [],
-            "failed_providers": []
+            "providers": [],
         }
-        
-        for provider, client in self.clients.items():
-            try:
-                # Simple health check - try to initialize or validate client
-                if hasattr(client, 'model') or hasattr(client, 'config'):
-                    status["available_providers"].append(provider)
-                else:
-                    status["failed_providers"].append(provider)
-            except Exception:
-                status["failed_providers"].append(provider)
-        
+        for provider in self.clients:
+            key_set = bool(key_map.get(provider))
+            cb = self.circuit_breakers.get(provider)
+            from backend.processors.health_monitor import health_monitor
+            fail_rate = health_monitor.get_failure_rate(f"llm_{provider}", window=10)
+            threshold = getattr(settings, "CIRCUIT_BREAKER_THRESHOLD", 0.75)
+            status["providers"].append({
+                "name": provider,
+                "key_configured": key_set,
+                "circuit_breaker": "open" if fail_rate >= threshold else "closed",
+                "failure_rate": round(fail_rate, 3),
+            })
         return status
 
 # Global instance

@@ -1,13 +1,21 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_from_directory
 from backend.db.session import SessionLocal
 from backend.db.repositories.media_repository import MediaRepository
 from backend.db.models import ArticleImage, VideoScript
 from backend.processors.image_engine import ImageEngine
+from backend.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 media_bp = Blueprint('media', __name__)
+
+@media_bp.get("/api/media/audio/<path:filename>")
+def serve_audio(filename):
+    """Serve audio files from the media/audio directory."""
+    audio_dir = settings.MEDIA_DIR / "audio"
+    return send_from_directory(str(audio_dir), filename)
+
 
 @media_bp.get("/api/media/assets/all")
 def get_all_media_assets():

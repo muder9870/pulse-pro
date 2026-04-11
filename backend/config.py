@@ -63,6 +63,20 @@ class Settings:
     OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")
     OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "anthropic/claude-3-haiku")
 
+    # ── Google Gemini (free at aistudio.google.com) ───────────────────────
+    GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-lite")
+
+    # ── Mistral (free Experiment plan at console.mistral.ai) ─────────────
+    MISTRAL_API_KEY: str | None = os.getenv("MISTRAL_API_KEY")
+    MISTRAL_MODEL: str = os.getenv("MISTRAL_MODEL", "mistral-small-latest")
+
+    # ── Pollinations.ai text (no key required) ────────────────────────────
+    POLLINATIONS_TEXT_ENABLED: bool = os.getenv("POLLINATIONS_TEXT_ENABLED", "true").lower() == "true"
+
+    # ── HuggingFace image model ───────────────────────────────────────────
+    HF_IMAGE_MODEL: str = os.getenv("HF_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0")
+
     # ── Notifications ─────────────────────────────────────────────────────────
     NOTIFY_ON: str = os.getenv("NOTIFY_ON", "failure")
     NOTIFY_WEBHOOK_URL: str | None = os.getenv("NOTIFY_WEBHOOK_URL")

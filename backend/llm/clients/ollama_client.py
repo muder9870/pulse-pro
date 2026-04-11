@@ -13,8 +13,9 @@ class LocalOllamaClient:
         if self.model is None:
             self.model = getattr(settings, "OLLAMA_MODEL", "llama3")
 
-    def generate(self, prompt: str, max_tokens: int = 512) -> str:
+    def generate(self, prompt: str, max_tokens: int = 512, timeout: int = None) -> str:
         start_time = time.monotonic()
+        effective_timeout = timeout or 90
         base = str(getattr(settings, "OLLAMA_HOST", "http://127.0.0.1:11434") or "").strip()
         if not base.startswith(("http://", "https://")):
             base = "http://" + base
@@ -29,7 +30,7 @@ class LocalOllamaClient:
                     "stream": False,
                     "options": {"num_predict": max_tokens, "num_ctx": 16384},
                 },
-                timeout=90,
+                timeout=effective_timeout,
             )
             r.raise_for_status()
             data = r.json()
