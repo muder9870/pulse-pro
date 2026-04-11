@@ -1,20 +1,19 @@
 # AI Pulse Pro
 
-AI Pulse Pro is a self-hosted AI content automation platform. It fetches AI/ML articles from multiple sources, analyzes them with a local or cloud LLM, generates platform-ready social posts, and publishes long-form blog content — all from a single React dashboard.
-
-**Current status: Running in Docker. Core pipeline functional. See [docs/AUDIT_AND_SUGGESTIONS.md](docs/AUDIT_AND_SUGGESTIONS.md) for known issues and improvement roadmap.**
+AI Pulse Pro is a self-hosted AI content automation platform. It fetches AI/ML articles from multiple sources, analyzes them with a local or cloud LLM, generates platform-ready social posts, and publishes long-form blog content — all from a single React dashboard running in Docker.
 
 ---
 
 ## What it does
 
-1. **Fetches** AI/ML content from arXiv, GitHub trending, RSS feeds (26+ defaults), Gmail newsletters, and Reddit
+1. **Fetches** AI/ML content from arXiv, GitHub trending, RSS feeds (35+ defaults), Gmail newsletters, and Reddit
 2. **Analyzes** each article with an LLM — summary, viral hook, key innovation, sentiment, and scores (viral / tech / relevance)
 3. **Prioritizes** articles using a decision engine (HIGH / MEDIUM / LOW)
 4. **Generates** platform-specific posts for Twitter/X, LinkedIn, Reddit, HackerNews, Medium, Dev.to, Facebook, Instagram, TikTok, Threads, YouTube, Telegram, Discord, and more
 5. **Schedules** posts for publishing via APScheduler
 6. **Publishes** long-form blog posts to Medium, Dev.to, and WordPress
 7. **Tracks** engagement metrics and platform ROI
+8. **Deep-dives** into arXiv papers — downloads PDFs, extracts methodology, results, limitations, and authors via LLM
 
 ---
 
@@ -22,7 +21,7 @@ AI Pulse Pro is a self-hosted AI content automation platform. It fetches AI/ML a
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, Vite, Tailwind CSS, TanStack React Query |
+| Frontend | React 18, Vite, Tailwind CSS, TanStack React Query, Zustand |
 | Backend | Flask 3, SQLAlchemy, Gunicorn |
 | Database | PostgreSQL 15 |
 | Cache / Queue | Redis 7, Celery |
@@ -44,7 +43,6 @@ AI Pulse Pro is a self-hosted AI content automation platform. It fetches AI/ML a
 ```bash
 git clone https://github.com/yourusername/ai-pulse-pro.git
 cd ai-pulse-pro
-
 cp .env.example .env
 ```
 
@@ -103,10 +101,9 @@ GROQ_API_KEY=                           # Groq free API key
 INGEST_CAP_PER_SOURCE=50               # Max articles fetched per source per run
 ANALYSIS_LIMIT=10                       # Max articles analyzed per run
 CONTENT_TOP_LIMIT=5                     # Max articles to generate content for
-GENERATION_TOP_N=5                      # Override for content generation limit
 CONTENT_PLATFORMS=twitter,linkedin,reddit,hackernews,medium
 
-# Data sources (optional — app works without these)
+# Data sources (optional)
 GMAIL_ADDRESS=
 GMAIL_APP_PASSWORD=
 REDDIT_CLIENT_ID=
@@ -127,28 +124,6 @@ NOTIFY_WEBHOOK_URL=                     # Slack/Discord webhook
 
 ---
 
-## Data Sources
-
-### arXiv
-Fetches from cs.AI, cs.LG, cs.CV, cs.CL categories automatically. No credentials needed.
-
-### RSS Feeds
-26+ AI/ML feeds included by default (Towards Data Science, The Batch, MIT Tech Review, etc.). Manage feeds in Settings → RSS Manager.
-
-### Gmail
-1. Enable 2-Step Verification on your Google account
-2. Create an App Password at myaccount.google.com → Security → App Passwords
-3. Set `GMAIL_ADDRESS` and `GMAIL_APP_PASSWORD` in `.env`
-
-### Reddit
-1. Create a script app at reddit.com/prefs/apps
-2. Set `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USER_AGENT` in `.env`
-
-### GitHub
-Fetches trending repositories automatically. No credentials needed.
-
----
-
 ## Dashboard Views
 
 | View | What it shows |
@@ -156,10 +131,38 @@ Fetches trending repositories automatically. No credentials needed.
 | **Dashboard** | Intelligence Feed — all analyzed articles with scores, generated content, and bulk actions |
 | **Analytics** | Platform ROI, engagement metrics, content performance charts |
 | **Calendar** | Scheduled posts timeline |
-| **Research** | Deep paper analysis for arXiv articles |
+| **Research** | Deep paper analysis for arXiv articles (methodology, results, limitations, authors) |
 | **Media** | Generated images and audio assets |
 | **Podcast** | Audio content management |
-| **Settings** | Pipeline config, RSS feeds, integrations, webhooks, theme |
+| **Settings Hub** | 8-tab configuration center (see below) |
+
+---
+
+## Settings Hub
+
+| Tab | What it does |
+|-----|-------------|
+| **Monetization** | Manage affiliate keyword → URL mappings injected into generated content |
+| **System Health** | Live pipeline service status, LLM circuit breaker, feature flags, article queue |
+| **Webhooks** | Configure outbound webhooks to Zapier, Slack, or custom endpoints |
+| **Source Manager** | Add/remove/toggle RSS feeds, import OPML, add 35+ default AI/ML feeds |
+| **Style Profile** | View AI-learned writing style preferences (tone, length, emoji usage) |
+| **Browser Widget** | Instructions for installing the Chrome extension for one-click article capture |
+| **Interface** | Theme selection (Light, Dark, Azure Light, Azure Dark, System) |
+| **Advanced** | Pipeline control, scheduler toggle, performance metrics, cache stats, RSS health check, content export |
+
+---
+
+## Research Deep Dive
+
+The Research tab provides deep analysis of arXiv papers:
+
+1. Click **Deep Dive** on any arXiv paper
+2. The system downloads the PDF, extracts text, and sends it to the LLM
+3. Results show: Technical Methodology, Experimental Results, Critical Limitations, Authors, Affiliations
+4. Use **Regenerate** to clear the cached result and get a fresh LLM analysis
+5. Use **Copy** to copy the full analysis as Markdown to clipboard
+6. Use **Download** to save as a `.md` file
 
 ---
 
@@ -167,124 +170,64 @@ Fetches trending repositories automatically. No credentials needed.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/stories` | Fetch articles (supports `limit`, `page`, `sort`, `source`) |
-| GET | `/api/stories/sources` | Unique sources with article counts |
+| GET | `/api/stories` | Fetch articles (`limit`, `page`, `sort`, `source`) |
 | POST | `/api/pipeline/run` | Start the full pipeline |
-| GET | `/api/pipeline/stream` | Real-time pipeline progress (SSE) |
 | GET | `/api/pipeline/status` | Current pipeline state |
+| GET | `/api/pipeline/stream` | Real-time pipeline progress (SSE) |
 | POST | `/api/generate` | Generate content for an article |
-| POST | `/api/tags/:id` | Update article tags |
-| GET | `/api/analytics/dashboard` | Platform analytics |
-| GET | `/api/hashtags` | Trending hashtags |
-| POST | `/api/schedule/queue` | Queue a post for publishing |
-| GET | `/api/schedule` | Get/set schedule configuration |
-| GET | `/api/export` | Export articles as Markdown |
-| POST | `/api/export/batch` | Batch export selected articles |
-| GET | `/api/health` | Backend health check |
-
----
-
-## Development
-
-### Local backend (without Docker)
-
-```bash
-python -m venv .venv
-source .venv/bin/activate   # or .venv\Scripts\activate on Windows
-pip install -r requirements.txt
-cp .env.example .env
-python -m backend.main
-```
-
-### Local frontend (without Docker)
-
-```bash
-cd frontend
-npm install
-npm run dev
-# Opens at http://localhost:5173
-# API proxied to http://localhost:5000 via vite.config.js
-```
-
-### Run tests
-
-```bash
-# Backend
-python -m unittest discover -s tests -p "test_*.py" -v
-
-# Frontend
-cd frontend && npx vitest run
-```
-
-### Rebuild Docker (no cache)
-
-```bash
-docker compose build --no-cache frontend
-docker compose up -d frontend
-```
+| GET | `/api/export` | Export content as CSV or JSON |
+| POST | `/api/export/batch` | Batch export selected articles as Markdown |
+| GET | `/api/research/analysis/:id` | Get deep-dive analysis for an article |
+| POST | `/api/research/deep-dive` | Trigger deep paper analysis |
+| DELETE | `/api/research/analysis/:id` | Clear cached analysis (force regenerate) |
+| GET | `/api/rss/feeds` | List RSS feeds |
+| POST | `/api/rss/feeds` | Add RSS feed |
+| DELETE | `/api/rss/feeds/:id` | Delete RSS feed |
+| PATCH | `/api/rss/feeds/:id` | Toggle feed active/inactive |
+| POST | `/api/rss/add-defaults` | Add 35+ default AI/ML feeds |
+| POST | `/api/rss/import-opml` | Import feeds from OPML file |
+| GET | `/api/integrations/webhooks` | List webhooks |
+| POST | `/api/integrations/webhooks` | Add webhook |
+| DELETE | `/api/integrations/webhooks/:id` | Delete webhook |
+| POST | `/api/integrations/webhooks/:id/toggle` | Enable/disable webhook |
+| POST | `/api/integrations/test` | Test all enabled webhooks |
+| GET | `/api/monetization/links` | List affiliate links |
+| POST | `/api/monetization/links` | Add affiliate link |
+| DELETE | `/api/monetization/links/:id` | Delete affiliate link |
+| GET | `/api/system/health` | Comprehensive system health |
+| GET | `/api/performance/metrics` | Real-time performance metrics |
+| GET | `/api/stats/dashboard` | Dashboard statistics |
+| GET | `/api/personalization/style` | AI-learned style preferences |
+| POST | `/api/personalization/feedback` | Submit thumbs up/down feedback |
+| GET | `/api/schedule` | Get schedule configuration |
+| POST | `/api/schedule` | Update schedule configuration |
+| GET | `/api/health` | Simple health check |
 
 ---
 
 ## Security Setup
 
-Phase 5 of the refactor added security hardening. Here's what's in place and what needs real values before going public.
-
 ### HTTP Basic Auth (nginx)
 
-Auth is configured in `frontend/nginx.conf` but requires a real `.htpasswd` file to work.
-
-**Current state:** `frontend/.htpasswd` is a placeholder comment file — nginx will reject all requests when auth is enabled with an invalid file. The app currently has auth enabled in `nginx.conf` but no valid credentials.
-
-**To set up real auth:**
+Auth is configured in `frontend/nginx.conf` but requires a real `.htpasswd` file.
 
 ```bash
-# Install apache2-utils if needed (Linux/Mac)
-# On Windows use Git Bash or WSL
-
-# Generate .htpasswd with a username and password
 htpasswd -c frontend/.htpasswd admin
-# Enter password when prompted
-
-# Rebuild the frontend Docker image
 docker compose build --no-cache frontend
 docker compose up -d frontend
 ```
 
-The `.htpasswd` file is in `.gitignore` — never commit real credentials.
-
-**To disable auth** (local dev only): comment out the two `auth_basic` lines in `frontend/nginx.conf`:
-
-```nginx
-# auth_basic "AI Pulse Pro";
-# auth_basic_user_file /etc/nginx/.htpasswd;
-```
+To disable auth (local dev): comment out the two `auth_basic` lines in `frontend/nginx.conf`.
 
 ### SECRET_KEY
 
-The app refuses to start if `SECRET_KEY` is the default value `"change-me"`. Generate a real key:
+The app refuses to start if `SECRET_KEY` is the default `"change-me"`. Generate a real key:
 
 ```bash
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-Add the output to `.env`:
-
-```bash
-SECRET_KEY=<paste-generated-key-here>
-```
-
-### Database & Redis Credentials
-
-The defaults in `.env.example` are placeholders. Set real passwords before exposing the app:
-
-```bash
-POSTGRES_PASSWORD=<strong-random-password>
-REDIS_PASSWORD=<strong-random-password>
-```
-
-### Rate Limits (already active)
-
-The following limits are enforced by Flask-Limiter (backed by Redis):
+### Rate Limits (active)
 
 | Endpoint | Limit |
 |----------|-------|
@@ -293,19 +236,45 @@ The following limits are enforced by Flask-Limiter (backed by Redis):
 | `GET /api/stories` | 60 per minute |
 | All other endpoints | 200 per minute |
 
-### Content Security Policy (already active)
-
-Flask-Talisman sets a strict CSP with no `'unsafe-inline'`. If you add inline scripts or styles, you'll need to update the CSP in `backend/main.py`.
-
 ---
 
-## Known Issues & Limitations
+## Development
 
-See [docs/AUDIT_AND_SUGGESTIONS.md](docs/AUDIT_AND_SUGGESTIONS.md) for the full audit. Key remaining items:
+### Local backend
 
-- **Auth uses a placeholder** — `frontend/.htpasswd` is a comment file. nginx will block all requests until you generate a real `.htpasswd` (see Security Setup above).
-- **`/api/schedule/queue` and `/api/export/batch` not implemented** — the frontend calls these endpoints but they don't exist in the backend yet. Bulk schedule and batch export will return 404.
-- **AnalyticsView bundle is 388KB** — recharts is large. Consider dynamic imports within the analytics component if load time is a concern.
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python -m backend.main
+```
+
+### Local frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+# Opens at http://localhost:5173
+```
+
+### Run tests
+
+```bash
+# Backend
+pytest backend/tests/ -v
+
+# Frontend
+cd frontend && npx vitest run
+```
+
+### Rebuild Docker
+
+```bash
+docker compose build frontend backend
+docker compose up -d --no-deps --force-recreate frontend backend
+```
 
 ---
 
@@ -315,7 +284,7 @@ See [docs/AUDIT_AND_SUGGESTIONS.md](docs/AUDIT_AND_SUGGESTIONS.md) for the full 
 ai-pulse-pro/
 ├── backend/
 │   ├── agents/          # Orchestrator, Ingestion, Analysis, Creative agents
-│   ├── api/routes/      # Flask blueprints (stories, pipeline, content, etc.)
+│   ├── api/routes/      # Flask blueprints (stories, pipeline, content, rss, etc.)
 │   ├── db/
 │   │   ├── models.py    # SQLAlchemy models
 │   │   ├── session.py   # Connection pooling, circuit breaker
@@ -324,59 +293,22 @@ ai-pulse-pro/
 │   ├── generators/      # Content, blog, image, video, podcast generators
 │   ├── processors/      # Cleaner, deduplicator, analyzer, scorer, scheduler
 │   ├── llm/             # LLM router and provider clients
+│   ├── tests/           # Backend test suite (pytest)
 │   ├── config.py        # Settings from environment variables
 │   └── main.py          # Flask app factory
 ├── frontend/
 │   ├── src/
 │   │   ├── components/  # React components + ui/ design system
 │   │   ├── hooks/       # Custom React hooks
-│   │   ├── api/         # API client
+│   │   ├── store/       # Zustand global state (appStore)
+│   │   ├── theme/       # ThemeProvider, tokens, ThemeExample
 │   │   └── App.jsx      # Main app shell
-│   ├── public/          # Static assets, pass-through service workers
 │   └── vite.config.js
-├── tests/               # Backend test suite
-├── docs/                # Documentation and audit files
+├── .kiro/specs/         # Feature and bugfix specs (requirements, design, tasks)
+├── docs/                # Architecture, runbook, audit docs
 ├── docker-compose.yml
 ├── Dockerfile           # Backend image
 └── .env.example
-```
-
----
-
-## Frontend Development
-
-The frontend is a React 18 + Vite application located in the `frontend/` directory.
-
-### Available Scripts
-
-| Script | Command | Description |
-|--------|---------|-------------|
-| `dev` | `npm run dev` | Start Vite dev server with HMR |
-| `build` | `npm run build` | Production build with optimizations |
-| `lint` | `npm run lint` | ESLint check with `--max-warnings 0` |
-| `lint:fix` | `npm run lint:fix` | Auto-fix ESLint issues |
-| `type-check` | `npm run type-check` | TypeScript check without emit |
-| `test` | `npm run test` | Run Vitest tests |
-| `test:watch` | `npm run test:watch` | Run tests in watch mode |
-| `test:coverage` | `npm run test:coverage` | Run tests with coverage report |
-| `test:ui` | `npm run test:ui` | Run tests with Vitest UI |
-| `test:docker` | `npm run test:docker` | Run tests in Docker environment |
-| `preview` | `npm run preview` | Preview production build locally |
-
-### Development Workflow
-
-```bash
-cd frontend
-npm install
-
-# Start development server
-npm run dev
-
-# Run tests
-npm run test
-
-# Build for production
-npm run build
 ```
 
 ---
@@ -385,8 +317,10 @@ npm run build
 
 | Version | Date | Notes |
 |---------|------|-------|
-| 2.2 | April 2026 | Phase 3–5 refactor: React Router, Zustand, code splitting, rate limiting, CSP, Basic Auth, Pydantic validation |
-| 2.1 | April 2026 | Fixed React error #130, stale SW, API base URL, Card.Content undefined, pipeline lock |
+| 2.4 | April 2026 | Settings Hub stable: all 8 tabs wired, Advanced tools rewrite, real performance metrics |
+| 2.3 | April 2026 | Theme system unification (Azure themes), Research Deep Dive sync fix, Regenerate/Copy/Download actions |
+| 2.2 | April 2026 | Phase 3–5 refactor: React Router, Zustand, code splitting, rate limiting, CSP, Basic Auth |
+| 2.1 | April 2026 | Fixed React error #130, stale SW, API base URL, pipeline lock |
 | 2.0 | February 2026 | RSS management, hashtag intelligence, blog auto-publisher, APScheduler |
 | 1.0 | Initial | Core pipeline, multi-source ingestion, React dashboard |
 

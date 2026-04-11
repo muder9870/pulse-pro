@@ -1,11 +1,11 @@
 # Emergency Runbook — Pulse Pro
-Updated: 2026-03-29  |  Owner: Principal SRE
+Updated: April 2026  |  Owner: Principal SRE
 
 ---
 
 ## DB Down
 
-**Detect:** `GET /health/performance` returns `db.ok: false`
+**Detect:** `GET /api/system/health` returns services with `status: error` for DB-related services
 **Expected side-effect:** Redis still serves cached reads; LLM jobs will queue
 
 1. `docker logs postgres --tail 100`
@@ -13,21 +13,21 @@ Updated: 2026-03-29  |  Owner: Principal SRE
 3. Wait 30s. Re-check `/health/performance`
 4. If still down after 2 restarts — escalate to DBA on-call
 
-**Verify:** `db.latency_s < 1.0` on `/health/performance`
+**Verify:** `GET /api/system/health` → `vitals.database.connection_pool: "healthy"`
 **Escalate if:** Not resolved within 15 minutes
 
 ---
 
 ## Redis Down
 
-**Detect:** `GET /health/performance` returns `redis.ok: false`
+**Detect:** `GET /api/system/health` → `vitals.database.connection_pool` shows error, or `/api/performance/cache-stats` returns 503
 **Expected side-effect:** Cache misses spike DB load 2-4x for 5-10 min after restart
 
 1. `docker logs redis --tail 50`
 2. `docker restart redis`
 3. Monitor DB query rate — expect elevated load during cache warm-up
 
-**Verify:** `redis-cli ping` returns PONG. DB query rate returns to baseline within 10 min.
+**Verify:** `redis-cli ping` returns PONG. `GET /api/performance/cache-stats` returns 200. DB query rate returns to baseline within 10 min.
 **Escalate if:** Redis restarts repeatedly (memory issue — check maxmemory config)
 
 ---
@@ -121,3 +121,37 @@ All items below must pass before deploying to production.
 | LLMRetryStorm | Retry rate > 30% for 5m | Check provider status, consider fallback |
 | RedisMemoryPressure | `evicted_keys` increasing | Check key volume, consider memory increase |
 | StuckArticles | Stuck articles > 100 | Run reconciliation job |
+
+---
+
+## Research Deep Dive Fails
+
+**Detect:** Deep Dive modal shows error or spins indefinitely
+
+1. Check `GET /api/research/analysis/:id` — if 202, analysis is pending
+2. Check backend logs for `research_analyzer` — PDF download or LLM timeout
+3. If LLM timed out: increase `DEEP_ANALYSIS_TIMEOUT_S` (default 180s) in `.env`
+4. If PDF download failed: check arXiv URL rewrite logic in `research_analyzer.py`
+5. Use **Regenerate** button in the modal to clear cache and retry
+
+**Verify:** Modal shows methodology, results, limitations, authors after retry
+**Escalate if:** All arXiv PDFs fail to download (network/firewall issue)
+
+---
+
+## Settings Hub — Endpoint 503/404
+
+**Detect:** Settings tab shows error or empty state
+
+| Tab | Endpoint | Common cause |
+|-----|----------|-------------|
+| System Health | `GET /api/system/health` | Backend startup failure |
+| RSS Manager | `GET /api/rss/feeds` | RSSFetcher DB error |
+| Webhooks | `GET /api/integrations/webhooks` | DB connection |
+| Monetization | `GET /api/monetization/links` | DB connection |
+| Style Profile | `GET /api/personalization/style` | Returns defaults if no data |
+| Advanced/Cache | `GET /api/performance/cache-stats` | Redis unavailable (503 expected) |
+
+**Note:** Cache stats returning 503 is expected when Redis is down — the UI shows "Redis not available" gracefully.
+
+**Verify:** `GET /api/health` returns `{"status": "ok"}`
