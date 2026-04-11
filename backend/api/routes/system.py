@@ -135,3 +135,108 @@ def scheduler_disable():
         finally:
             db.close()
     return jsonify({"error": "Scheduler not initialized"}), 500
+
+@system_bp.get("/api/system/llm-providers")
+def llm_providers_status():
+    """Return configuration status for all LLM providers."""
+    from backend.config import settings
+
+    providers = [
+        {
+            "name": "Groq",
+            "key": "GROQ_API_KEY",
+            "configured": bool(getattr(settings, "GROQ_API_KEY", None)),
+            "model": getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile"),
+            "free": True,
+            "get_key_url": "https://console.groq.com",
+            "notes": "Free tier, 30 RPM. Fastest option.",
+        },
+        {
+            "name": "Cerebras",
+            "key": "CEREBRAS_API_KEY",
+            "configured": bool(getattr(settings, "CEREBRAS_API_KEY", None)),
+            "model": getattr(settings, "CEREBRAS_MODEL", "llama3.1-8b"),
+            "free": True,
+            "get_key_url": "https://cloud.cerebras.ai",
+            "notes": "Free tier, fast inference.",
+        },
+        {
+            "name": "Google Gemini",
+            "key": "GEMINI_API_KEY",
+            "configured": bool(getattr(settings, "GEMINI_API_KEY", None)),
+            "model": getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash-lite"),
+            "free": True,
+            "get_key_url": "https://aistudio.google.com",
+            "notes": "Free tier: 30 RPM, 1000 RPD. No credit card.",
+        },
+        {
+            "name": "Mistral",
+            "key": "MISTRAL_API_KEY",
+            "configured": bool(getattr(settings, "MISTRAL_API_KEY", None)),
+            "model": getattr(settings, "MISTRAL_MODEL", "mistral-small-latest"),
+            "free": True,
+            "get_key_url": "https://console.mistral.ai",
+            "notes": "Free Experiment plan (~1B tokens/month). Phone verification required.",
+        },
+        {
+            "name": "OpenRouter",
+            "key": "OPENROUTER_API_KEY",
+            "configured": bool(getattr(settings, "OPENROUTER_API_KEY", None)),
+            "model": getattr(settings, "OPENROUTER_MODEL", "anthropic/claude-3-haiku"),
+            "free": False,
+            "get_key_url": "https://openrouter.ai/keys",
+            "notes": "Pay-per-use. Some models are free.",
+        },
+        {
+            "name": "OpenAI",
+            "key": "OPENAI_API_KEY",
+            "configured": bool(getattr(settings, "OPENAI_API_KEY", None)),
+            "model": getattr(settings, "OPENAI_MODEL", "gpt-4o-mini"),
+            "free": False,
+            "get_key_url": "https://platform.openai.com/api-keys",
+            "notes": "Paid. Used for DALL-E 3 image generation too.",
+        },
+        {
+            "name": "Anthropic",
+            "key": "ANTHROPIC_API_KEY",
+            "configured": bool(getattr(settings, "ANTHROPIC_API_KEY", None)),
+            "model": getattr(settings, "ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
+            "free": False,
+            "get_key_url": "https://console.anthropic.com",
+            "notes": "Paid.",
+        },
+        {
+            "name": "Ollama (Local)",
+            "key": None,
+            "configured": True,  # Always available — just needs Ollama running
+            "model": getattr(settings, "OLLAMA_MODEL", "llama3.2"),
+            "free": True,
+            "get_key_url": "https://ollama.com",
+            "notes": "Local GPU required. No API key needed.",
+        },
+        {
+            "name": "Pollinations.ai (Text)",
+            "key": None,
+            "configured": getattr(settings, "POLLINATIONS_TEXT_ENABLED", True),
+            "model": "openai (GPT-5 Nano)",
+            "free": True,
+            "get_key_url": None,
+            "notes": "No key required. Last-resort fallback.",
+        },
+        {
+            "name": "HuggingFace (Images)",
+            "key": "HF_TOKEN",
+            "configured": bool(getattr(settings, "HF_TOKEN", None)),
+            "model": getattr(settings, "HF_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0"),
+            "free": True,
+            "get_key_url": "https://huggingface.co/settings/tokens",
+            "notes": "Free tier for image generation.",
+        },
+    ]
+
+    configured_count = sum(1 for p in providers if p["configured"])
+    return jsonify({
+        "providers": providers,
+        "configured_count": configured_count,
+        "total_count": len(providers),
+    }), 200

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Terminal, RefreshCw, Download, Zap, Database, Activity,
     CheckCircle, AlertCircle, Clock, BarChart3, Cpu, Trash2,
-    Play, ChevronDown, ChevronUp
+    Play, ChevronDown, ChevronUp, Key, ExternalLink
 } from 'lucide-react';
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
@@ -52,6 +52,22 @@ function ResultBadge({ ok, text }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function AdvancedTools({ activeTheme }) {
+    // ── LLM Provider Status ───────────────────────────────────────────────────
+    const [llmProviders, setLlmProviders] = useState(null);
+    const [llmLoading, setLlmLoading] = useState(false);
+
+    const fetchLlmProviders = async () => {
+        setLlmLoading(true);
+        try {
+            const res = await fetch('/api/system/llm-providers');
+            if (res.ok) setLlmProviders(await res.json());
+        } catch { /* silent */ } finally {
+            setLlmLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchLlmProviders(); }, []);
+
     // ── Pipeline ──────────────────────────────────────────────────────────────
     const [pipelineStatus, setPipelineStatus] = useState(null);
     const [pipelineRunning, setPipelineRunning] = useState(false);
@@ -231,6 +247,68 @@ export default function AdvancedTools({ activeTheme }) {
                     </p>
                 </div>
             </div>
+
+            {/* LLM Provider Status */}
+            <Section title="LLM Providers" icon={Key}>
+                <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm text-slate-500">
+                        {llmProviders
+                            ? `${llmProviders.configured_count} of ${llmProviders.total_count} providers configured`
+                            : 'Loading…'}
+                    </p>
+                    <ActionButton onClick={fetchLlmProviders} loading={llmLoading} variant="outline" icon={RefreshCw}>
+                        Refresh
+                    </ActionButton>
+                </div>
+                {llmProviders?.providers ? (
+                    <div className="space-y-2">
+                        {llmProviders.providers.map(p => (
+                            <div key={p.name} className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                                p.configured
+                                    ? 'bg-green-50 border-green-100'
+                                    : 'bg-slate-50 border-slate-100'
+                            }`}>
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {p.configured
+                                        ? <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                        : <AlertCircle className="w-4 h-4 text-slate-300 shrink-0" />
+                                    }
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-sm font-bold ${p.configured ? 'text-slate-800' : 'text-slate-400'}`}>
+                                                {p.name}
+                                            </span>
+                                            {p.free && (
+                                                <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                                                    Free
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 truncate">{p.model}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0 ml-4">
+                                    {!p.configured && p.get_key_url && (
+                                        <a
+                                            href={p.get_key_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                                        >
+                                            Get Key <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    )}
+                                    {p.configured && (
+                                        <span className="text-[10px] font-bold text-green-600">Configured</span>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm text-slate-400 text-center py-4">Loading provider status…</p>
+                )}
+            </Section>
 
             {/* Pipeline Control */}
             <Section title="Pipeline Control" icon={Play}>
