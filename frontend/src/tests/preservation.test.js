@@ -109,7 +109,7 @@ describe('Property 2b — Build output preservation (Req 3.5)', () => {
     const jsFiles = files.filter(f => f.endsWith('.js'));
     expect(jsFiles.length, 'Must have at least one JS asset').toBeGreaterThanOrEqual(1);
     // At least one JS file must have a hash pattern: name-[hash].js
-    const hashedJs = jsFiles.filter(f => /^index-[A-Za-z0-9]+\.js$/.test(f));
+    const hashedJs = jsFiles.filter(f => /^index-[A-Za-z0-9-]+\.js$/.test(f));
     expect(hashedJs.length, 'Must have a hashed index JS file (index-[hash].js)').toBeGreaterThanOrEqual(1);
   });
 
@@ -117,7 +117,7 @@ describe('Property 2b — Build output preservation (Req 3.5)', () => {
     const files = fs.readdirSync(DIST_ASSETS_PATH);
     const cssFiles = files.filter(f => f.endsWith('.css'));
     expect(cssFiles.length, 'Must have at least one CSS asset').toBeGreaterThanOrEqual(1);
-    const hashedCss = cssFiles.filter(f => /^index-[A-Za-z0-9]+\.css$/.test(f));
+    const hashedCss = cssFiles.filter(f => /^index-[A-Za-z0-9-]+\.css$/.test(f));
     expect(hashedCss.length, 'Must have a hashed index CSS file (index-[hash].css)').toBeGreaterThanOrEqual(1);
   });
 

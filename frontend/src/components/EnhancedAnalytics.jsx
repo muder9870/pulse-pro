@@ -44,7 +44,8 @@ export default function EnhancedAnalytics({ onBack }) {
       // Process source data
       const sourceMap = data.articles?.by_source || {};
       const sourceChartData = Object.entries(sourceMap)
-        .map(([name, value]) => ({ name: name || 'Unknown', value }))
+        .filter(([name, _]) => name !== null && name !== undefined)
+        .map(([name, value]) => ({ name: String(name) || 'Unknown', value: Number(value) || 0 }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 6);
       setSourceData(sourceChartData);
@@ -237,8 +238,8 @@ export default function EnhancedAnalytics({ onBack }) {
             <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[9px] font-black text-slate-400 uppercase tracking-widest">Last 7 Days</div>
           </div>
 
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[300px] w-full min-h-[300px]">
+            <ResponsiveContainer width="100%" height="100%" minHeight={300}>
               <AreaChart data={timelineData}>
                 <defs>
                   <linearGradient id="colorArticles" x1="0" y1="0" x2="0" y2="1">
@@ -306,8 +307,8 @@ export default function EnhancedAnalytics({ onBack }) {
             <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[9px] font-black text-slate-400 uppercase tracking-widest">Top 6 Sources</div>
           </div>
 
-          <div className="h-[300px] w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[300px] w-full relative min-h-[300px]">
+            <ResponsiveContainer width="100%" height="100%" minHeight={300}>
               <PieChart>
                 <Pie
                   data={sourceData}
@@ -358,8 +359,8 @@ export default function EnhancedAnalytics({ onBack }) {
           </div>
         </div>
 
-        <div className="h-[350px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-[350px] w-full min-h-[350px]">
+          <ResponsiveContainer width="100%" height="100%" minHeight={350}>
             <BarChart data={scoreData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
               <XAxis

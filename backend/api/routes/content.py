@@ -251,3 +251,45 @@ def get_personalization_style():
         return jsonify({"status": "success", "style": _STYLE_DEFAULTS}), 200
     finally:
         db.close()
+
+@content_bp.post("/api/content/quality-check")
+def quality_check():
+    """Run a quality check on the generated content."""
+    from backend.processors.content_quality import ContentQualityAnalyzer
+    try:
+        data = request.json or {}
+        article_id = data.get("article_id")
+        content = data.get("content")
+        platform = data.get("platform")
+        
+        analyzer = ContentQualityAnalyzer()
+        score = analyzer.analyze_content(content, platform=platform)
+        
+        return jsonify({"status": "success", "quality_score": score}), 200
+    except Exception as e:
+        logger.exception("Quality check failed")
+        return jsonify({"error": str(e)}), 500
+
+@content_bp.post("/api/content/update")
+def update_content():
+    """Manually update generated content from the dashboard."""
+    db = SessionLocal()
+    try:
+        data = request.json or {}
+        article_id = data.get("article_id")
+        platform = data.get("platform")
+        content = data.get("content")
+        
+        if not all([article_id, platform, content]):
+            return jsonify({"error": "Missing required fields"}), 400
+            
+        repo = ContentRepository(db)
+        updated = repo.update_content(article_id, platform, content)
+        
+        return jsonify({"status": "success", "record": updated}), 200
+    except Exception as e:
+        db.rollback()
+        logger.exception("Content update failed")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()

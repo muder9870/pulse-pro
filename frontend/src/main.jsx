@@ -8,6 +8,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { BrowserRouter } from 'react-router-dom'
 import { PipelineProvider } from './context/PipelineContext'
+import { ThemeProvider } from './theme/ThemeProvider'
 
 // Unregister ALL service workers immediately before anything else
 if ('serviceWorker' in navigator) {
@@ -35,10 +36,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <PipelineProvider>
-          <ErrorBoundary>
-            <App />
-          </ErrorBoundary>
-          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+          <ThemeProvider>
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
+            {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+          </ThemeProvider>
         </PipelineProvider>
       </QueryClientProvider>
     </BrowserRouter>

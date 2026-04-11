@@ -90,6 +90,33 @@ def get_research_analysis(article_id):
         db.close()
 
 
+@research_bp.delete("/api/research/analysis/<int:article_id>")
+def delete_research_analysis(article_id):
+    """Clear cached deep-dive analysis so it can be regenerated."""
+    db = SessionLocal()
+    try:
+        processed = db.query(ProcessedArticle).filter(
+            ProcessedArticle.raw_article_id == article_id
+        ).first()
+        if not processed:
+            return jsonify({"error": "Article not found", "article_id": article_id}), 404
+
+        paper_analysis = db.query(PaperAnalysis).filter(
+            PaperAnalysis.article_id == processed.id
+        ).first()
+        if not paper_analysis:
+            return jsonify({"error": "No analysis found to delete", "article_id": article_id}), 404
+
+        db.delete(paper_analysis)
+        db.commit()
+        return jsonify({"status": "cleared", "article_id": article_id}), 200
+    except Exception as e:
+        logger.error(f"Error deleting research analysis: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
+
 @research_bp.post("/api/research/deep-dive")
 def research_deep_dive():
     """Trigger deep paper analysis for an arXiv article."""
@@ -108,6 +135,21 @@ def research_deep_dive():
                 
         if not p_id:
             return jsonify({"error": "Article not found or could not be processed"}), 404
+
+        # Bug 4 fix: verify resolved processed_id belongs to the requested article_id
+        processed_check = db.query(ProcessedArticle).filter(ProcessedArticle.id == p_id).first()
+        if processed_check and processed_check.raw_article_id != article_id:
+            logger.error(
+                f"deep_dive_id_mismatch article_id={article_id} "
+                f"resolved_processed_id={p_id} "
+                f"actual_raw_article_id={processed_check.raw_article_id}"
+            )
+            return jsonify({
+                "error": "ID mismatch: resolved processed article does not belong to the requested raw article",
+                "article_id": article_id,
+                "resolved_processed_id": p_id,
+                "actual_raw_article_id": processed_check.raw_article_id,
+            }), 422
             
         from backend.processors.research_analyzer import ResearchAnalyzer
         analyzer = ResearchAnalyzer()

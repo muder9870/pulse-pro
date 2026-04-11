@@ -81,12 +81,35 @@ function ResearchView() {
         }
     };
 
+    const handleRegenerate = async () => {
+        setDeepDiving(true);
+        setAnalysis(null);
+        try {
+            await fetch(`/api/research/analysis/${selectedPaper.id}`, { method: 'DELETE' });
+            const diveRes = await fetch('/api/research/deep-dive', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ article_id: selectedPaper.id })
+            });
+            const diveData = await diveRes.json();
+            if (diveRes.ok && diveData.analysis) {
+                setAnalysis(diveData.analysis);
+            } else {
+                alert(diveData.error || "Regeneration failed");
+            }
+        } catch (err) {
+            alert("Failed to regenerate analysis");
+        } finally {
+            setDeepDiving(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900">AI Research Assistant</h2>
-                    <p className="text-gray-500">Deep technical analysis of the latest academic papers</p>
+                    <p className="text-gray-600">Deep technical analysis of the latest academic papers</p>
                 </div>
                 <button
                     onClick={fetchPapers}
@@ -99,20 +122,20 @@ function ResearchView() {
             {loading ? (
                 <div className="space-y-3 animate-pulse">
                     {[1, 2, 3, 4, 5].map(i => (
-                        <div key={i} className="h-24 bg-slate-100 rounded-xl border border-slate-200" />
+                        <div key={i} className="h-24 bg-gray-100 rounded-xl border border-gray-300" />
                     ))}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {papers.length === 0 ? (
-                        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center text-gray-500">
+                        <div className="bg-gray-50 rounded-xl border border-dashed border-gray-400 p-12 text-center text-gray-600">
                             <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                             <p>No research papers found in your feed yet.</p>
                             <p className="text-sm">Try running the pipeline or adding more arXiv feeds.</p>
                         </div>
                     ) : (
                         papers.map(paper => (
-                            <div key={paper.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow group">
+                            <div key={paper.id} className="bg-gray-50 rounded-xl border border-gray-300 p-5 hover:shadow-md transition-shadow group">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
@@ -146,7 +169,7 @@ function ResearchView() {
                                             href={paper.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors"
+                                            className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors"
                                         >
                                             <ExternalLink className="w-4 h-4" />
                                             arXiv
@@ -164,6 +187,7 @@ function ResearchView() {
                 onClose={() => setModalOpen(false)}
                 analysis={analysis}
                 story={selectedPaper}
+                onRegenerate={handleRegenerate}
             />
         </div>
     );

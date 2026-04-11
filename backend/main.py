@@ -37,6 +37,7 @@ from .api.routes.media import media_bp
 from .api.routes.performance import performance_bp
 from .api.routes.export import export_bp
 from .api.routes.articles import articles_bp
+from .api.routes.podcast import podcast_bp
 
 # Shared state
 from .api.state import pipeline_lock, pipeline_state
@@ -114,6 +115,7 @@ def create_app() -> Flask:
     app.register_blueprint(performance_bp)
     app.register_blueprint(export_bp)
     app.register_blueprint(articles_bp)
+    app.register_blueprint(podcast_bp)
 
     # Metrics endpoint
     @app.route('/metrics')

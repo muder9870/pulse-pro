@@ -9,6 +9,7 @@ vi.mock('lucide-react', () => ({
   Home: () => <span data-testid="icon-home">🏠</span>,
   BarChart2: () => <span data-testid="icon-chart">📊</span>,
   Calendar: () => <span data-testid="icon-calendar">📅</span>,
+  Image: () => <span data-testid="icon-image">🖼️</span>,
   ImageIcon: () => <span data-testid="icon-image">🖼️</span>,
   BookOpen: () => <span data-testid="icon-book">📖</span>,
   Mic: () => <span data-testid="icon-mic">🎤</span>,
@@ -35,6 +36,7 @@ describe('Sidebar', () => {
       { name: 'arxiv', count: 42 },
       { name: 'github', count: 15 },
     ],
+    setActiveSource: vi.fn(),
     onSourceSelect: vi.fn(),
     onClose: vi.fn(),
     isOpen: true,
@@ -69,8 +71,9 @@ describe('Sidebar', () => {
 
     expect(screen.getByText('Source Folders')).toBeInTheDocument();
     expect(screen.getByText('All Sources')).toBeInTheDocument();
-    expect(screen.getByText('Arxiv')).toBeInTheDocument();
-    expect(screen.getByText('Github')).toBeInTheDocument();
+    // Source names are rendered as-is (CSS capitalize handles display)
+    expect(screen.getByText('arxiv')).toBeInTheDocument();
+    expect(screen.getByText('github')).toBeInTheDocument();
   });
 
   it('displays source counts', () => {
@@ -120,8 +123,8 @@ describe('Sidebar', () => {
 
   it('has aria-current on active navigation item', () => {
     render(
-      <MemoryRouter>
-        <Sidebar {...defaultProps} currentView="analytics" />
+      <MemoryRouter initialEntries={['/analytics']}>
+        <Sidebar {...defaultProps} />
       </MemoryRouter>
     );
 

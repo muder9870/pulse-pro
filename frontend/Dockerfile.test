@@ -13,6 +13,9 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Build the frontend (required for preservation tests)
+RUN npm run build
+
 # Create test results directory
 RUN mkdir -p test-results
 

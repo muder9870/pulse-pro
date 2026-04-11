@@ -251,16 +251,16 @@ const StoryCard = React.memo(({
 
   const getGradeColor = (grade) => {
     switch (grade) {
-      case 'A': return 'text-green-600 bg-green-50/50 border-green-200';
-      case 'B': return 'text-blue-600 bg-blue-50/50 border-blue-200';
-      case 'C': return 'text-orange-600 bg-orange-50/50 border-orange-200';
-      default: return 'text-gray-600 bg-gray-50/50 border-gray-200';
+      case 'A': return 'text-green-600 bg-green-100 border-green-300';
+      case 'B': return 'text-blue-600 bg-blue-100 border-blue-300';
+      case 'C': return 'text-orange-600 bg-orange-100 border-orange-300';
+      default: return 'text-gray-600 bg-gray-100 border-gray-300';
     }
   };
 
   return (
-    <div className={`group relative bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg border transition-all duration-500 overflow-hidden ${
-      isSelected ? 'border-indigo-500 ring-4 ring-indigo-100 scale-[1.02] z-10' : 'border-gray-100 hover:border-blue-200 hover:shadow-2xl hover:-translate-y-1'
+    <div className={`group relative glass-morphism rounded-[2rem] shadow-lg border transition-all duration-500 overflow-hidden ${
+      isSelected ? 'border-indigo-500 ring-4 ring-indigo-100 scale-[1.02] z-10' : 'border-gray-300 hover:border-indigo-500/30 hover:shadow-2xl hover:-translate-y-1'
     }`}>
       {/* Selection Checkbox */}
       {onToggleSelection && (
@@ -279,7 +279,7 @@ const StoryCard = React.memo(({
         </div>
 
         {/* Global Action Bar */}
-        <div className="flex items-center gap-4 pt-6 mt-2 border-t border-gray-100/50">
+        <div className="flex items-center gap-4 pt-6 mt-2 border-t border-gray-300">
           <Button
             onClick={() => { if (!expanded) { logEngagement('view'); fetchMedia(); fetchAudio(); } setExpanded(!expanded); }}
             variant="primary"
@@ -303,8 +303,8 @@ const StoryCard = React.memo(({
           <PublishPanel
             platforms={platforms}
             onChange={setPlatforms}
-            contentCount={Object.values(generatedContent).filter(c => c.text && !c.text.startsWith('Error')).length}
-            hasValidContent={platforms.length > 0 && Object.values(generatedContent).filter(c => c.text && !c.text.startsWith('Error')).length === platforms.length}
+            contentCount={Object.values(generatedContent).filter(c => c && c.text && !c.text.startsWith('Error')).length}
+            hasValidContent={platforms.length > 0 && Object.values(generatedContent).filter(c => c && c.text && !c.text.startsWith('Error')).length === platforms.length}
             onSchedule={(p) => alert(`Scheduling for ${p} coming soon!`)}
             onPublishNow={() => alert('Publish now coming soon!')}
           />

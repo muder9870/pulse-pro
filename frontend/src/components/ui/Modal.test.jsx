@@ -1,15 +1,26 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '../../theme/ThemeProvider';
 import Modal, { ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from './Modal';
 
 describe('Modal', () => {
+  const renderWithTheme = (component, theme = 'light') => {
+    return render(
+      <ThemeProvider defaultTheme={theme}>
+        {component}
+      </ThemeProvider>
+    );
+  };
+
   beforeEach(() => {
     localStorage.clear();
+    document.documentElement.className = '';
+    document.documentElement.removeAttribute('data-theme');
   });
 
   afterEach(() => {
+    cleanup(); // Prevents lingering components, memory leaks, act() warnings
     localStorage.clear();
     document.body.style.overflow = 'unset';
   });
@@ -67,31 +78,27 @@ describe('Modal', () => {
     it('renders modal surface with theme background color', () => {
       const handleClose = vi.fn();
       
-      const { container } = render(
-        <ThemeProvider>
-          <Modal open onClose={handleClose}>
-            <ModalBody>Content</ModalBody>
-          </Modal>
-        </ThemeProvider>
+      const { container } = renderWithTheme(
+        <Modal open onClose={handleClose}>
+          <ModalBody>Content</ModalBody>
+        </Modal>
       );
       
-      // Find the modal surface (the div with rounded-2xl)
-      const modalSurface = container.querySelector('.rounded-2xl');
+      // Find the modal surface (the div with rounded-xl)
+      const modalSurface = container.querySelector('.rounded-xl');
       expect(modalSurface).toBeInTheDocument();
-      expect(modalSurface.className).toContain('bg-[var(--color-background)]');
+      expect(modalSurface.className).toContain('bg-[var(--color-surface)]');
     });
 
     it('renders modal header with theme border color', () => {
       const handleClose = vi.fn();
       
-      render(
-        <ThemeProvider>
-          <Modal open onClose={handleClose}>
-            <ModalHeader>
-              <ModalTitle>Title</ModalTitle>
-            </ModalHeader>
-          </Modal>
-        </ThemeProvider>
+      renderWithTheme(
+        <Modal open onClose={handleClose}>
+          <ModalHeader>
+            <ModalTitle>Title</ModalTitle>
+          </ModalHeader>
+        </Modal>
       );
       
       const header = screen.getByText('Title').parentElement;
@@ -101,14 +108,12 @@ describe('Modal', () => {
     it('renders modal footer with theme border color', () => {
       const handleClose = vi.fn();
       
-      const { container } = render(
-        <ThemeProvider>
-          <Modal open onClose={handleClose}>
-            <ModalFooter>
-              <button>Close</button>
-            </ModalFooter>
-          </Modal>
-        </ThemeProvider>
+      const { container } = renderWithTheme(
+        <Modal open onClose={handleClose}>
+          <ModalFooter>
+            <button>Close</button>
+          </ModalFooter>
+        </Modal>
       );
       
       const footer = container.querySelector('.border-t');
@@ -139,12 +144,10 @@ describe('Modal', () => {
     it('does not render when open is false', () => {
       const handleClose = vi.fn();
       
-      const { container } = render(
-        <ThemeProvider>
-          <Modal open={false} onClose={handleClose}>
-            <ModalBody>Content</ModalBody>
-          </Modal>
-        </ThemeProvider>
+      const { container } = renderWithTheme(
+        <Modal open={false} onClose={handleClose}>
+          <ModalBody>Content</ModalBody>
+        </Modal>
       );
       
       expect(container.firstChild).toBeNull();
@@ -153,12 +156,10 @@ describe('Modal', () => {
     it('renders when open is true', () => {
       const handleClose = vi.fn();
       
-      render(
-        <ThemeProvider>
-          <Modal open onClose={handleClose}>
-            <ModalBody>Modal content</ModalBody>
-          </Modal>
-        </ThemeProvider>
+      renderWithTheme(
+        <Modal open onClose={handleClose}>
+          <ModalBody>Modal content</ModalBody>
+        </Modal>
       );
       
       expect(screen.getByText('Modal content')).toBeInTheDocument();
@@ -186,12 +187,10 @@ describe('Modal', () => {
       const user = userEvent.setup();
       const handleClose = vi.fn();
       
-      render(
-        <ThemeProvider>
-          <Modal open onClose={handleClose}>
-            <ModalBody>Content</ModalBody>
-          </Modal>
-        </ThemeProvider>
+      renderWithTheme(
+        <Modal open onClose={handleClose}>
+          <ModalBody>Content</ModalBody>
+        </Modal>
       );
       
       await user.keyboard('{Escape}');
@@ -296,7 +295,7 @@ describe('Modal', () => {
 
     it('renders Modal.Footer correctly', () => {
       const handleClose = vi.fn();
-      
+
       render(
         <ThemeProvider>
           <Modal open onClose={handleClose}>
@@ -307,7 +306,7 @@ describe('Modal', () => {
           </Modal>
         </ThemeProvider>
       );
-      
+
       expect(screen.getByText('Cancel')).toBeInTheDocument();
       expect(screen.getByText('Confirm')).toBeInTheDocument();
     });

@@ -10,17 +10,25 @@ class PodcastGenerator:
     """Combines top articles into a conversational daily digest."""
     
     PODCAST_PROMPT_TEMPLATE = """
-    Create a highly engaging, conversational podcast dialogue script between a Host (Jamie) and an AI Expert (Dr. Aris) based on these news items.
-    
-    News Items:
+    Create a highly engaging, high-signal technical debate script between two expert personas: 
+    1. ALEX (Strategic Visionary): Focused on breakthroughs, long-term upside, and the cutting edge of AI development.
+    2. MORGAN (Pragmatic Skeptic): Focused on implementation hurdles, compute efficiency, data privacy, and "reality checks."
+
+    The dialogue should analyze the following AI news items:
     {news_items}
     
+    Flow:
+    - Alex introduces the breakthrough with excitement.
+    - Morgan interjects with a critical question or a "but does it scale?" nuance.
+    - They debate the specific technical methodology found in the news.
+    - Morgan admits where the value is, Alex acknowledges the hurdles.
+    - Conclusion: One sentence actionable takeaway for researchers and developers.
+
     Guidelines:
-    1. The Host is curious and asks insightful questions.
-    2. The Expert explains the technical significance and real-world implications.
-    3. Keep it punchy, dynamic, and under 5 minutes when spoken.
-    4. Start with an exciting intro and end with a summary.
-    5. Format the output as a script with [JAMIE] and [ARIS] labels.
+    1. Keep it punchy, fast-paced, and professional. Use "industry insider" tone.
+    2. Avoid generic hype. Focus on data points provided in the news.
+    3. Format the output as a script with [ALEX] and [MORGAN] labels.
+    4. Total duration: Under 4 minutes when spoken.
     
     Strictly return ONLY the script text.
     """
@@ -70,7 +78,7 @@ class PodcastGenerator:
         
         # Clean script from labels for TTS (or keep them if the voice handles it)
         # For single voice, removing labels makes it smoother
-        clean_script = script.replace("[JAMIE]", "Jamie here: ").replace("[ARIS]", "Dr. Aris says: ")
+        clean_script = script.replace("[ALEX]", "Alex: ").replace("[MORGAN]", "Morgan: ")
         
         # Generate audio
         filename = f"podcast_digest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"

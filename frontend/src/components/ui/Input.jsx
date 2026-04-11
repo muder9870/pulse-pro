@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import LiveRegion from './LiveRegion';
 
 /**
@@ -6,6 +6,7 @@ import LiveRegion from './LiveRegion';
  * 
  * Uses theme tokens for colors to support light/dark mode.
  * Includes accessibility features: labels, error messages with aria-live announcements.
+ * SSR-safe with stable ID generation.
  */
 const Input = React.forwardRef(({
   label,
@@ -15,6 +16,7 @@ const Input = React.forwardRef(({
   iconPosition = 'left',
   fullWidth = false,
   className = '',
+  id, // External control
   ...props
 }, ref) => {
   const baseStyles = 'px-3 py-2 border rounded-lg text-sm transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-background)] text-[var(--color-text-primary)]';
@@ -31,7 +33,9 @@ const Input = React.forwardRef(({
       : 'pr-10'
     : '';
 
-  const inputId = `input-${Math.random().toString(36).substr(2, 9)}`;
+  // 🚨 PRODUCTION: Stable, SSR-safe ID generation
+  const generatedId = useId();
+  const inputId = id || `input-${generatedId}`;
   const errorId = error ? `${inputId}-error` : undefined;
   const helperId = helperText ? `${inputId}-helper` : undefined;
 
@@ -81,9 +85,8 @@ const Input = React.forwardRef(({
           <p id={errorId} className="mt-1 text-xs text-red-500">
             {error}
           </p>
-          <LiveRegion aria-live="assertive" role="alert">
-            {error}
-          </LiveRegion>
+          {/* 🚨 BULLETPROOF: No semantic overlap */}
+          <LiveRegion message={`Error occurred: ${error}`} />
         </>
       )}
     </div>

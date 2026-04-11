@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, cleanup } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -13,6 +13,9 @@ import Modal from '../components/ui/Modal';
  */
 
 describe('Button Accessibility', () => {
+  afterEach(() => {
+    cleanup(); // Prevents lingering components, memory leaks, act() warnings
+  });
   it('should have no accessibility violations', async () => {
     const { container } = render(
       <Button variant="primary" aria-label="Submit form">
@@ -49,6 +52,9 @@ describe('Button Accessibility', () => {
 });
 
 describe('Input Accessibility', () => {
+  afterEach(() => {
+    cleanup(); // Prevents lingering components, memory leaks, act() warnings
+  });
   it('should have no accessibility violations', async () => {
     const { container } = render(
       <Input
@@ -88,6 +94,9 @@ describe('Input Accessibility', () => {
 });
 
 describe('Modal Accessibility', () => {
+  afterEach(() => {
+    cleanup(); // Prevents lingering components, memory leaks, act() warnings
+  });
   it('should have no accessibility violations when open', async () => {
     const { container } = render(
       <Modal open={true} onClose={() => {}} title="Test Modal">
@@ -122,6 +131,9 @@ describe('Modal Accessibility', () => {
 });
 
 describe('Semantic HTML', () => {
+  afterEach(() => {
+    cleanup(); // Prevents lingering components, memory leaks, act() warnings
+  });
   it('should use proper heading hierarchy', async () => {
     const { container } = render(
       <div>

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from backend.models import EngagementMetric, RawArticle, ProcessedArticle, GeneratedContent
+from backend.db.models import EngagementMetric, RawArticle, ProcessedArticle, GeneratedContent, PaperAnalysis
 
 class AnalyticsRepository:
     def __init__(self, session: Session):
@@ -11,6 +11,7 @@ class AnalyticsRepository:
         total_articles = self.session.query(func.count(RawArticle.id)).scalar() or 0
         processed_articles = self.session.query(func.count(ProcessedArticle.id)).scalar() or 0
         generated_content = self.session.query(func.count(GeneratedContent.id)).scalar() or 0
+        deep_dive_analyzed = self.session.query(func.count(PaperAnalysis.article_id)).scalar() or 0
         
         # Calculate coverage percentage
         coverage_pct = round((processed_articles / total_articles * 100), 1) if total_articles > 0 else 0
@@ -67,6 +68,7 @@ class AnalyticsRepository:
             "total_articles": total_articles,
             "processed_articles": processed_articles,
             "generated_content": generated_content,
+            "deep_dive_analyzed": deep_dive_analyzed,
             "avg_priority_score": round(avg_priority_score, 1),
             "avg_viral_score": round(avg_viral_score, 1),
             "avg_tech_score": round(avg_tech_score, 1),

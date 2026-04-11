@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { themeTokens } from './tokens';
+import { useAppStore } from '../store/appStore';
 
 /**
  * Theme Context
@@ -8,23 +9,29 @@ import { themeTokens } from './tokens';
 const ThemeContext = createContext(undefined);
 
 /**
- * Get initial theme preference
- * Priority: localStorage > system preference > default (light)
+ * Get initial theme preference - deterministic priority chain
+ * Priority: defaultTheme > localStorage > system preference > 'light'
  */
-const getInitialTheme = () => {
-  // Check localStorage first
+const getInitialTheme = (defaultTheme) => {
+  const validThemes = ['light', 'dark', 'electric-azure-light', 'electric-azure-dark', 'system'];
+
+  // 1. Explicit control (highest priority)
+  if (defaultTheme && validThemes.includes(defaultTheme)) {
+    return defaultTheme;
+  }
+
+  // 2. User preference (persistent)
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem('theme');
-    if (stored === 'light' || stored === 'dark') {
-      return stored;
-    }
-    
-    // Fall back to system preference
+    if (stored && validThemes.includes(stored)) return stored;
+
+    // 3. System preference (controlled influence, lowest priority)
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
   }
-  
+
+  // 4. Deterministic fallback (no randomness)
   return 'light';
 };
 
@@ -33,8 +40,9 @@ const getInitialTheme = () => {
  * 
  * Manages theme state (light/dark) and provides theme tokens to all child components.
  * Features:
+ * - Deterministic theme resolution with explicit priority chain
+ * - Reacts to defaultTheme prop changes (controlled component pattern)
  * - Persists theme preference to localStorage
- * - Detects and respects system dark mode preference on initial load
  * - Sets CSS variables on document root for theme tokens
  * - Provides theme context to all child components
  * 
@@ -43,38 +51,69 @@ const getInitialTheme = () => {
  * @param {string} [props.defaultTheme] - Override default theme detection
  */
 export const ThemeProvider = ({ children, defaultTheme }) => {
-  const [theme, setThemeState] = useState(() => defaultTheme || getInitialTheme());
+  const [theme, setThemeState] = useState(() => getInitialTheme(defaultTheme));
+  const setActiveTheme = useAppStore((s) => s.setActiveTheme);
+
+  // 🚨 CRITICAL: React to defaultTheme changes
+  useEffect(() => {
+    const validThemes = ['light', 'dark', 'electric-azure-light', 'electric-azure-dark', 'system'];
+    if (defaultTheme && validThemes.includes(defaultTheme)) {
+      setThemeState(defaultTheme);
+    }
+  }, [defaultTheme]);
 
   /**
-   * Set CSS variables on document root for all theme tokens
+   * Set CSS variables on document root for all theme tokens - explicit DOM control
    */
   useEffect(() => {
     const root = document.documentElement;
-    const colors = themeTokens.colors;
 
-    // Set color CSS variables
-    root.style.setProperty('--color-primary', colors.primary[theme]);
-    root.style.setProperty('--color-secondary', colors.secondary[theme]);
-    root.style.setProperty('--color-success', colors.success[theme]);
-    root.style.setProperty('--color-danger', colors.danger[theme]);
-    root.style.setProperty('--color-warning', colors.warning[theme]);
-    root.style.setProperty('--color-info', colors.info[theme]);
-    root.style.setProperty('--color-background', colors.background[theme]);
-    root.style.setProperty('--color-surface', colors.surface[theme]);
-    root.style.setProperty('--color-text-primary', colors.text.primary[theme]);
-    root.style.setProperty('--color-text-secondary', colors.text.secondary[theme]);
-    root.style.setProperty('--color-border', colors.border[theme]);
+    // Determine which color palette to use
+    let colors;
+    let themeMode = 'light';
 
-    // Set data attribute for theme-based styling
-    root.setAttribute('data-theme', theme);
-    
-    // Update document class for Tailwind dark mode
-    if (theme === 'dark') {
-      root.classList.add('dark');
+    if (theme === 'electric-azure-light') {
+      colors = themeTokens.electricAzureLight.colors;
+      themeMode = 'light';
+      root.classList.add('theme-electric-azure-light');
+      root.classList.remove('theme-electric-azure-dark', 'dark');
+    } else if (theme === 'electric-azure-dark') {
+      colors = themeTokens.electricAzureDark.colors;
+      themeMode = 'dark';
+      root.classList.add('theme-electric-azure-dark', 'dark');
+      root.classList.remove('theme-electric-azure-light');
+    } else if (theme === 'system') {
+      colors = themeTokens.colors;
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      themeMode = prefersDark ? 'dark' : 'light';
+      root.classList.toggle('dark', prefersDark);
+      root.classList.remove('theme-electric-azure-light', 'theme-electric-azure-dark');
     } else {
-      root.classList.remove('dark');
+      // light or dark
+      colors = themeTokens.colors;
+      themeMode = theme;
+      root.classList.remove('theme-electric-azure-light', 'theme-electric-azure-dark');
+      root.classList.toggle('dark', theme === 'dark');
     }
-  }, [theme]);
+
+    // Single source of truth for theme state
+    root.setAttribute('data-theme', theme);
+
+    // Consistent token injection
+    root.style.setProperty('--color-primary', colors.primary[themeMode]);
+    root.style.setProperty('--color-secondary', colors.secondary[themeMode]);
+    root.style.setProperty('--color-success', colors.success[themeMode]);
+    root.style.setProperty('--color-danger', colors.danger[themeMode]);
+    root.style.setProperty('--color-warning', colors.warning[themeMode]);
+    root.style.setProperty('--color-info', colors.info[themeMode]);
+    root.style.setProperty('--color-background', colors.background[themeMode]);
+    root.style.setProperty('--color-surface', colors.surface[themeMode]);
+    root.style.setProperty('--color-text-primary', colors.text.primary[themeMode]);
+    root.style.setProperty('--color-text-secondary', colors.text.secondary[themeMode]);
+    root.style.setProperty('--color-border', colors.border[themeMode]);
+
+    setActiveTheme(themeMode);
+  }, [theme, setActiveTheme]);
 
   /**
    * Persist theme preference to localStorage
@@ -119,18 +158,24 @@ export const ThemeProvider = ({ children, defaultTheme }) => {
    * Set theme and persist to localStorage
    */
   const setTheme = (newTheme) => {
-    if (newTheme === 'light' || newTheme === 'dark') {
+    const validThemes = ['light', 'dark', 'electric-azure-light', 'electric-azure-dark', 'system'];
+    if (validThemes.includes(newTheme)) {
       setThemeState(newTheme);
     } else {
-      console.warn(`Invalid theme "${newTheme}". Valid themes are: "light", "dark"`);
+      console.warn(`Invalid theme "${newTheme}". Valid themes are: ${validThemes.join(', ')}`);
     }
   };
 
   /**
-   * Toggle between light and dark themes
+   * Toggle between themes (cycling through: light -> dark -> electric-azure-light -> electric-azure-dark -> system -> light)
    */
   const toggleTheme = () => {
-    setThemeState((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+    setThemeState((prevTheme) => {
+      const themes = ['light', 'dark', 'electric-azure-light', 'electric-azure-dark', 'system'];
+      const currentIndex = themes.indexOf(prevTheme);
+      const nextIndex = (currentIndex + 1) % themes.length;
+      return themes[nextIndex];
+    });
   };
 
   const value = {

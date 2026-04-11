@@ -77,7 +77,7 @@ const DashboardView = ({
               <h1 className={`text-3xl font-black tracking-tight capitalize ${activeTheme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                 Dashboard
               </h1>
-              <p className="text-slate-500 text-sm mt-1">
+              <p className="text-gray-600 text-sm mt-1">
                 Manage your AI content ecosystem
               </p>
             </div>
@@ -91,13 +91,13 @@ const DashboardView = ({
                   {typeof activeSource === 'string' ? activeSource : activeSource?.name}
                 </h1>
               </div>
-              <p className="text-slate-500 text-sm italic">
+              <p className="text-gray-600 text-sm italic">
                 All gathered data from {typeof activeSource === 'string' ? activeSource : activeSource?.name}
               </p>
             </div>
             <button
               onClick={() => handleSourceSelect(null)}
-              className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors"
+              className="px-4 py-2 text-sm font-bold text-gray-600 hover:text-indigo-600 transition-colors"
             >
               Back to All
             </button>
@@ -112,7 +112,7 @@ const DashboardView = ({
           <DashboardStats activeTheme={activeTheme} />
 
           {/* Filter Panel */}
-          <div className={`backdrop-blur-xl rounded-3xl border p-4 shadow-xl mb-6 transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200'}`}>
+          <div className={`backdrop-blur-xl rounded-3xl border p-4 shadow-xl mb-6 transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-gray-50 border-gray-300'}`}>
             <div className="flex items-center gap-3 mb-4 px-2">
               <div className="p-1.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
                 <Search className="w-3.5 h-3.5 text-indigo-400" />
@@ -146,7 +146,7 @@ const DashboardView = ({
                       onChange={handleSelectAllFiltered}
                       className="!gap-2"
                     />
-                    <span className={`text-xs font-medium ${activeTheme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <span className={`text-xs font-medium ${activeTheme === 'dark' ? 'text-slate-300' : 'text-gray-700'}`}>
                       Select All
                       {selectedIds.size > 0 && (
                         <span className="ml-1 text-indigo-400 font-bold">
@@ -157,7 +157,7 @@ const DashboardView = ({
                   </div>
                 )}
               </div>
-              <span className={`text-xs font-bold px-3 py-1 rounded-full border shadow-sm ${activeTheme === 'dark' ? 'text-slate-400 bg-slate-800/50 border-white/10' : 'text-slate-400 bg-white border-slate-200'}`}>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full border shadow-sm ${activeTheme === 'dark' ? 'text-slate-400 bg-slate-800/50 border-white/10' : 'text-gray-600 bg-gray-50 border-gray-300'}`}>
                 {filteredStories.length} Matches
               </span>
             </div>
@@ -170,9 +170,9 @@ const DashboardView = ({
                 <EmptyFeed onRunPipeline={handleRunPipeline} activeTheme={activeTheme} />
               ) : filteredStories.length === 0 ? (
                 // Stories exist but current filters hide them all
-                <div className={`py-20 text-center rounded-2xl border-2 border-dashed transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200'}`}>
+                <div className={`py-20 text-center rounded-2xl border-2 border-dashed transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-gray-50 border-gray-300'}`}>
                   <Activity className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                  <p className="text-slate-500 italic">No stories match your current perspective.</p>
+                  <p className="text-gray-600 italic">No stories match your current perspective.</p>
                   <button
                     onClick={() => {
                       handleSourceSelect(null);
@@ -203,7 +203,7 @@ const DashboardView = ({
                         size="lg"
                         onClick={fetchNextPage}
                         disabled={isFetchingNextPage}
-                        className="bg-white/5 border-white/10 text-white hover:bg-white/10 px-12 rounded-2xl font-black uppercase tracking-widest transition-all"
+                        className={`px-12 rounded-2xl font-black uppercase tracking-widest transition-all ${activeTheme === 'dark' ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'}`}
                       >
                         {isFetchingNextPage ? (
                           <span className="flex items-center gap-2">

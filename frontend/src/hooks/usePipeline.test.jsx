@@ -80,7 +80,12 @@ describe('usePipeline / SSE', () => {
 
   it('retries connection after error', async () => {
     vi.useFakeTimers();
-    
+
+    // Mock fetch for the status check that happens on error
+    global.fetch.mockResolvedValue({
+      json: () => Promise.resolve({ stage: 'idle', message: 'Pipeline idle' })
+    });
+
     renderHook(() => usePipeline(), {
       wrapper: ({ children }) => <PipelineProvider>{children}</PipelineProvider>,
     });

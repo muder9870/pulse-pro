@@ -63,8 +63,24 @@ class ImageEngine:
             except Exception as e:
                 logger.error(f"Hugging Face generation failed: {e}")
 
-        # 3. Fail if no successful generation
-        logger.warning(f"No successful AI generation for article {article_id}.")
+        # 3. Procedural Fallback (Quote Card)
+        try:
+            logger.info(f"Falling back to procedural quote card for article {article_id}")
+            db_f = SessionLocal()
+            try:
+                from backend.db.models import ProcessedArticle
+                article = db_f.query(ProcessedArticle).get(article_id)
+                if article:
+                    text = article.summary or prompt
+                    title = article.title or "Pulse Pro Insight"
+                    return self.generate_quote_card(article_id, text, title)
+            finally:
+                db_f.close()
+        except Exception as e:
+            logger.error(f"Procedural fallback failed: {e}")
+
+        # 4. Fail if no successful generation
+        logger.warning(f"No successful AI or procedural generation for article {article_id}.")
         return None
 
     def generate_hf_image(self, article_id: int, prompt: str) -> str | None:

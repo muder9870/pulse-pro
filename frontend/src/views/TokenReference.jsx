@@ -102,7 +102,7 @@ const TokenReference = () => {
         <h2 className="text-xl font-semibold mb-4">Color Tokens (HSL)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {colorTokens.map((token) => (
-            <div key={token.name} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <div key={token.name} className="p-4 bg-gray-100 rounded-xl border border-gray-300">
               <code className="text-sm font-mono text-blue-600">{token.name}</code>
               <p className="text-sm text-gray-600 mt-1">{token.value}</p>
               <p className="text-xs text-gray-500 mt-1">{token.desc}</p>
@@ -116,7 +116,7 @@ const TokenReference = () => {
         <h2 className="text-xl font-semibold mb-4">Semantic Colors</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {semanticColors.map((color) => (
-            <div key={color.name} className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-4">
+            <div key={color.name} className="p-4 bg-gray-100 rounded-xl border border-gray-300 flex items-center gap-4">
               <div 
                 className="w-12 h-12 rounded-lg shadow-inner"
                 style={{ backgroundColor: color.value }}

@@ -154,6 +154,84 @@
   --info-foreground: 222.2 84% 4.9%;
 }
 
+/* Electric Azure Light Theme */
+.theme-electric-azure-light {
+  --brand-gradient: linear-gradient(135deg, #0891B2 0%, #0EA5E9 50%, #14B8A6 100%);
+  --brand-primary: #0891B2;
+  --brand-primary-dark: #0E7490;
+
+  /* Semantic Colors */
+  --success: #10B981;
+  --success-hsl: 160 84% 42%;
+  --success-foreground: #FFFFFF;
+  --warning: #F59E0B;
+  --warning-hsl: 38 92% 50%;
+  --warning-foreground: #FFFFFF;
+  --error: #E11D48;
+  --error-hsl: 350 91% 49%;
+  --error-foreground: #FFFFFF;
+  --info: #0EA5E9;
+  --info-hsl: 199 89% 48%;
+  --info-foreground: #FFFFFF;
+
+  /* Neutral Palette */
+  --gray-50: #F8FAFC;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1E293B;
+  --gray-900: #0F172A;
+
+  /* Colored Shadows */
+  --shadow-cyan-sm: 0 1px 3px 0 rgb(8 145 178 / 0.1), 0 1px 2px -1px rgb(8 145 178 / 0.1);
+  --shadow-cyan-md: 0 4px 6px -1px rgb(8 145 178 / 0.15), 0 2px 4px -2px rgb(8 145 178 / 0.15);
+  --shadow-cyan-lg: 0 10px 15px -3px rgb(8 145 178 / 0.2), 0 4px 6px -4px rgb(8 145 178 / 0.2);
+  --shadow-cyan-xl: 0 20px 25px -5px rgb(8 145 178 / 0.25), 0 8px 10px -6px rgb(8 145 178 / 0.25);
+}
+
+/* Electric Azure Dark Theme */
+.theme-electric-azure-dark {
+  --brand-gradient: linear-gradient(135deg, #0891B2 0%, #0EA5E9 50%, #14B8A6 100%);
+  --brand-primary: #22D3EE;
+  --brand-primary-dark: #0891B2;
+
+  /* Semantic Colors */
+  --success: #4ADE80;
+  --success-hsl: 142 76% 63%;
+  --success-foreground: #0F172A;
+  --warning: #FCD34D;
+  --warning-hsl: 48 96% 64%;
+  --warning-foreground: #0F172A;
+  --error: #FB7185;
+  --error-hsl: 350 78% 75%;
+  --error-foreground: #0F172A;
+  --info: #7DD3FC;
+  --info-hsl: 199 89% 75%;
+  --info-foreground: #0F172A;
+
+  /* Neutral Palette */
+  --gray-50: #F8FAFC;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1E293B;
+  --gray-900: #0F172A;
+
+  /* Colored Shadows */
+  --shadow-cyan-sm: 0 1px 3px 0 rgb(34 211 238 / 0.15), 0 1px 2px -1px rgb(34 211 238 / 0.15);
+  --shadow-cyan-md: 0 4px 6px -1px rgb(34 211 238 / 0.2), 0 2px 4px -2px rgb(34 211 238 / 0.2);
+  --shadow-cyan-lg: 0 10px 15px -3px rgb(34 211 238 / 0.25), 0 4px 6px -4px rgb(34 211 238 / 0.25);
+  --shadow-cyan-xl: 0 20px 25px -5px rgb(34 211 238 / 0.3), 0 8px 10px -6px rgb(34 211 238 / 0.3);
+}
+
 @layer base {
   /* Focus Visible Styles - WCAG 2.2 Compliant */
   *:focus {
@@ -207,7 +285,7 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
   
   /* 

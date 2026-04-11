@@ -39,3 +39,23 @@ def stats_dashboard():
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
+
+@analytics_bp.post("/api/analytics/log")
+def log_event():
+    from flask import request
+    db = SessionLocal()
+    try:
+        data = request.json or {}
+        repo = AnalyticsRepository(db)
+        repo.log_interaction(
+            event_type=data.get("event_type", "interaction"),
+            article_id=data.get("article_id"),
+            platform=data.get("platform"),
+            metadata=data.get("metadata", {})
+        )
+        return jsonify({"status": "success"}), 201
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()

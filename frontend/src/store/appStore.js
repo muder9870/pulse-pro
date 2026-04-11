@@ -24,11 +24,13 @@ export const useAppStore = create(
     (set) => ({
       // ── Theme (persisted) ────────────────────────────────────────────────────
       activeTheme: (() => {
-        const saved = localStorage.getItem('pulse-theme') || 'system';
+        const saved = localStorage.getItem('theme') || 'system';
+        if (saved === 'electric-azure-light') return 'light';
+        if (saved === 'electric-azure-dark') return 'dark';
         if (saved === 'system') {
           return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
-        return saved;
+        return saved || 'light';
       })(),
       setActiveTheme: (theme) => set({ activeTheme: theme }),
 

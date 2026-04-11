@@ -35,7 +35,7 @@ const DevToolsView = () => {
         {/* Theme Tokens */}
         <Link 
           to="/dev/theme"
-          className="p-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow"
+          className="p-6 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 hover:shadow-lg transition-shadow"
         >
           <h2 className="text-xl font-semibold mb-2">Theme Tokens</h2>
           <p className="text-gray-600 dark:text-gray-400">
@@ -46,7 +46,7 @@ const DevToolsView = () => {
         {/* Component Showcase */}
         <Link 
           to="/dev/components"
-          className="p-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow"
+          className="p-6 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 hover:shadow-lg transition-shadow"
         >
           <h2 className="text-xl font-semibold mb-2">Component Showcase</h2>
           <p className="text-gray-600 dark:text-gray-400">
@@ -57,7 +57,7 @@ const DevToolsView = () => {
         {/* Accessibility Audit */}
         <Link 
           to="/dev/a11y"
-          className="p-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow"
+          className="p-6 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 hover:shadow-lg transition-shadow"
         >
           <h2 className="text-xl font-semibold mb-2">Accessibility Audit</h2>
           <p className="text-gray-600 dark:text-gray-400">
@@ -68,7 +68,7 @@ const DevToolsView = () => {
         {/* API Testing */}
         <Link 
           to="/dev/api"
-          className="p-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow"
+          className="p-6 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 hover:shadow-lg transition-shadow"
         >
           <h2 className="text-xl font-semibold mb-2">API Testing</h2>
           <p className="text-gray-600 dark:text-gray-400">
@@ -79,7 +79,7 @@ const DevToolsView = () => {
         {/* State Debug */}
         <Link 
           to="/dev/state"
-          className="p-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow"
+          className="p-6 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 hover:shadow-lg transition-shadow"
         >
           <h2 className="text-xl font-semibold mb-2">State Debugger</h2>
           <p className="text-gray-600 dark:text-gray-400">
@@ -90,7 +90,7 @@ const DevToolsView = () => {
         {/* Feature Flags */}
         <Link 
           to="/dev/flags"
-          className="p-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow"
+          className="p-6 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 hover:shadow-lg transition-shadow"
         >
           <h2 className="text-xl font-semibold mb-2">Feature Flags</h2>
           <p className="text-gray-600 dark:text-gray-400">

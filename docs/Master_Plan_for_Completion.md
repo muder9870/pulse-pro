@@ -52,12 +52,16 @@ This document outlines the final enhancement phases for AI Pulse Pro, incorporat
     - Use ONLY for `high_score` articles or long-form content.
     - Avoid wasting tokens on low-value articles.
 
-### 🎨 Step 5: Phase 4 — Polish (Future Moat)
+### 🎨 Step 5: Phase 4 — Polish (Future Moat) [COMPLETED]
 *Focus: UX enhancements and behavior-driven ranking.*
 
 10. **Artistic Style Mapping**:
-    - Dynamic image prompts based on category.
-11. **ML Relevance Ranking**:
+    - Dynamic image prompts based on category. [DONE]
+11. **Visual & UX Polish (Premium Pass)**:
+    - Standardized typography (Plus Jakarta Sans). [DONE]
+    - Global Audio Context for background playback. [DONE]
+    - Glassmorphism & premium redesign of Research/Intel Brief. [DONE]
+12. **ML Relevance Ranking**:
     - Transition from rule-based scoring to behavior-driven ranking (future moat).
     - *Note: User Style Learning is delayed until more data is available.*
 

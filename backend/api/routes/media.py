@@ -123,7 +123,30 @@ def generate_image():
                 "image_path": image_path
             }), 200
         else:
-            return jsonify({"error": "Image generation failed"}), 500
+            return jsonify({"error": "Image generation unavailable - AI providers and procedural fallback failed."}), 503
             
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@media_bp.post("/api/media/generate-video-script")
+def generate_video_script():
+    """Generate a video script for an article."""
+    try:
+        data = request.json or {}
+        article_id = data.get("article_id")
+        platform = data.get("platform", "youtube")
+        
+        if not article_id:
+            return jsonify({"error": "article_id is required"}), 400
+            
+        from backend.generators.generator_v5 import ContentGenerator
+        generator = ContentGenerator()
+        results = generator.generate_for_article(int(article_id), platforms=[platform])
+        
+        return jsonify({
+            "status": "success",
+            "script": results.get(platform)
+        }), 200
+    except Exception as e:
+        logger.exception("Video script generation failed")
         return jsonify({"error": str(e)}), 500

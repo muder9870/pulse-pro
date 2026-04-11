@@ -1,34 +1,34 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Play, Pause, Volume2, RotateCcw, Activity } from 'lucide-react';
+import React from 'react';
+import { Play, Pause, Volume2, Activity } from 'lucide-react';
+import { useAudio } from '../context/AudioContext';
 
 const AudioPlayer = ({ url, title }) => {
-    const audioRef = useRef(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [progress, setProgress] = useState(0);
-    const [duration, setDuration] = useState(0);
+    const { 
+        url: currentUrl, 
+        isPlaying, 
+        progress, 
+        currentTime, 
+        duration, 
+        togglePlay, 
+        playAudio, 
+        seek 
+    } = useAudio();
 
-    const togglePlay = () => {
-        if (isPlaying) {
-            audioRef.current.pause();
+    const isCurrent = currentUrl === url;
+
+    const handleToggle = () => {
+        if (isCurrent) {
+            togglePlay();
         } else {
-            audioRef.current.play();
+            playAudio(url, title);
         }
-        setIsPlaying(!isPlaying);
     };
 
-    const onTimeUpdate = () => {
-        const current = audioRef.current.currentTime;
-        const total = audioRef.current.duration;
-        setProgress((current / total) * 100);
-    };
-
-    const onLoadedMetadata = () => {
-        setDuration(audioRef.current.duration);
-    };
-
-    const onEnded = () => {
-        setIsPlaying(false);
-        setProgress(0);
+    const handleSeek = (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percent = (x / rect.width) * 100;
+        seek(percent);
     };
 
     const formatTime = (time) => {
@@ -38,46 +38,55 @@ const AudioPlayer = ({ url, title }) => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const activePlay = isCurrent && isPlaying;
+
     return (
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 overflow-hidden">
-                    <Activity className="w-4 h-4 text-blue-500 flex-shrink-0 animate-pulse" />
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate">
-                        {title || 'Playing Summary'}
+        <div className={`glass-morphism rounded-2xl p-4 border transition-all duration-300 ${activePlay ? 'border-indigo-500/50 shadow-lg shadow-indigo-500/10' : 'border-white/10'}`}>
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activePlay ? 'bg-indigo-500/20' : 'bg-white/5'}`}>
+                        <Activity className={`w-4 h-4 ${activePlay ? 'text-indigo-400 animate-pulse' : 'text-slate-500'}`} />
+                    </div>
+                    <div className="overflow-hidden">
+                        <span className={`text-[11px] font-bold uppercase tracking-wider block truncate ${activePlay ? 'text-white' : 'text-slate-400'}`}>
+                            {title || 'Daily Digest'}
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
+                            AI Synthesis Engine
+                        </span>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <span className="text-[10px] text-white font-black font-mono px-2 py-1 bg-white/5 rounded-md">
+                        {isCurrent ? formatTime(currentTime) : '0:00'} / {isCurrent ? formatTime(duration) : formatTime(0)}
                     </span>
                 </div>
-                <span className="text-[10px] text-gray-500 font-mono">
-                    {formatTime(audioRef.current?.currentTime)} / {formatTime(duration)}
-                </span>
             </div>
 
             <div className="flex items-center gap-4">
                 <button
-                    onClick={togglePlay}
-                    className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-all transform hover:scale-105"
+                    onClick={handleToggle}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all transform active:scale-90 shadow-xl ${activePlay ? 'bg-indigo-600 text-white shadow-indigo-500/30' : 'bg-white/10 text-white hover:bg-white/20'}`}
                 >
-                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                    {activePlay ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
                 </button>
 
-                <div className="flex-1 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden relative group cursor-pointer">
+                <div 
+                    className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden relative group cursor-pointer"
+                    onClick={handleSeek}
+                >
                     <div
-                        className="h-full bg-blue-500 rounded-full transition-all duration-100"
-                        style={{ width: `${progress}%` }}
-                    ></div>
+                        className={`h-full rounded-full transition-all duration-100 ${activePlay ? 'bg-indigo-500' : 'bg-slate-600'}`}
+                        style={{ width: `${isCurrent ? progress : 0}%` }}
+                    >
+                        <div className="absolute top-0 right-0 w-2 h-full bg-white/40 blur-[2px]" />
+                    </div>
                 </div>
 
-                <Volume2 className="w-4 h-4 text-gray-400" />
+                <div className="p-2 rounded-xl bg-white/5 text-slate-500">
+                    <Volume2 className="w-4 h-4" />
+                </div>
             </div>
-
-            <audio
-                ref={audioRef}
-                src={url}
-                onTimeUpdate={onTimeUpdate}
-                onLoadedMetadata={onLoadedMetadata}
-                onEnded={onEnded}
-                hidden
-            />
         </div>
     );
 };

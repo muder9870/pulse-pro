@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func
-from backend.models import RawArticle, ProcessedArticle, ArticleTag, PaperAnalysis
+from backend.db.models import RawArticle, ProcessedArticle, ArticleTag, PaperAnalysis
 
 class ArticleRepository:
     def __init__(self, session: Session):
@@ -50,7 +50,14 @@ class ArticleRepository:
         return [self._format_story(raw) for raw in articles]
 
     def ensure_processed_id(self, article_id: int) -> int | None:
-        """Resolve raw ``RawArticle.id`` to ``ProcessedArticle.id`` first (see article_repo)."""
+        """Resolve raw ``RawArticle.id`` to ``ProcessedArticle.id``.
+
+        Primary path: look up by raw_article_id (correct relationship).
+        Fallback path: look up by ProcessedArticle.id == article_id, but ONLY
+        if that ProcessedArticle actually belongs to the requested raw article.
+        This prevents silently returning a ProcessedArticle that belongs to a
+        different RawArticle when the numeric IDs happen to collide.
+        """
         processed = (
             self.session.query(ProcessedArticle.id)
             .filter(ProcessedArticle.raw_article_id == article_id)
@@ -58,7 +65,16 @@ class ArticleRepository:
         )
         if processed:
             return processed[0]
-        return self.session.query(ProcessedArticle.id).filter(ProcessedArticle.id == article_id).scalar()
+        # Fallback: check if a ProcessedArticle with id == article_id exists,
+        # but verify it actually belongs to the requested raw article.
+        fallback = (
+            self.session.query(ProcessedArticle)
+            .filter(ProcessedArticle.id == article_id)
+            .first()
+        )
+        if fallback and fallback.raw_article_id == article_id:
+            return fallback.id
+        return None
 
     def get_tags(self, article_id: int) -> list[str]:
         p_id = self.ensure_processed_id(article_id)

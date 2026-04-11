@@ -5,14 +5,18 @@ import React from 'react';
  * 
  * Announces content changes to screen readers.
  * Essential for form error messages and dynamic updates.
+ * Bulletproof semantic separation from visible content.
  * 
  * Usage:
+ * <LiveRegion message="Error occurred: Invalid email format" />
+ * OR
  * <LiveRegion aria-live="polite">
  *   {errorMessage}
  * </LiveRegion>
  */
 const LiveRegion = ({
   children,
+  message,
   'aria-live': ariaLive = 'polite',
   'aria-atomic': ariaAtomic = 'true',
   className = '',
@@ -23,9 +27,10 @@ const LiveRegion = ({
       aria-live={ariaLive}
       aria-atomic={ariaAtomic}
       className={`sr-only ${className}`}
+      role="alert"
       {...props}
     >
-      {children}
+      {message || children}
     </div>
   );
 };

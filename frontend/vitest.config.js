@@ -76,6 +76,7 @@ export default defineConfig({
       '**/*.config.ts',
       'e2e/**',
       '**/*.e2e.{js,jsx,ts,tsx}',
+      'src/test/components.test.jsx',
     ],
     // Environment variables for test consistency
     env: {

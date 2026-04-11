@@ -1,2 +1,37 @@
-# Redirect root models to the new modular db/ package
-from .db.models import *
+# Redirect root models to the new modular db/ package.
+# NOTE: EngagementMetric is intentionally NOT re-exported here.
+# It must be imported directly from backend.db.models.
+from .db.models import (
+    Base,
+    RawArticle,
+    ProcessedArticle,
+    GeneratedContent,
+    DailyIntelligence,
+    UserPreference,
+    ArticleTag,
+    TrendingHashtag,
+    BlogPost,
+    BlogPublication,
+    SystemStatus,
+    HealthHistory,
+    PaperAnalysis,
+    Webhook,
+    ScheduledPost,
+    UserStyle,
+    ArticleImage,
+    ArticleAudio,
+    RSSFeed,
+    RSSFeedItem,
+    GmailNewsletterSender,
+    ContentHistory,
+    HashtagPerformance,
+    ContentHashtag,
+    BlogCredential,
+    PlatformROI,
+    TopicTrend,
+    AffiliateLink,
+    UserFeedback,
+    LLMCache,
+    VideoScript,
+    IdempotencyLog,
+)

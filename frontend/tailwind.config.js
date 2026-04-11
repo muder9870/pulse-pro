@@ -7,11 +7,11 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
+      },
       colors: {
-        border: {
-          DEFAULT: "hsl(var(--border))",
-          border: "hsl(var(--border))",
-        },
+        border: "hsl(var(--border))",
         input: "hsl(var(--border))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",

@@ -1,7 +1,9 @@
-import React, { useEffect, useCallback } from 'react';
-import { X, BookOpen, AlertCircle, BarChart3, Users, Landmark, Clock, Activity } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, BookOpen, AlertCircle, BarChart3, Users, Landmark, Clock, Activity, RefreshCw, Copy, Check, Download } from 'lucide-react';
 
-function PaperDetailsModal({ isOpen, onClose, analysis, story, activeTheme = 'dark' }) {
+function PaperDetailsModal({ isOpen, onClose, analysis, story, activeTheme = 'dark', onRegenerate }) {
+    const [regenerating, setRegenerating] = useState(false);
+    const [copied, setCopied] = useState(false);
     // Handle ESC key to close modal
     const handleKeyDown = useCallback((e) => {
         if (e.key === 'Escape') {
@@ -24,6 +26,41 @@ function PaperDetailsModal({ isOpen, onClose, analysis, story, activeTheme = 'da
     if (!isOpen || !story) return null;
 
     const isDark = activeTheme === 'dark';
+
+    const buildMarkdown = () => `# ${story.title}
+
+## Technical Methodology
+${analysis.methodology}
+
+## Experimental Results
+${analysis.results}
+
+## Critical Limitations
+${analysis.limitations}
+
+## Authors
+${Array.isArray(analysis.authors) ? analysis.authors.join(', ') : analysis.authors}
+
+## Affiliations
+${analysis.affiliations}`;
+
+    const handleCopy = async () => {
+        const text = buildMarkdown();
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleDownload = () => {
+        const text = buildMarkdown();
+        const blob = new Blob([text], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `deep-dive-${story.id}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     // Loading skeleton component
     const SectionSkeleton = ({ lines = 3 }) => (
@@ -171,7 +208,31 @@ function PaperDetailsModal({ isOpen, onClose, analysis, story, activeTheme = 'da
                 </div>
 
                 {/* Footer */}
-                <div className={`px-6 py-4 border-t flex justify-end ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-100 bg-gray-50'}`}>
+                <div className={`px-6 py-4 border-t flex justify-end gap-2 ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-100 bg-gray-50'}`}>
+                    <button
+                        onClick={async () => { setRegenerating(true); await onRegenerate?.(); setRegenerating(false); }}
+                        disabled={!analysis || regenerating}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 border border-slate-600 text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                        <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
+                        {regenerating ? 'Regenerating…' : 'Regenerate'}
+                    </button>
+                    <button
+                        onClick={handleCopy}
+                        disabled={!analysis}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 border border-slate-600 text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                    <button
+                        onClick={handleDownload}
+                        disabled={!analysis}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 border border-slate-600 text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                        <Download className="w-4 h-4" />
+                        Download
+                    </button>
                     <button
                         onClick={onClose}
                         className={`px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-gray-900 text-white hover:bg-gray-800'}`}

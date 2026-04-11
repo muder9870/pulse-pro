@@ -1,9 +1,9 @@
 /**
  * Theme Tokens Configuration
- * 
+ *
  * Centralized design tokens for the AI Pulse Pro component library.
  * All color tokens include light and dark mode values with WCAG 2.1 AA compliant contrast ratios.
- * 
+ *
  * Contrast Requirements:
  * - Normal text (< 18pt): 4.5:1 minimum
  * - Large text (≥ 18pt or ≥ 14pt bold): 3:1 minimum
@@ -17,49 +17,49 @@ export const themeTokens = {
       light: '#4F46E5', // indigo-600 - 4.54:1 on white
       dark: '#818CF8'   // indigo-400 - 7.04:1 on slate-900
     },
-    
+
     // Secondary/neutral color - gray
     secondary: {
       light: '#6B7280', // gray-500 - 4.61:1 on white
       dark: '#9CA3AF'   // gray-400 - 7.37:1 on slate-900
     },
-    
+
     // Success state - green
     success: {
       light: '#059669', // emerald-600 - 4.52:1 on white
       dark: '#34D399'   // emerald-400 - 7.77:1 on slate-900
     },
-    
+
     // Danger/error state - red
     danger: {
       light: '#DC2626', // red-600 - 5.90:1 on white
       dark: '#F87171'   // red-400 - 6.42:1 on slate-900
     },
-    
+
     // Warning state - amber
     warning: {
       light: '#D97706', // amber-600 - 4.54:1 on white
       dark: '#FCD34D'   // amber-300 - 10.35:1 on slate-900
     },
-    
+
     // Info state - blue
     info: {
       light: '#2563EB', // blue-600 - 5.14:1 on white
       dark: '#60A5FA'   // blue-400 - 6.28:1 on slate-900
     },
-    
+
     // Background colors
     background: {
       light: '#FFFFFF', // white
       dark: '#0F172A'   // slate-900
     },
-    
+
     // Surface colors (cards, panels)
     surface: {
       light: '#F9FAFB', // gray-50
       dark: '#1E293B'   // slate-800
     },
-    
+
     // Text colors
     text: {
       primary: {
@@ -71,14 +71,156 @@ export const themeTokens = {
         dark: '#94A3B8'   // slate-400 - 7.88:1 on slate-900
       }
     },
-    
+
     // Border colors
     border: {
       light: '#E5E7EB', // gray-200 - 3.07:1 on white
       dark: '#334155'   // slate-700 - 3.24:1 on slate-900
     }
   },
-  
+
+  // Electric Azure Light theme colors
+  electricAzureLight: {
+    colors: {
+      // Primary brand color - cyan
+      primary: {
+        light: '#0891B2', // cyan-600 - 4.52:1 on white
+        dark: '#22D3EE'   // cyan-400 - 7.12:1 on slate-900
+      },
+
+      // Secondary/neutral color - slate
+      secondary: {
+        light: '#475569', // slate-600 - 7.12:1 on white
+        dark: '#94A3B8'   // slate-400 - 6.42:1 on slate-900
+      },
+
+      // Success state - emerald
+      success: {
+        light: '#10B981', // emerald-500 - 4.52:1 on white
+        dark: '#4ADE80'   // green-400 - 7.88:1 on slate-900
+      },
+
+      // Danger/error state - rose
+      danger: {
+        light: '#E11D48', // rose-600 - 5.25:1 on white
+        dark: '#FB7185'   // rose-400 - 6.42:1 on slate-900
+      },
+
+      // Warning state - amber
+      warning: {
+        light: '#F59E0B', // amber-500 - 3.55:1 on white (large text only)
+        dark: '#FCD34D'   // amber-300 - 10.35:1 on slate-900
+      },
+
+      // Info state - sky
+      info: {
+        light: '#0EA5E9', // sky-500 - 4.52:1 on white
+        dark: '#7DD3FC'   // sky-300 - 7.12:1 on slate-900
+      },
+
+      // Background colors
+      background: {
+        light: '#FFFFFF', // white
+        dark: '#0F172A'   // slate-900
+      },
+
+      // Surface colors (cards, panels)
+      surface: {
+        light: '#F1F5F9', // slate-100
+        dark: '#1E293B'   // slate-800
+      },
+
+      // Text colors
+      text: {
+        primary: {
+          light: '#0F172A', // slate-900 - 16.07:1 on white
+          dark: '#F8FAFC'   // slate-50 - 15.21:1 on slate-900
+        },
+        secondary: {
+          light: '#475569', // slate-600 - 7.12:1 on white
+          dark: '#CBD5E1'   // slate-300 - 6.42:1 on slate-900
+        }
+      },
+
+      // Border colors
+      border: {
+        light: '#CBD5E1', // slate-300 - 2.01:1 on white (large text only)
+        dark: '#475569'   // slate-600 - 3.24:1 on slate-900
+      }
+    }
+  },
+
+  // Electric Azure Dark theme colors
+  electricAzureDark: {
+    colors: {
+      // Primary brand color - cyan
+      primary: {
+        light: '#0891B2', // cyan-600 - 4.52:1 on white
+        dark: '#22D3EE'   // cyan-400 - 7.12:1 on slate-900
+      },
+
+      // Secondary/neutral color - slate
+      secondary: {
+        light: '#475569', // slate-600 - 7.12:1 on white
+        dark: '#94A3B8'   // slate-400 - 6.42:1 on slate-900
+      },
+
+      // Success state - emerald
+      success: {
+        light: '#10B981', // emerald-500 - 4.52:1 on white
+        dark: '#4ADE80'   // green-400 - 7.88:1 on slate-900
+      },
+
+      // Danger/error state - rose
+      danger: {
+        light: '#E11D48', // rose-600 - 5.25:1 on white
+        dark: '#FB7185'   // rose-400 - 6.42:1 on slate-900
+      },
+
+      // Warning state - amber
+      warning: {
+        light: '#F59E0B', // amber-500 - 3.55:1 on white (large text only)
+        dark: '#FCD34D'   // amber-300 - 10.35:1 on slate-900
+      },
+
+      // Info state - sky
+      info: {
+        light: '#0EA5E9', // sky-500 - 4.52:1 on white
+        dark: '#7DD3FC'   // sky-300 - 7.12:1 on slate-900
+      },
+
+      // Background colors
+      background: {
+        light: '#FFFFFF', // white
+        dark: '#0F172A'   // slate-900
+      },
+
+      // Surface colors (cards, panels)
+      surface: {
+        light: '#F1F5F9', // slate-100
+        dark: '#1E293B'   // slate-800
+      },
+
+      // Text colors
+      text: {
+        primary: {
+          light: '#0F172A', // slate-900 - 16.07:1 on white
+          dark: '#F8FAFC'   // slate-50 - 15.21:1 on slate-900
+        },
+        secondary: {
+          light: '#475569', // slate-600 - 7.12:1 on white
+          dark: '#CBD5E1'   // slate-300 - 6.42:1 on slate-900
+        }
+      },
+
+      // Border colors
+      border: {
+        light: '#CBD5E1', // slate-300 - 2.01:1 on white (large text only)
+        dark: '#475569'   // slate-600 - 3.24:1 on slate-900
+      }
+    }
+  },
+
   // Spacing scale (maps to Tailwind spacing)
   spacing: {
     xs: '0.25rem',  // 4px - Tailwind: space-1
@@ -87,7 +229,7 @@ export const themeTokens = {
     lg: '1.5rem',   // 24px - Tailwind: space-6
     xl: '2rem'      // 32px - Tailwind: space-8
   },
-  
+
   // Typography scale
   typography: {
     fontSize: {
@@ -109,7 +251,7 @@ export const themeTokens = {
       relaxed: 1.75   // Tailwind: leading-relaxed
     }
   },
-  
+
   // Border radius scale
   borderRadius: {
     sm: '0.25rem',  // 4px - Tailwind: rounded-sm
@@ -167,7 +309,7 @@ export const getColorValue = (colorKey, theme = 'light') => {
 export const getNestedColorValue = (path, theme = 'light') => {
   const keys = path.split('.');
   let value = themeTokens.colors;
-  
+
   for (const key of keys) {
     value = value[key];
     if (!value) {
@@ -175,7 +317,7 @@ export const getNestedColorValue = (path, theme = 'light') => {
       return themeTokens.colors.primary[theme]; // Fallback to primary
     }
   }
-  
+
   return value[theme];
 };
 

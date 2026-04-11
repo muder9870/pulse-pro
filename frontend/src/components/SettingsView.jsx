@@ -12,7 +12,7 @@ import WebhookManager from './WebhookManager';
 import ExtensionHelp from './ExtensionHelp';
 import RSSManager from './RSSManager';
 import StyleProfile from './StyleProfile';
-import ThemeManager from './ThemeManager';
+import ThemeSelector from './ThemeSelector';
 import ProductionDeployment from './ProductionDeployment';
 import DataMigration from './DataMigration';
 import FeatureParityVerification from './FeatureParityVerification';
@@ -85,7 +85,7 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
             label: 'Interface',
             icon: Layout,
             desc: 'theme & visual settings',
-            component: ThemeManager
+            component: ThemeSelector
         },
         {
             id: 'advanced',

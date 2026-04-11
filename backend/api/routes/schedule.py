@@ -23,12 +23,12 @@ def get_schedule_list():
         schedule_list = []
         for post in scheduled_posts:
             schedule_list.append({
-                "id": post.id,
-                "title": post.title or "Untitled",
-                "platform": post.platform,
-                "status": post.status,
-                "scheduled_at": post.scheduled_at.isoformat() if post.scheduled_at else None,
-                "created_at": post.created_at.isoformat() if post.created_at else None
+                "id": post.get("id"),
+                "title": post.get("title") or "Untitled",
+                "platform": post.get("platform"),
+                "status": post.get("status"),
+                "scheduled_at": post.get("scheduled_at").isoformat() if post.get("scheduled_at") else None,
+                "created_at": post.get("created_at").isoformat() if post.get("created_at") else None
             })
         
         return jsonify(schedule_list), 200

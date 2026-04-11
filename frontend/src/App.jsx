@@ -7,6 +7,7 @@ import QuickActions from './components/QuickActions';
 import Skeleton from './components/Skeleton';
 import { Button } from './components/ui';
 import { ToastProvider, useToastContext } from './hooks/useToast';
+import { AudioProvider } from './context/AudioContext';
 import { useBulkSelection } from './hooks/useBulkSelection';
 import { useStories, useSources } from './hooks/useStories';
 import { usePipeline } from './hooks/usePipeline';
@@ -58,7 +59,6 @@ function AppContent() {
 
   // Zustand store — theme, source filter, dashboard filters
   const activeTheme = useAppStore((s) => s.activeTheme);
-  const setActiveTheme = useAppStore((s) => s.setActiveTheme);
   const activeSource = useAppStore((s) => s.activeSource);
   const setActiveSource = useAppStore((s) => s.setActiveSource);
   const filters = useAppStore((s) => s.filters);
@@ -105,32 +105,6 @@ function AppContent() {
   const [scheduleNextRun, setScheduleNextRun] = useState(null);
   const [scheduleServerTime, setScheduleServerTime] = useState(null);
   const [scheduleError, setScheduleError] = useState(null);
-  
-  // Theme Management — applies CSS class to <html> and syncs with Zustand store
-  useEffect(() => {
-    const root = window.document.documentElement;
-
-    const applyTheme = (t) => {
-      const resolved = t === 'system'
-        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : t;
-      root.classList.remove('light', 'dark');
-      root.classList.add(resolved);
-      setActiveTheme(resolved);
-    };
-
-    applyTheme(localStorage.getItem('pulse-theme') || 'system');
-
-    const handleThemeChange = (e) => { if (e.detail?.theme) applyTheme(e.detail.theme); };
-    const handleStorageChange = () => applyTheme(localStorage.getItem('pulse-theme') || 'system');
-
-    window.addEventListener('pulse-theme-change', handleThemeChange);
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('pulse-theme-change', handleThemeChange);
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [setActiveTheme]);
   
   // Handle source changes from sidebar
   const handleSourceSelect = (source) => {
@@ -1390,8 +1364,10 @@ const ToastWrapper = () => {
 export default function App() {
   return (
     <ToastProvider>
-      <AppContent />
-      <ToastWrapper />
+      <AudioProvider>
+        <AppContent />
+        <ToastWrapper />
+      </AudioProvider>
     </ToastProvider>
   );
 }
