@@ -13,9 +13,7 @@ import ExtensionHelp from './ExtensionHelp';
 import RSSManager from './RSSManager';
 import StyleProfile from './StyleProfile';
 import ThemeSelector from './ThemeSelector';
-import ProductionDeployment from './ProductionDeployment';
-import DataMigration from './DataMigration';
-import FeatureParityVerification from './FeatureParityVerification';
+import AdvancedTools from './AdvancedTools';
 
 const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -91,19 +89,8 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
             id: 'advanced',
             label: 'Advanced',
             icon: Terminal,
-            desc: 'dev & deployment tools',
-            component: () => (
-                <div className="space-y-8">
-                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-                        <p className="text-sm text-amber-800 dark:text-amber-200">
-                            <strong>Internal Tools:</strong> These features are for development and deployment purposes only.
-                        </p>
-                    </div>
-                    <ProductionDeployment />
-                    <DataMigration />
-                    <FeatureParityVerification />
-                </div>
-            )
+            desc: 'dev & ops tools',
+            component: AdvancedTools
         },
     ];
 

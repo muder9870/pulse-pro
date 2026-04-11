@@ -6,14 +6,10 @@ import {
     Rss,
     BarChart2,
     Calendar,
-    UserCheck,
     Image as ImageIcon,
-    Chrome,
     Mic,
     BookOpen,
     Activity,
-    DollarSign,
-    Share2,
     ChevronDown,
     ChevronRight,
     Database,
@@ -100,17 +96,7 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
         { id: 'settings', label: 'Settings Hub', icon: Settings },
     ];
 
-    // Settings deep links - grouped under collapsible section
-    const settingsLinks = [
-        { id: 'monetization', label: 'Monetization', icon: DollarSign },
-        { id: 'health', label: 'Health', icon: Activity },
-        { id: 'webhooks', label: 'Webhooks', icon: Share2 },
-        { id: 'rss', label: 'RSS Feeds', icon: Rss },
-        { id: 'style', label: 'Style', icon: UserCheck },
-        { id: 'extension', label: 'Extension', icon: Chrome },
-    ];
-    
-    const [settingsExpanded, setSettingsExpanded] = React.useState(false);
+
 
     return (
         <>
@@ -248,35 +234,7 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
                             </button>
                         ))}
                         
-                        {/* Settings quick links - collapsible */}
-                        <button
-                            onClick={() => setSettingsExpanded(!settingsExpanded)}
-                            className="w-full px-3 flex items-center justify-between text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-2 mb-1 hover:text-slate-300 transition-colors opacity-60"
-                        >
-                            <span>Quick Links</span>
-                            {settingsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                        </button>
-                        
-                        {settingsExpanded && (
-                            <div className="space-y-0.5 animate-fade-in pl-2">
-                                {settingsLinks.map((item) => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => handleNavClick(item.id)}
-                                        aria-current={currentView === item.id ? 'page' : undefined}
-                                        className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${currentView === item.id
-                                            ? 'bg-indigo-600/10 text-indigo-400'
-                                            : activeTheme === 'dark' 
-                                                ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/30' 
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                                            }`}
-                                    >
-                                        <item.icon className={`w-3 h-3 ${currentView === item.id ? 'text-indigo-400' : 'text-slate-500'}`} />
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+
                     </nav>
                 </div>
 

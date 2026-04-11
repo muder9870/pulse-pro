@@ -24,6 +24,16 @@ class IntegrationRepository:
         self.session.query(Webhook).filter(Webhook.id == webhook_id).delete()
         self.session.commit()
 
+    def toggle_webhook(self, webhook_id: int, enabled: bool):
+        wh = self.session.query(Webhook).filter(Webhook.id == webhook_id).first()
+        if wh:
+            wh.enabled = 1 if enabled else 0
+            self.session.commit()
+
+    def delete_affiliate_link(self, link_id: int):
+        self.session.query(AffiliateLink).filter(AffiliateLink.id == link_id).delete()
+        self.session.commit()
+
     def get_affiliate_links(self) -> list[dict]:
         links = self.session.query(AffiliateLink).order_by(AffiliateLink.keyword.asc()).all()
         return [{

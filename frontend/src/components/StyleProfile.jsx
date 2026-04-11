@@ -13,7 +13,7 @@ export default function StyleProfile() {
             const res = await fetch('/api/personalization/style');
             const data = await res.json();
             if (res.ok) {
-                setStyles(data.styles || {});
+                setStyles(data.style || {});
             } else {
                 throw new Error(data.error || 'Failed to fetch style profile');
             }
@@ -70,7 +70,7 @@ export default function StyleProfile() {
         );
     }
 
-    const hasStyles = Object.keys(styles).length > 0;
+    const hasStyles = Object.entries(styles).some(([k, v]) => k !== 'learned' && v !== null && v !== undefined);
 
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-8">
@@ -105,24 +105,32 @@ export default function StyleProfile() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {Object.entries(styles).map(([key, value]) => (
-                        <div key={key} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-purple-100 rounded-lg">
-                                    <UserCheck className="w-5 h-5 text-purple-700" />
+                    {Object.entries(styles)
+                        .filter(([key, value]) => key !== 'learned' && value !== null && value !== undefined)
+                        .map(([key, value]) => {
+                            const displayValue = typeof value === 'boolean'
+                                ? (value ? 'Yes' : 'No')
+                                : String(value).replace(/_/g, ' ');
+                            const displayKey = String(key).replace(/_/g, ' ');
+                            return (
+                                <div key={key} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="p-2 bg-purple-100 rounded-lg">
+                                            <UserCheck className="w-5 h-5 text-purple-700" />
+                                        </div>
+                                        <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">
+                                            {displayKey}
+                                        </h3>
+                                    </div>
+                                    <div className="text-2xl font-bold text-purple-800 mb-2 capitalize">
+                                        {displayValue}
+                                    </div>
+                                    <p className="text-gray-600 text-sm">
+                                        {getStyleDescription(key, String(value))}
+                                    </p>
                                 </div>
-                                <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">
-                                    {key.replace('_', ' ')}
-                                </h3>
-                            </div>
-                            <div className="text-2xl font-bold text-purple-800 mb-2 capitalize">
-                                {value.replace('_', ' ')}
-                            </div>
-                            <p className="text-gray-600 text-sm">
-                                {getStyleDescription(key, value)}
-                            </p>
-                        </div>
-                    ))}
+                            );
+                        })}
                 </div>
             )}
 
