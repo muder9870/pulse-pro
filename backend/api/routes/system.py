@@ -240,3 +240,60 @@ def llm_providers_status():
         "configured_count": configured_count,
         "total_count": len(providers),
     }), 200
+
+
+@system_bp.post("/api/system/cleanup-orphans")
+def cleanup_orphans():
+    """
+    Remove ProcessedArticle rows that have no corresponding RawArticle.
+    Also removes GeneratedContent rows with system_fallback placeholder text.
+    Safe to run at any time — only deletes genuinely orphaned/junk records.
+    """
+    from backend.db.session import SessionLocal
+    from backend.db.models import ProcessedArticle, RawArticle, GeneratedContent
+
+    db = SessionLocal()
+    try:
+        # Find ProcessedArticle IDs with no matching RawArticle
+        orphaned = (
+            db.query(ProcessedArticle.id)
+            .outerjoin(RawArticle, RawArticle.id == ProcessedArticle.raw_article_id)
+            .filter(RawArticle.id.is_(None))
+            .all()
+        )
+        orphan_ids = [r.id for r in orphaned]
+
+        deleted_processed = 0
+        if orphan_ids:
+            # Delete generated content for orphans first (FK constraint)
+            db.query(GeneratedContent).filter(
+                GeneratedContent.article_id.in_(orphan_ids)
+            ).delete(synchronize_session=False)
+            deleted_processed = db.query(ProcessedArticle).filter(
+                ProcessedArticle.id.in_(orphan_ids)
+            ).delete(synchronize_session=False)
+
+        # Remove system_fallback placeholder content
+        FALLBACK_PHRASES = [
+            "Content generation unavailable at the moment.",
+            "Content generation unavailable.",
+        ]
+        deleted_fallback = 0
+        for phrase in FALLBACK_PHRASES:
+            deleted_fallback += db.query(GeneratedContent).filter(
+                GeneratedContent.content == phrase
+            ).delete(synchronize_session=False)
+
+        db.commit()
+        return jsonify({
+            "status": "success",
+            "orphaned_processed_articles_deleted": deleted_processed,
+            "fallback_content_deleted": deleted_fallback,
+            "orphan_ids": orphan_ids,
+        }), 200
+    except Exception as e:
+        db.rollback()
+        logger.error("Cleanup failed: %s", e)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()

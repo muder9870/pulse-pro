@@ -160,6 +160,25 @@ export default function AdvancedTools({ activeTheme }) {
         return () => clearInterval(t);
     }, []);
 
+    // ── Cleanup ───────────────────────────────────────────────────────────────
+    const [cleanupResult, setCleanupResult] = useState(null);
+    const [cleanupLoading, setCleanupLoading] = useState(false);
+
+    const runCleanup = async () => {
+        if (!window.confirm('Remove orphaned articles and system_fallback placeholder content from the database?')) return;
+        setCleanupLoading(true);
+        setCleanupResult(null);
+        try {
+            const res = await fetch('/api/system/cleanup-orphans', { method: 'POST' });
+            const data = await res.json();
+            setCleanupResult({ ok: res.ok, data });
+        } catch (e) {
+            setCleanupResult({ ok: false, data: { error: e.message } });
+        } finally {
+            setCleanupLoading(false);
+        }
+    };
+
     // ── RSS health check ──────────────────────────────────────────────────────
     const [rssHealthResult, setRssHealthResult] = useState(null);
     const [rssHealthLoading, setRssHealthLoading] = useState(false);
@@ -535,6 +554,28 @@ export default function AdvancedTools({ activeTheme }) {
                     </div>
                 </Section>
             )}
+
+            {/* Database Cleanup */}
+            <Section title="Database Cleanup" icon={Trash2}>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <p className="text-sm text-slate-500">Remove orphaned article records and placeholder content generated when all LLM providers were unavailable.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        {cleanupResult && (
+                            <ResultBadge
+                                ok={cleanupResult.ok}
+                                text={cleanupResult.ok
+                                    ? `${cleanupResult.data.orphaned_processed_articles_deleted} orphans + ${cleanupResult.data.fallback_content_deleted} fallback posts removed`
+                                    : cleanupResult.data.error ?? 'Failed'}
+                            />
+                        )}
+                        <ActionButton onClick={runCleanup} loading={cleanupLoading} variant="danger" icon={Trash2}>
+                            Clean Up DB
+                        </ActionButton>
+                    </div>
+                </div>
+            </Section>
 
             {/* RSS Health Check */}
             <Section title="RSS Feed Health Check" icon={Activity}>
