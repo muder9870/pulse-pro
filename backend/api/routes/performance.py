@@ -17,13 +17,16 @@ def get_pool_usage():
     try:
         from backend.db.session import engine
         pool = engine.pool
-        return {
+        result = {
             'size': pool.size(),
             'checked_in': pool.checkedin(),
             'checked_out': pool.checkedout(),
             'overflow': pool.overflow(),
-            'invalid': pool.invalid()
         }
+        # 'invalid' only exists on some pool types
+        if hasattr(pool, 'invalid'):
+            result['invalid'] = pool.invalid()
+        return result
     except Exception as e:
         logging.error(f"Error getting pool usage: {e}")
         return {}

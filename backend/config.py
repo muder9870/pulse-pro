@@ -61,7 +61,7 @@ class Settings:
     
     # ── OpenRouter ───────────────────────────────────────────────────────
     OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")
-    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "anthropic/claude-3-haiku")
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "mistralai/mistral-7b-instruct:free")
 
     # ── Google Gemini (free at aistudio.google.com) ───────────────────────
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")

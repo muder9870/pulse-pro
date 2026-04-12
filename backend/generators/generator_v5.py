@@ -274,7 +274,11 @@ class ContentGenerator:
             db3.close()
 
         for pid in article_ids:
-            results[pid] = self.generate_for_article(pid, platforms=platforms)
+            try:
+                results[pid] = self.generate_for_article(pid, platforms=platforms)
+            except Exception as e:
+                self.log.warning("generate_for_article_skipped article_id=%s error=%s", pid, e)
+                continue
 
         return results
 
