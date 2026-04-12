@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from datetime import datetime, timezone
+import logging
 import os
 from backend.config import settings
 from backend.db.session import SessionLocal
@@ -8,6 +9,7 @@ from backend.monitoring import get_all_vitals
 from backend.metrics import metrics
 from backend.api.state import pipeline_lock, pipeline_state
 
+logger = logging.getLogger(__name__)
 system_bp = Blueprint('system', __name__)
 
 @system_bp.get("/api/health")
@@ -294,6 +296,79 @@ def cleanup_orphans():
     except Exception as e:
         db.rollback()
         logger.error("Cleanup failed: %s", e)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
+
+@system_bp.post("/api/system/reset-data")
+def reset_data():
+    """
+    Clean-state reset for development.
+    Wipes all article data, generated content, analysis, and scheduled posts.
+    PRESERVES: rss_feeds, webhooks, affiliate_links, user_preferences, system_status.
+
+    Requires header: X-Reset-Confirm: yes
+    """
+    if request.headers.get("X-Reset-Confirm") != "yes":
+        return jsonify({
+            "error": "Missing confirmation header. Send X-Reset-Confirm: yes to proceed."
+        }), 400
+
+    from backend.db.session import SessionLocal
+    import redis as redis_lib
+
+    db = SessionLocal()
+    counts = {}
+    try:
+        # Use TRUNCATE CASCADE — handles all FK dependencies atomically
+        # Preserves: rss_feeds, webhooks, affiliate_links, user_preferences, system_status
+        data_tables = [
+            "scheduled_posts", "content_history", "content_hashtags",
+            "paper_analysis", "article_images", "article_audio", "video_scripts",
+            "generated_content", "article_tags", "blog_publications", "blog_posts",
+            "user_feedback", "user_styles",
+            "processed_articles", "rss_feed_items", "raw_articles",
+            "daily_intelligence", "trending_hashtags", "hashtag_performance",
+            "engagement_metrics", "llm_cache", "idempotency_logs",
+            "health_history", "system_status",
+        ]
+
+        from sqlalchemy import text
+        for table in data_tables:
+            try:
+                db.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
+                counts[table] = "truncated"
+            except Exception as e:
+                db.rollback()
+                logger.warning("Could not truncate %s: %s — skipping", table, e)
+                counts[table] = f"skipped"
+
+        db.commit()
+
+        # Clear Redis cache
+        redis_cleared = 0
+        try:
+            from backend.config import settings
+            r = redis_lib.Redis.from_url(settings.REDIS_URL)
+            redis_cleared = r.dbsize()
+            r.flushdb()
+        except Exception as e:
+            logger.warning("Redis flush failed: %s", e)
+
+        logger.info("clean_state_reset completed rows_deleted=%s redis_keys_cleared=%d",
+                    sum(v for v in counts.values() if isinstance(v, int)), redis_cleared)
+
+        return jsonify({
+            "status": "success",
+            "message": "Clean state reset complete. All article data wiped. Config preserved.",
+            "rows_deleted": counts,
+            "redis_keys_cleared": redis_cleared,
+        }), 200
+
+    except Exception as e:
+        db.rollback()
+        logger.error("Reset failed: %s", e)
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
