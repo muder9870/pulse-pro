@@ -34,7 +34,10 @@ import {
   Zap,
   Trash2,
   RefreshCw,
-  Search
+  Search,
+  Calendar,
+  Download,
+  Bell,
 } from 'lucide-react';
 
 function AppContent() {
@@ -1117,59 +1120,187 @@ function AppContent() {
       />
 
       <div className="flex-1 flex flex-col min-w-0 min-h-screen" style={{ marginLeft: 'var(--sidebar-w)' }}>
-        {/* Simplified Global Header */}
-        <header className="sticky top-0 z-10 flex items-center gap-3 px-5 shadow-sm flex-shrink-0" style={{ height: 'var(--header-h)', background: 'var(--bg2)', borderBottom: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-4 lg:gap-6 flex-1">
-            <button className="lg:hidden p-2 -ml-2 text-slate-500 hover:text-indigo-600 transition-colors" onClick={() => setMobileMenuOpen(true)}>
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="relative w-48 lg:w-64 group hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-xs focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all outline-none font-bold"
-              />
-            </div>
+        {/* Header — Pulse Pro style */}
+        <header
+          className="sticky top-0 z-10 flex items-center gap-2.5 flex-shrink-0"
+          style={{ height: 'var(--header-h)', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', padding: '0 20px' }}
+        >
+          {/* Mobile menu toggle */}
+          <button
+            className="lg:hidden flex-shrink-0"
+            onClick={() => setMobileMenuOpen(true)}
+            style={{ color: 'var(--text2)' }}
+          >
+            <Menu className="w-4 h-4" />
+          </button>
 
-            <QuickActions
-              onFetchData={handleRunPipeline}
-              onGenerateContent={() => {
-                if (selectedIds.size > 0) {
-                  handleBulkGenerate();
-                } else {
-                  toast.info('Please select articles to generate content for.');
-                }
+          {/* Search */}
+          <div
+            className="hidden sm:flex items-center gap-2 flex-shrink-0"
+            style={{
+              width: 220,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: '6px 12px',
+              transition: 'all 0.2s',
+            }}
+            onFocusCapture={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--bg3)'; }}
+            onBlurCapture={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+          >
+            <Search style={{ width: 13, height: 13, color: 'var(--text3)', flexShrink: 0 }} />
+            <input
+              type="text"
+              placeholder="Search articles, research…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                background: 'none', border: 'none', outline: 'none',
+                color: 'var(--text)', fontSize: 12,
+                fontFamily: 'var(--font-body)', width: '100%',
               }}
-              onSchedule={() => setScheduleOpen(true)}
-              onExport={handleExport}
-              pipelineRunning={pipelineRunning}
-              processedCount={stories.filter(s => s.summary).length}
-              variant="compact"
             />
           </div>
 
-          <div className="flex items-center gap-4 ml-8">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${pipelineRunning ? 'bg-orange-50 border-orange-100' : 'bg-indigo-50 border-indigo-100'}`}>
-              <Zap className={`w-3.5 h-3.5 ${pipelineRunning ? 'text-orange-600 animate-pulse' : 'text-indigo-600'}`} />
-              <span className={`text-[9px] font-black uppercase tracking-wider flex items-center ${pipelineRunning ? 'text-orange-700' : 'text-indigo-700'}`}>
-                {pipelineRunning ? `Syncing... (${pipelineElapsed}s / 300s)` : 'Ready'}
-              </span>
-              {pipelineRunning && (
-                <progress className="w-16 h-1.5 ml-2 accent-orange-500 rounded-full bg-orange-200" value={pipelineElapsed} max={300}></progress>
-              )}
-            </div>
+          {/* Ready to Launch pill */}
+          {(() => {
+            const readyCount = stories.filter(s => s.posts && s.posts.length > 0 && !s.posted).length;
+            return readyCount > 0 ? (
+              <button
+                onClick={() => navigate('/articles')}
+                className="hidden sm:flex items-center gap-1.5 flex-shrink-0"
+                style={{
+                  background: 'var(--accent-glow)',
+                  border: '1px solid var(--accent)',
+                  borderRadius: 8,
+                  padding: '5px 11px',
+                  fontSize: 12, fontWeight: 500,
+                  color: 'var(--accent)',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <Zap style={{ width: 12, height: 12 }} />
+                <span>{readyCount} Ready to Launch</span>
+              </button>
+            ) : null;
+          })()}
 
-            <button
-              onClick={fetchStories}
-              disabled={loading}
-              className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all disabled:opacity-50"
-              title="Refresh Global Data"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+          {/* Fetch pill */}
+          <button
+            onClick={handleRunPipeline}
+            disabled={pipelineRunning}
+            className="hidden sm:flex items-center gap-1.5 flex-shrink-0"
+            style={{
+              background: pipelineRunning ? 'var(--amber-dim)' : 'var(--teal-dim)',
+              border: `1px solid ${pipelineRunning ? 'var(--amber)' : 'var(--teal)'}`,
+              borderRadius: 8,
+              padding: '5px 11px',
+              fontSize: 12, fontWeight: 500,
+              color: pipelineRunning ? 'var(--amber)' : 'var(--teal)',
+              cursor: pipelineRunning ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s',
+              opacity: pipelineRunning ? 0.8 : 1,
+            }}
+          >
+            <RefreshCw style={{ width: 12, height: 12 }} className={pipelineRunning ? 'animate-spin' : ''} />
+            <span>{pipelineRunning ? `Syncing… ${pipelineElapsed}s` : '↻ Fetch'}</span>
+          </button>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Calendar icon btn */}
+          <button
+            onClick={() => navigate('/calendar')}
+            title="Calendar"
+            className="flex items-center justify-center flex-shrink-0"
+            style={{
+              width: 32, height: 32,
+              borderRadius: 8,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              color: 'var(--text2)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+          >
+            <Calendar style={{ width: 15, height: 15, opacity: 0.6 }} />
+          </button>
+
+          {/* Export icon btn */}
+          <button
+            onClick={handleExport}
+            title="Export"
+            className="flex items-center justify-center flex-shrink-0"
+            style={{
+              width: 32, height: 32,
+              borderRadius: 8,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              color: 'var(--text2)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+          >
+            <Download style={{ width: 15, height: 15, opacity: 0.6 }} />
+          </button>
+
+          {/* Notifications icon btn */}
+          <button
+            title="Notifications"
+            className="flex items-center justify-center flex-shrink-0 relative"
+            style={{
+              width: 32, height: 32,
+              borderRadius: 8,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              color: 'var(--text2)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+          >
+            <Bell style={{ width: 15, height: 15, opacity: 0.6 }} />
+            {/* Red notification dot */}
+            <span style={{
+              position: 'absolute', top: -3, right: -3,
+              width: 8, height: 8, borderRadius: '50%',
+              background: 'var(--red)',
+              border: '1.5px solid var(--bg2)',
+            }} />
+          </button>
+
+          {/* Ready status badge */}
+          <div
+            className="hidden sm:flex items-center gap-1.5 flex-shrink-0"
+            style={{
+              padding: '5px 10px',
+              borderRadius: 8,
+              background: pipelineRunning ? 'var(--amber-dim)' : 'var(--green-dim)',
+              border: `1px solid ${pipelineRunning ? 'var(--amber)' : 'var(--green)'}`,
+              color: pipelineRunning ? 'var(--amber)' : 'var(--green)',
+              fontSize: 11, fontWeight: 600,
+            }}
+          >
+            <span
+              style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: pipelineRunning ? 'var(--amber)' : 'var(--green)',
+                boxShadow: `0 0 6px ${pipelineRunning ? 'var(--amber)' : 'var(--green)'}`,
+                flexShrink: 0,
+                display: 'inline-block',
+              }}
+              className={pipelineRunning ? '' : 'animate-pulse-dot'}
+            />
+            {pipelineRunning ? 'Syncing' : 'Ready'}
           </div>
         </header>
 
