@@ -13,8 +13,11 @@ import {
     ChevronDown,
     ChevronRight,
     Zap,
-    X
+    X,
+    Bell
 } from 'lucide-react';
+import NotificationPanel from './NotificationPanel';
+import { useAppStore } from '../stores/appStore';
 
 const SOURCE_COLORS = {
     arxiv:  '#EF4444',
@@ -41,6 +44,8 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
     const location = useLocation();
     const currentView = location.pathname.replace(/^\//, '') || 'dashboard';
     const [sourcesExpanded, setSourcesExpanded] = useState(true);
+    const [notificationOpen, setNotificationOpen] = useState(false);
+    const { ui } = useAppStore();
 
     // Focus trap refs
     const sidebarRef = React.useRef(null);
@@ -292,12 +297,15 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
                         <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', color: 'var(--text3)', textTransform: 'uppercase', padding: '0 8px', marginBottom: 4 }}>
                             System
                         </div>
-                        {[{ id: 'settings', label: 'Settings Hub', icon: Settings }].map((item) => {
+                        {[
+                            { id: 'settings', label: 'Settings Hub', icon: Settings },
+                            { id: 'notifications', label: 'Notifications', icon: Bell, badge: ui.notifications.length, isAction: true }
+                        ].map((item) => {
                             const active = isActive(item.id);
                             return (
                                 <button
                                     key={item.id}
-                                    onClick={() => handleNavClick(item.id)}
+                                    onClick={() => item.isAction ? setNotificationOpen(true) : handleNavClick(item.id)}
                                     aria-current={active ? 'page' : undefined}
                                     className="w-full flex items-center gap-2.5 relative"
                                     style={{
@@ -321,6 +329,19 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
                                     )}
                                     <item.icon style={{ width: 16, height: 16, opacity: active ? 1 : 0.7, flexShrink: 0, color: active ? 'var(--accent)' : 'currentColor' }} />
                                     <span className="flex-1">{item.label}</span>
+                                    {item.badge > 0 && (
+                                        <span style={{
+                                            minWidth: 18, height: 18,
+                                            borderRadius: 9,
+                                            background: 'var(--accent)',
+                                            color: 'white',
+                                            fontSize: 10, fontWeight: 700,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            padding: '0 5px',
+                                        }}>
+                                            {item.badge > 99 ? '99+' : item.badge}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
@@ -367,6 +388,17 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
                     </button>
                 </div>
             </aside>
+
+            {/* Notification Panel */}
+            <NotificationPanel
+                isOpen={notificationOpen}
+                onClose={() => setNotificationOpen(false)}
+                notifications={ui.notifications}
+                onRemoveNotification={(id) => {
+                    const { removeNotification } = useAppStore.getState();
+                    removeNotification(id);
+                }}
+            />
         </>
     );
 });

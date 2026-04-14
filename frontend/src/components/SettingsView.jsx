@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     DollarSign, Activity, Share2, Chrome, Rss, UserCheck,
-    Settings, ChevronRight, Shield, Zap, Layout, Terminal
+    Settings, ChevronRight, Shield, Zap, Layout, Terminal, Tag
 } from 'lucide-react';
 
 /* Import setting modules directly */
@@ -14,6 +14,8 @@ import RSSManager from './RSSManager';
 import StyleProfile from './StyleProfile';
 import ThemeSelector from './ThemeSelector';
 import AdvancedTools from './AdvancedTools';
+import KeywordsManager from './KeywordsManager';
+import LLMProviders from './LLMProviders';
 
 const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -35,73 +37,113 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
         }
     }, [urlTab]);
 
-    const tabs = [
+    const tabGroups = [
         {
-            id: 'monetization',
-            label: 'Monetization',
-            icon: DollarSign,
-            desc: 'revenue & payout config',
-            component: MonetizationManager
+            label: 'Content & Sources',
+            tabs: [
+                {
+                    id: 'rss',
+                    label: 'Source Manager',
+                    icon: Rss,
+                    iconEmoji: '📡',
+                    iconBg: 'var(--teal-dim)',
+                    component: RSSManager
+                },
+                {
+                    id: 'style',
+                    label: 'Style Profile',
+                    icon: UserCheck,
+                    iconEmoji: '🎨',
+                    iconBg: 'var(--accent-glow)',
+                    component: StyleProfile
+                },
+                {
+                    id: 'keywords',
+                    label: 'Keywords',
+                    icon: Tag,
+                    iconEmoji: '🏷',
+                    iconBg: 'var(--amber-dim)',
+                    component: KeywordsManager
+                },
+            ]
         },
         {
-            id: 'health',
-            label: 'System Health',
-            icon: Activity,
-            desc: 'engine & pipeline status',
-            component: SystemHealth
+            label: 'Integrations',
+            tabs: [
+                {
+                    id: 'webhooks',
+                    label: 'Webhooks',
+                    icon: Share2,
+                    iconEmoji: '🔗',
+                    iconBg: 'rgba(236,72,153,0.1)',
+                    component: WebhookManager
+                },
+                {
+                    id: 'monetization',
+                    label: 'Monetization',
+                    icon: DollarSign,
+                    iconEmoji: '💰',
+                    iconBg: 'var(--green-dim)',
+                    component: MonetizationManager
+                },
+                {
+                    id: 'extension',
+                    label: 'Browser Widget',
+                    icon: Chrome,
+                    iconEmoji: '🌐',
+                    iconBg: 'rgba(245,158,11,0.1)',
+                    component: ExtensionHelp
+                },
+            ]
         },
         {
-            id: 'webhooks',
-            label: 'Webhooks',
-            icon: Share2,
-            desc: 'external integrations',
-            component: WebhookManager
-        },
-        {
-            id: 'rss',
-            label: 'Source Manager',
-            icon: Rss,
-            desc: 'rss & data intake',
-            component: RSSManager
-        },
-        {
-            id: 'style',
-            label: 'Style Profile',
-            icon: UserCheck,
-            desc: 'ai persona calibration',
-            component: StyleProfile
-        },
-        {
-            id: 'extension',
-            label: 'Browser Widget',
-            icon: Chrome,
-            desc: 'chrome extension assist',
-            component: ExtensionHelp
-        },
-        {
-            id: 'theme',
-            label: 'Interface',
-            icon: Layout,
-            desc: 'theme & visual settings',
-            component: ThemeSelector
-        },
-        {
-            id: 'advanced',
-            label: 'Advanced',
-            icon: Terminal,
-            desc: 'dev & ops tools',
-            component: AdvancedTools
+            label: 'System',
+            tabs: [
+                {
+                    id: 'health',
+                    label: 'System Health',
+                    icon: Activity,
+                    iconEmoji: '❤',
+                    iconBg: 'var(--green-dim)',
+                    component: SystemHealth
+                },
+                {
+                    id: 'llm',
+                    label: 'LLM Providers',
+                    icon: Zap,
+                    iconEmoji: '🤖',
+                    iconBg: 'var(--accent-glow)',
+                    component: LLMProviders
+                },
+                {
+                    id: 'theme',
+                    label: 'Interface',
+                    icon: Layout,
+                    iconEmoji: '🖥',
+                    iconBg: 'var(--surface2)',
+                    component: ThemeSelector
+                },
+                {
+                    id: 'advanced',
+                    label: 'Advanced',
+                    icon: Terminal,
+                    iconEmoji: '⚙',
+                    iconBg: 'var(--surface2)',
+                    component: AdvancedTools
+                },
+            ]
         },
     ];
 
-    const ActiveContent = tabs.find(tab => tab.id === activeTab)?.component;
+    const allTabs = tabGroups.flatMap(group => group.tabs);
+    const ActiveContent = allTabs.find(tab => tab.id === activeTab)?.component;
 
     return (
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 animate-fade-in pb-8 lg:pb-20">
             {/* Mobile Tab Selector - Horizontal scrollable tabs for mobile */}
             <div className="lg:hidden px-2 -mx-2 overflow-x-auto">
                 <div className="flex gap-2 pb-2 min-w-max">
-                    {tabs.map((tab) => {
+                    {allTabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
                         return (
@@ -123,73 +165,94 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
             </div>
 
             {/* Side Navigation for Hub - Hidden on mobile */}
-            <div className="hidden lg:block lg:w-80 shrink-0">
-                <div className="sticky top-24 space-y-6">
-                    <div className="px-4">
-                        <h1 className={`text-3xl font-black tracking-tight ${activeTheme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Settings Hub</h1>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
-                            <Zap className="w-3 h-3 text-indigo-500" />
+            <div className="hidden lg:block lg:w-72 shrink-0">
+                <div className="sticky top-24 space-y-4">
+                    <div style={{ padding: '0 4px' }}>
+                        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>
+                            Settings Hub
+                        </h1>
+                        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text3)', marginTop: 6 }}>
                             Pulse Pro Configuration
                         </p>
                     </div>
 
-                    <nav className={`backdrop-blur-xl rounded-[2.5rem] border p-4 shadow-2xl space-y-2 transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200'}`}>
-                        {tabs.map((tab) => {
-                            const Icon = tab.icon;
-                            const isActive = activeTab === tab.id;
-
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => handleTabChange(tab.id)}
-                                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-3xl transition-all group relative overflow-hidden ${isActive
-                                            ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20'
-                                            : `text-slate-400 hover:text-indigo-600 ${activeTheme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-indigo-50'}`
-                                        }`}
-                                >
-                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-all ${isActive ? 'bg-white/20 border-white/20' : `${activeTheme === 'dark' ? 'bg-white/5 border-white/10 group-hover:border-white/20' : 'bg-slate-100 border-slate-200 group-hover:border-indigo-200'}`
-                                        }`}>
-                                        <Icon className="w-5 h-5" />
-                                    </div>
-
-                                    <div className="flex-1 text-left">
-                                        <p className="text-[11px] font-black uppercase tracking-wider leading-none mb-1">{tab.label}</p>
-                                        <p className={`text-[9px] font-bold tracking-tight leading-none ${isActive ? 'text-indigo-100/70' : 'text-slate-500'}`}>
-                                            {tab.desc}
-                                        </p>
-                                    </div>
-
-                                    {isActive && (
-                                        <div className="absolute right-4">
-                                            <ChevronRight className="w-4 h-4 opacity-50" />
-                                        </div>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </nav>
-
-                    {/* Quick Info / Security Badge */}
-                    <div className={`rounded-3xl p-6 transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-emerald-500/5 border border-emerald-500/10' : 'bg-emerald-50 border border-emerald-100'}`}>
-                        <div className="flex items-center gap-3 mb-3">
-                            <Shield className="w-4 h-4 text-emerald-400" />
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${activeTheme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>Enhanced Encryption</span>
+                    {tabGroups.map((group) => (
+                        <div key={group.label} style={{ marginBottom: 20 }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text3)', padding: '0 4px', marginBottom: 8 }}>
+                                {group.label}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                {group.tabs.map((tab) => {
+                                    const isActive = activeTab === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => handleTabChange(tab.id)}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 10,
+                                                padding: '9px 12px',
+                                                borderRadius: 8,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.15s',
+                                                color: isActive ? 'var(--accent)' : 'var(--text2)',
+                                                fontSize: 12,
+                                                marginBottom: 2,
+                                                border: isActive ? '1px solid rgba(108,99,255,0.2)' : '1px solid transparent',
+                                                background: isActive ? 'var(--accent-glow)' : 'transparent',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (!isActive) {
+                                                    e.currentTarget.style.background = 'var(--surface)';
+                                                    e.currentTarget.style.color = 'var(--text)';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (!isActive) {
+                                                    e.currentTarget.style.background = 'transparent';
+                                                    e.currentTarget.style.color = 'var(--text2)';
+                                                }
+                                            }}
+                                        >
+                                            <div style={{
+                                                width: 28,
+                                                height: 28,
+                                                borderRadius: 7,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                flexShrink: 0,
+                                                fontSize: 13,
+                                                background: tab.iconBg,
+                                            }}>
+                                                {tab.iconEmoji}
+                                            </div>
+                                            <span style={{ fontSize: 12, fontWeight: 400 }}>
+                                                {tab.label}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <p className={`text-[9px] font-bold leading-relaxed ${activeTheme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
-                            All your configuration data, including webhooks and style profiles, are encrypted and stored locally.
-                        </p>
-                    </div>
+                    ))}
                 </div>
             </div>
 
             {/* Main Content Area */}
             <div className="flex-1 min-w-0 px-2 lg:px-0">
-                <div className={`backdrop-blur-md rounded-2xl lg:rounded-[3rem] border p-4 lg:p-12 shadow-inner min-h-[500px] lg:min-h-[700px] transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-900/20 border-white/5' : 'bg-white border-slate-200'}`}>
-                    <div className="max-w-4xl mx-auto">
+                <div style={{
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '24px',
+                    minHeight: '500px',
+                    transition: 'all 0.15s',
+                }}>
+                    <div style={{ maxWidth: 800, margin: '0 auto' }}>
                         {/* Dynamic Rendering of setting module */}
-                        <div className="animate-slide-up">
-                            {ActiveContent && <ActiveContent activeTheme={activeTheme} />}
-                        </div>
+                        {ActiveContent && <ActiveContent activeTheme={activeTheme} />}
                     </div>
                 </div>
             </div>

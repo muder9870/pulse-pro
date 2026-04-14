@@ -8,17 +8,18 @@ import Badge from './ui/Badge';
 
 function StatCard({ label, value, sub, color = 'slate' }) {
     const colors = {
-        green: 'bg-green-50 border-green-100 text-green-700',
-        red: 'bg-red-50 border-red-100 text-red-700',
-        amber: 'bg-amber-50 border-amber-100 text-amber-700',
-        blue: 'bg-blue-50 border-blue-100 text-blue-700',
-        slate: 'bg-slate-50 border-slate-100 text-slate-700',
+        green: { bg: 'var(--green-dim)', border: 'var(--green)', text: 'var(--green)' },
+        red: { bg: 'var(--red-dim)', border: 'var(--red)', text: 'var(--red)' },
+        amber: { bg: 'var(--amber-dim)', border: 'var(--amber)', text: 'var(--amber)' },
+        blue: { bg: 'rgba(59,130,246,0.1)', border: 'var(--blue)', text: 'var(--blue)' },
+        slate: { bg: 'var(--bg3)', border: 'var(--border)', text: 'var(--text2)' },
     };
+    const style = colors[color] || colors.slate;
     return (
-        <div className={`rounded-xl border p-4 ${colors[color]}`}>
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">{label}</p>
-            <p className="text-2xl font-black">{value}</p>
-            {sub && <p className="text-xs mt-1 opacity-70">{sub}</p>}
+        <div style={{ borderRadius: 12, border: `1px solid ${style.border}`, padding: 16, background: style.bg }}>
+            <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.7, marginBottom: 4 }}>{label}</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: style.text }}>{value}</p>
+            {sub && <p style={{ fontSize: 11, marginTop: 4, opacity: 0.8 }}>{sub}</p>}
         </div>
     );
 }
@@ -53,20 +54,28 @@ export default function SystemHealth({ onBack }) {
 
     if (loading && !health) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-                <Activity className="w-8 h-8 text-blue-500 animate-pulse" />
-                <p className="text-gray-500 font-medium">Monitoring system vitals...</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 16 }}>
+                <Activity className="animate-pulse" style={{ width: 32, height: 32, color: 'var(--accent)' }} />
+                <p style={{ color: 'var(--text2)', fontWeight: 500, fontSize: 13 }}>Monitoring system vitals...</p>
             </div>
         );
     }
 
     if (error && !health) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-                <AlertCircle className="w-10 h-10 text-red-500" />
-                <h3 className="text-xl font-bold text-gray-900">Health Check Failed</h3>
-                <p className="text-red-500 bg-red-50 px-4 py-2 rounded-lg text-sm">{error}</p>
-                <Button onClick={fetchHealth} variant="outline" icon={RefreshCw}>Try Again</Button>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 16 }}>
+                <AlertCircle style={{ width: 40, height: 40, color: 'var(--red)' }} />
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Health Check Failed</h3>
+                <p style={{ color: 'var(--red)', background: 'var(--red-dim)', padding: '8px 16px', borderRadius: 8, fontSize: 12 }}>{error}</p>
+                <button
+                    onClick={fetchHealth}
+                    style={{
+                        padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)',
+                        background: 'var(--surface2)', color: 'var(--text)', fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                    }}
+                >
+                    Try Again
+                </button>
             </div>
         );
     }
@@ -89,35 +98,44 @@ export default function SystemHealth({ onBack }) {
         : '—';
 
     return (
-        <div className="space-y-8">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, lineHeight: 1.2, flexWrap: 'wrap' }}>
                         System Health
                         {allOk
-                            ? <ShieldCheck className="w-6 h-6 text-green-500" />
+                            ? <ShieldCheck style={{ width: 24, height: 24, color: 'var(--green)' }} />
                             : services.length === 0
-                                ? <AlertCircle className="w-6 h-6 text-gray-400" />
-                                : <AlertCircle className="w-6 h-6 text-amber-500" />
+                                ? <AlertCircle style={{ width: 24, height: 24, color: 'var(--text3)' }} />
+                                : <AlertCircle style={{ width: 24, height: 24, color: 'var(--amber)' }} />
                         }
                         {health?.stability_mode && (
-                            <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                            <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--amber-dim)', color: 'var(--amber)', padding: '2px 8px', borderRadius: 12 }}>
                                 Stability Mode
                             </span>
                         )}
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
                         Last updated: {health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : '—'}
                     </p>
                 </div>
-                <Button onClick={fetchHealth} variant="info" size="sm" icon={RefreshCw} loading={loading}>
+                <button
+                    onClick={fetchHealth}
+                    style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)',
+                        background: 'var(--surface2)', color: 'var(--text)', fontSize: 12, fontWeight: 500,
+                        cursor: 'pointer', opacity: loading ? 0.5 : 1,
+                    }}
+                >
+                    <RefreshCw className={loading ? 'animate-spin' : ''} style={{ width: 14, height: 14 }} />
                     Refresh
-                </Button>
+                </button>
             </div>
 
             {/* Top Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
                 <StatCard
                     label="LLM Failure Rate"
                     value={failureRate}
@@ -149,37 +167,37 @@ export default function SystemHealth({ onBack }) {
             {/* Vitals */}
             {Object.keys(vitals).length > 0 && (
                 <section>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
-                        <Server className="w-4 h-4" /> System Vitals
+                    <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Server style={{ width: 14, height: 14 }} /> System Vitals
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12 }}>
 
                         {/* Active Threads */}
                         {vitals.active_threads !== undefined && (
-                            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Active Threads</p>
-                                <p className="text-3xl font-black text-gray-800">{vitals.active_threads}</p>
+                            <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 16 }}>
+                                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 8 }}>Active Threads</p>
+                                <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)' }}>{vitals.active_threads}</p>
                             </div>
                         )}
 
                         {/* Database */}
                         {vitals.database && (
-                            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Database</p>
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-gray-500">Connection Pool</span>
-                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                                            vitals.database.connection_pool === 'healthy'
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-red-100 text-red-700'
-                                        }`}>
+                            <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 16 }}>
+                                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12 }}>Database</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>Connection Pool</span>
+                                        <span style={{
+                                            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
+                                            background: vitals.database.connection_pool === 'healthy' ? 'var(--green-dim)' : 'var(--red-dim)',
+                                            color: vitals.database.connection_pool === 'healthy' ? 'var(--green)' : 'var(--red)',
+                                        }}>
                                             {vitals.database.connection_pool}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-gray-500">DB Size</span>
-                                        <span className="text-xs font-bold text-gray-700">
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>DB Size</span>
+                                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>
                                             {vitals.database.db_size_kb > 0
                                                 ? `${(vitals.database.db_size_kb / 1024).toFixed(1)} MB`
                                                 : 'PostgreSQL'}
@@ -191,28 +209,28 @@ export default function SystemHealth({ onBack }) {
 
                         {/* LLM */}
                         {vitals.llm && (
-                            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">LLM Circuit Breaker</p>
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-gray-500">Status</span>
-                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                                            vitals.llm.circuit_breaker_tripped
-                                                ? 'bg-red-100 text-red-700'
-                                                : 'bg-green-100 text-green-700'
-                                        }`}>
+                            <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 16 }}>
+                                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12 }}>LLM Circuit Breaker</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>Status</span>
+                                        <span style={{
+                                            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
+                                            background: vitals.llm.circuit_breaker_tripped ? 'var(--red-dim)' : 'var(--green-dim)',
+                                            color: vitals.llm.circuit_breaker_tripped ? 'var(--red)' : 'var(--green)',
+                                        }}>
                                             {vitals.llm.circuit_breaker_tripped ? 'Tripped' : 'Healthy'}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-gray-500">Failure Rate</span>
-                                        <span className="text-xs font-bold text-gray-700">
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>Failure Rate</span>
+                                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>
                                             {(vitals.llm.failure_rate * 100).toFixed(1)}%
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-gray-500">Threshold</span>
-                                        <span className="text-xs font-bold text-gray-700">
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>Threshold</span>
+                                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>
                                             {(vitals.llm.threshold * 100).toFixed(0)}%
                                         </span>
                                     </div>
@@ -222,25 +240,25 @@ export default function SystemHealth({ onBack }) {
 
                         {/* Queue */}
                         {vitals.queue && (
-                            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm md:col-span-2 lg:col-span-1">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
+                            <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 16 }}>
+                                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12 }}>
                                     Article Queue
-                                    <span className="ml-2 text-indigo-600 normal-case font-bold">
+                                    <span style={{ marginLeft: 8, color: 'var(--accent)', textTransform: 'none', fontWeight: 700 }}>
                                         {vitals.queue.total_pending ?? 0} pending
                                     </span>
                                 </p>
                                 {vitals.queue.states && (
-                                    <div className="space-y-1.5">
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                         {Object.entries(vitals.queue.states).map(([state, count]) => (
-                                            <div key={state} className="flex items-center justify-between">
-                                                <span className="text-xs text-gray-500 capitalize">{state}</span>
-                                                <span className="text-xs font-bold text-gray-700 tabular-nums">{count}</span>
+                                            <div key={state} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <span style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'capitalize' }}>{state}</span>
+                                                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{count}</span>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                                 {vitals.queue.error && (
-                                    <p className="text-xs text-red-500 mt-2">{vitals.queue.error}</p>
+                                    <p style={{ fontSize: 11, color: 'var(--red)', marginTop: 8 }}>{vitals.queue.error}</p>
                                 )}
                             </div>
                         )}
@@ -251,30 +269,30 @@ export default function SystemHealth({ onBack }) {
 
             {/* Pipeline Error */}
             {pipeline.last_error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+                <div style={{ padding: 16, background: 'var(--red-dim)', border: '1px solid var(--red)', borderRadius: 12, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <AlertCircle style={{ width: 18, height: 18, color: 'var(--red)', marginTop: 2, flexShrink: 0 }} />
                     <div>
-                        <p className="text-sm font-bold text-red-800">Last Pipeline Error</p>
-                        <p className="text-xs text-red-600 font-mono mt-1">{pipeline.last_error}</p>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--red)' }}>Last Pipeline Error</p>
+                        <p style={{ fontSize: 11, color: 'var(--red)', fontFamily: 'var(--font-mono)', marginTop: 4 }}>{pipeline.last_error}</p>
                     </div>
                 </div>
             )}
 
             {/* Service Cards */}
             <section>
-                <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
-                    <Activity className="w-4 h-4" /> Pipeline Services ({services.length})
+                <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Activity style={{ width: 14, height: 14 }} /> Pipeline Services ({services.length})
                 </h2>
                 {services.length === 0 ? (
-                    <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-                        <Activity className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-gray-500">Waiting for first pipeline heartbeat</h3>
-                        <p className="text-gray-400 max-w-sm mx-auto mt-2 text-sm">
+                    <div style={{ textAlign: 'center', padding: 64, background: 'var(--bg3)', borderRadius: 16, border: '2px dashed var(--border)' }}>
+                        <Activity style={{ width: 48, height: 48, color: 'var(--text3)', margin: '0 auto 16px' }} />
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text2)' }}>Waiting for first pipeline heartbeat</h3>
+                        <p style={{ color: 'var(--text3)', maxWidth: 300, margin: '8px auto 0', fontSize: 12 }}>
                             Services appear here after the pipeline runs for the first time.
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
                         {services.map((service) => {
                             const name = service.service_name;
                             const total = (service.success_count || 0) + (service.failure_count || 0);
@@ -282,7 +300,6 @@ export default function SystemHealth({ onBack }) {
                                 ? Math.round((service.success_count / total) * 100)
                                 : null;
 
-                            // Human-readable label
                             const labelMap = {
                                 llm: 'LLM Router',
                                 llm_groq: 'Groq',
@@ -293,39 +310,46 @@ export default function SystemHealth({ onBack }) {
                             const label = labelMap[name]
                                 || name.replace('fetcher:', '').replace('processor:', '').replace(/_/g, ' ');
 
-                            // Icon
                             const isLLM = name.startsWith('llm');
                             const isFetcher = name.includes('fetcher');
                             const IconEl = isLLM ? Zap : isFetcher ? Database : Cpu;
-                            const iconColor = isLLM ? 'text-indigo-500' : isFetcher ? 'text-blue-600' : 'text-purple-600';
+                            const iconColor = isLLM ? 'var(--accent)' : isFetcher ? 'var(--teal)' : 'var(--purple)';
 
                             const isOk = service.status === 'ok';
 
                             return (
-                                <div key={name} className={`bg-white p-5 rounded-xl shadow-sm border transition-all group ${
-                                    isOk ? 'border-gray-100 hover:border-green-200' : 'border-red-100 hover:border-red-200'
-                                }`}>
+                                <div key={name} style={{
+                                    background: 'var(--surface)', padding: 20, borderRadius: 12,
+                                    border: `1px solid ${isOk ? 'var(--border)' : 'var(--red)'}`,
+                                    transition: 'all 0.15s',
+                                }} onMouseEnter={(e) => e.currentTarget.style.borderColor = isOk ? 'var(--border2)' : 'var(--red)'}
+                                   onMouseLeave={(e) => e.currentTarget.style.borderColor = isOk ? 'var(--border)' : 'var(--red)'}>
                                     {/* Top row */}
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className={`p-2 rounded-lg ${isOk ? 'bg-gray-50 group-hover:bg-indigo-50' : 'bg-red-50'} transition-colors`}>
-                                            <IconEl className={`w-5 h-5 ${iconColor}`} />
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                                        <div style={{
+                                            padding: 8, borderRadius: 8,
+                                            background: isOk ? 'var(--bg3)' : 'var(--red-dim)',
+                                            transition: 'background 0.15s',
+                                        }}>
+                                            <IconEl style={{ width: 18, height: 18, color: iconColor }} />
                                         </div>
-                                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full flex items-center gap-1 ${
-                                            isOk
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-red-100 text-red-700'
-                                        }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${isOk ? 'bg-green-500' : 'bg-red-500'}`} />
+                                        <span style={{
+                                            fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em',
+                                            padding: '4px 8px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 4,
+                                            background: isOk ? 'var(--green-dim)' : 'var(--red-dim)',
+                                            color: isOk ? 'var(--green)' : 'var(--red)',
+                                        }}>
+                                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: isOk ? 'var(--green)' : 'var(--red)' }} />
                                             {isOk ? 'OK' : 'Error'}
                                         </span>
                                     </div>
 
                                     {/* Name */}
-                                    <h3 className="font-bold text-gray-800 capitalize mb-1">{label}</h3>
+                                    <h3 style={{ fontWeight: 600, color: 'var(--text)', textTransform: 'capitalize', fontSize: 13, marginBottom: 4 }}>{label}</h3>
 
                                     {/* Last run */}
-                                    <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-4">
-                                        <Clock className="w-3 h-3" />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--text3)', marginBottom: 16 }}>
+                                        <Clock style={{ width: 12, height: 12 }} />
                                         <span>
                                             {service.last_run_at
                                                 ? new Date(service.last_run_at).toLocaleString()
@@ -334,19 +358,19 @@ export default function SystemHealth({ onBack }) {
                                     </div>
 
                                     {/* Stats */}
-                                    <div className="flex gap-6 mb-3">
+                                    <div style={{ display: 'flex', gap: 24, marginBottom: 12 }}>
                                         <div>
-                                            <p className="text-[10px] uppercase text-gray-400 font-bold">Successes</p>
-                                            <p className="text-lg font-black text-gray-700">{service.success_count ?? 0}</p>
+                                            <p style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--text3)', fontWeight: 700 }}>Successes</p>
+                                            <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{service.success_count ?? 0}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] uppercase text-gray-400 font-bold">Failures</p>
-                                            <p className="text-lg font-black text-red-500">{service.failure_count ?? 0}</p>
+                                            <p style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--text3)', fontWeight: 700 }}>Failures</p>
+                                            <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--red)' }}>{service.failure_count ?? 0}</p>
                                         </div>
                                         {successRate !== null && (
                                             <div>
-                                                <p className="text-[10px] uppercase text-gray-400 font-bold">Success Rate</p>
-                                                <p className={`text-lg font-black ${successRate >= 80 ? 'text-green-600' : successRate >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                                                <p style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--text3)', fontWeight: 700 }}>Success Rate</p>
+                                                <p style={{ fontSize: 18, fontWeight: 800, color: successRate >= 80 ? 'var(--green)' : successRate >= 50 ? 'var(--amber)' : 'var(--red)' }}>
                                                     {successRate}%
                                                 </p>
                                             </div>
@@ -355,20 +379,21 @@ export default function SystemHealth({ onBack }) {
 
                                     {/* Success rate bar */}
                                     {successRate !== null && (
-                                        <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3">
+                                        <div style={{ width: '100%', background: 'var(--bg3)', borderRadius: 12, height: 6, marginBottom: 12 }}>
                                             <div
-                                                className={`h-1.5 rounded-full transition-all ${
-                                                    successRate >= 80 ? 'bg-green-500' : successRate >= 50 ? 'bg-amber-400' : 'bg-red-500'
-                                                }`}
-                                                style={{ width: `${successRate}%` }}
+                                                style={{
+                                                    height: 6, borderRadius: 12, transition: 'all 0.15s',
+                                                    background: successRate >= 80 ? 'var(--green)' : successRate >= 50 ? 'var(--amber)' : 'var(--red)',
+                                                    width: `${successRate}%`,
+                                                }}
                                             />
                                         </div>
                                     )}
 
                                     {/* Last error */}
                                     {service.last_error && (
-                                        <div className="p-2.5 bg-red-50 rounded-lg border border-red-100">
-                                            <p className="text-[10px] font-mono text-red-600 line-clamp-3 leading-relaxed" title={service.last_error}>
+                                        <div style={{ padding: 10, background: 'var(--red-dim)', borderRadius: 8, border: '1px solid var(--red)' }}>
+                                            <p style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--red)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', lineHeight: 1.4 }} title={service.last_error}>
                                                 {service.last_error}
                                             </p>
                                         </div>
@@ -383,26 +408,28 @@ export default function SystemHealth({ onBack }) {
             {/* Feature Flags */}
             {Object.keys(featureFlags).length > 0 && (
                 <section>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
-                        <Flag className="w-4 h-4" /> Feature Flags
+                    <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Flag style={{ width: 14, height: 14 }} /> Feature Flags
                         {disabledFeatures.length > 0 && (
-                            <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                            <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--amber-dim)', color: 'var(--amber)', padding: '2px 8px', borderRadius: 12 }}>
                                 {disabledFeatures.length} disabled
                             </span>
                         )}
                     </h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
                         {Object.entries(featureFlags).map(([flag, enabled]) => (
-                            <div key={flag} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
-                                enabled
-                                    ? 'bg-green-50 border-green-100 text-green-700'
-                                    : 'bg-red-50 border-red-100 text-red-600'
-                            }`}>
+                            <div key={flag} style={{
+                                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8,
+                                border: '1px solid', fontSize: 11, fontWeight: 500,
+                                background: enabled ? 'var(--green-dim)' : 'var(--red-dim)',
+                                borderColor: enabled ? 'var(--green)' : 'var(--red)',
+                                color: enabled ? 'var(--green)' : 'var(--red)',
+                            }}>
                                 {enabled
-                                    ? <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                                    : <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                    ? <CheckCircle style={{ width: 12, height: 12, flexShrink: 0 }} />
+                                    : <AlertCircle style={{ width: 12, height: 12, flexShrink: 0 }} />
                                 }
-                                <span className="truncate">{flag.replace(/_/g, ' ')}</span>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{flag.replace(/_/g, ' ')}</span>
                             </div>
                         ))}
                     </div>
