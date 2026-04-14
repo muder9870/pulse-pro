@@ -16,30 +16,58 @@ def get_schedule_list():
     """Get list of scheduled posts."""
     db = SessionLocal()
     try:
-        repo = SystemRepository(db)
-        scheduled_posts = repo.list_scheduled_posts()
+        from backend.db.models import ProcessedArticle, RawArticle
+        posts = db.query(ScheduledPost).order_by(ScheduledPost.scheduled_time.asc()).limit(50).all()
         
-        # Transform to frontend format
         schedule_list = []
-        for post in scheduled_posts:
+        for post in posts:
+            # Join to get article title via ProcessedArticle → RawArticle
+            article_title = f"Article #{post.article_id}"
+            try:
+                processed = db.query(ProcessedArticle).filter(ProcessedArticle.id == post.article_id).first()
+                if processed:
+                    raw = db.query(RawArticle).filter(RawArticle.id == processed.raw_article_id).first()
+                    if raw and raw.title:
+                        article_title = raw.title
+            except Exception:
+                pass
+
             schedule_list.append({
-                "id": post.get("id"),
-                "title": post.get("title") or "Untitled",
-                "platform": post.get("platform"),
-                "status": post.get("status"),
-                "scheduled_at": post.get("scheduled_at").isoformat() if post.get("scheduled_at") else None,
-                "created_at": post.get("created_at").isoformat() if post.get("created_at") else None
+                "id": post.id,
+                "article_id": post.article_id,
+                "article_title": article_title,
+                "platform": post.platform,
+                "status": post.status,
+                "scheduled_time": post.scheduled_time.isoformat() if post.scheduled_time else None,
+                "error_message": getattr(post, 'error_message', None),
             })
         
-        return jsonify(schedule_list), 200
+        return jsonify({"posts": schedule_list}), 200
         
     except Exception as e:
+        logger.exception("Failed to list scheduled posts")
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
 
 
-@schedule_bp.post("/api/schedule/queue")
+@schedule_bp.delete("/api/schedule/<int:post_id>")
+def delete_scheduled_post(post_id):
+    """Delete a scheduled post entry only — does NOT delete the article or generated content."""
+    db = SessionLocal()
+    try:
+        post = db.query(ScheduledPost).filter(ScheduledPost.id == post_id).first()
+        if not post:
+            return jsonify({"error": f"Scheduled post {post_id} not found"}), 404
+        db.delete(post)
+        db.commit()
+        return jsonify({"status": "deleted", "id": post_id}), 200
+    except Exception as e:
+        db.rollback()
+        logger.exception("Failed to delete scheduled post")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
 @limiter.limit("20 per minute")
 def queue_scheduled_post():
     """Queue an article for publishing on a specific platform at a scheduled time.

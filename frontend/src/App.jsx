@@ -110,6 +110,20 @@ function AppContent() {
   const [scheduleServerTime, setScheduleServerTime] = useState(null);
   const [scheduleError, setScheduleError] = useState(null);
   
+  // Handle schedule modal trigger from StoryCard
+  useEffect(() => {
+    const handleOpenSchedule = (e) => {
+      const { articleId } = e.detail;
+      // Pre-select the article and open schedule modal
+      if (articleId && !selectedIds.has(articleId)) {
+        toggleSelection(articleId);
+      }
+      setShowScheduleModal(true);
+    };
+    window.addEventListener('open-schedule-modal', handleOpenSchedule);
+    return () => window.removeEventListener('open-schedule-modal', handleOpenSchedule);
+  }, [selectedIds, toggleSelection]);
+
   // Handle source changes from sidebar
   const handleSourceSelect = (source) => {
     setActiveSource(source);
