@@ -52,7 +52,7 @@ const IntelCard = ({ story, onClick }) => {
   return (
     <div
       onClick={onClick}
-      style={{ ...card, padding: 16, transition: 'all 0.2s', cursor: 'pointer' }}
+      style={{ ...card, padding: 16, transition: 'all 0.2s', cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%' }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
     >
@@ -62,7 +62,7 @@ const IntelCard = ({ story, onClick }) => {
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, marginBottom: 6 }}>
         {story.title}
       </div>
-      <div style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 10 }}>
+      <div style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 10, flex: 1 }}>
         {story.summary ? story.summary.slice(0, 120) + (story.summary.length > 120 ? '…' : '') : 'No summary available.'}
       </div>
       {story.angle && (
@@ -70,7 +70,7 @@ const IntelCard = ({ story, onClick }) => {
           "{story.angle}"
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'auto' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'var(--accent-glow)', color: 'var(--accent)' }}>
           {story.source?.toUpperCase() || 'SOURCE'}
         </span>
@@ -193,6 +193,40 @@ const DashboardView = ({ stories = [], loading, handleRunPipeline }) => {
           </div>
         )}
 
+        {/* ── Setup Guide ── */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.12), rgba(139,92,246,0.08))', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', whiteSpace: 'nowrap' }}>Setup Guide</div>
+          <div style={{ display: 'flex', gap: 6, flex: 1, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Add Source', done: totalArticles > 0 },
+              { label: 'Configure LLM', done: true },
+              { label: 'First Fetch', done: totalArticles > 0 },
+              { label: 'Generate Article', done: contentReady > 0, active: contentReady === 0 },
+              { label: 'Publish', done: false },
+            ].map((step, i, arr) => (
+              <React.Fragment key={step.label}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: step.done ? 'var(--green)' : step.active ? 'var(--text)' : 'var(--text2)', fontWeight: step.active ? 500 : 400 }}>
+                  <div style={{ width: 18, height: 18, borderRadius: '50%', border: `1.5px solid currentColor`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, flexShrink: 0, background: step.done ? 'var(--green)' : 'transparent', color: step.done ? '#fff' : 'currentColor' }}>
+                    {step.done ? '✓' : i + 1}
+                  </div>
+                  {step.label}
+                </div>
+                {i < arr.length - 1 && <span style={{ color: 'var(--text3)', fontSize: 10 }}>›</span>}
+              </React.Fragment>
+            ))}
+          </div>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>Dismiss</button>
+        </div>
+
+        {/* ── Pipeline Live Status ── */}
+        <div style={{ ...card, padding: '16px 18px', marginBottom: 20 }}>
+          <SectionLabel>
+            <Zap style={{ width: 14, height: 14, color: 'var(--accent)' }} />
+            Pipeline Live Status
+          </SectionLabel>
+          <PipelineStatus />
+        </div>
+
         {/* ── KPI Cards ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 18 }}>
           <KpiCard label="Intelligence Base" value={totalArticles} trend={`+${Math.min(12, totalArticles)} today`} trendUp />
@@ -202,7 +236,7 @@ const DashboardView = ({ stories = [], loading, handleRunPipeline }) => {
         </div>
 
         {/* ── Main 2-col grid: Intel Feed + Priority Picks ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 18, alignItems: 'start' }}>
 
           {/* Intel Feed */}
           <div>
@@ -214,7 +248,7 @@ const DashboardView = ({ stories = [], loading, handleRunPipeline }) => {
                 {[1,2,3].map(i => <div key={i} style={{ height: 180, background: 'var(--surface)', borderRadius: 'var(--radius-lg)', animation: 'shimmer 1.5s infinite' }} />)}
               </div>
             ) : intelCards.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'stretch' }}>
                 {intelCards.map(story => (
                   <IntelCard key={story.id} story={story} onClick={() => navigate('/articles')} />
                 ))}
@@ -308,15 +342,6 @@ const DashboardView = ({ stories = [], loading, handleRunPipeline }) => {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* ── Pipeline Status ── */}
-        <div style={{ ...card, padding: '16px 18px', marginBottom: 18 }}>
-          <SectionLabel>
-            <Zap style={{ width: 14, height: 14, color: 'var(--accent)' }} />
-            Curation Workbench
-          </SectionLabel>
-          <PipelineStatus />
         </div>
 
       </div>
