@@ -341,12 +341,12 @@ function AppContent() {
     }
   }, [pipelineStatus.stage, queryClient]);
 
-  // Clear selection when navigating away from dashboard (Requirement 1.4)
+  // Clear selection when navigating away from articles/dashboard
   useEffect(() => {
-    if (currentView !== 'dashboard' && selectedIds.size > 0) {
+    if (currentView !== 'dashboard' && currentView !== 'articles' && selectedIds.size > 0) {
       clearSelection();
     }
-  }, [currentView, selectedIds.size, clearSelection]);
+  }, [currentView]);
 
   const handleExport = async () => {
     try {
