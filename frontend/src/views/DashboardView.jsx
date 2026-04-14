@@ -3,10 +3,7 @@ import {
   Zap, TrendingUp, ArrowUpRight,
   BarChart3, Calendar, BookOpen,
   Image as ImageIcon, Mic, Search, Settings,
-  AlertTriangle
 } from 'lucide-react';
-import DailyIntelligence from '../components/DailyIntelligence';
-import DashboardStats from '../components/DashboardStats';
 import FeatureErrorBoundary from '../components/FeatureErrorBoundary';
 import PipelineStatus from '../components/PipelineStatus';
 import { useNavigate } from 'react-router-dom';
@@ -320,25 +317,6 @@ const DashboardView = ({ stories = [], loading, handleRunPipeline }) => {
             Curation Workbench
           </SectionLabel>
           <PipelineStatus />
-        </div>
-
-        {/* ── Live Intelligence (DailyIntelligence component) ── */}
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <TrendingUp style={{ width: 14, height: 14, color: 'var(--accent)' }} />
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Live Intelligence Feed</span>
-            <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)' }}>Full Analysis</span>
-          </div>
-          <DailyIntelligence onRunPipeline={handleRunPipeline} />
-        </div>
-
-        {/* ── System Metrics ── */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <BarChart3 style={{ width: 14, height: 14, color: 'var(--green)' }} />
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>System Ecosystem Metrics</span>
-          </div>
-          <DashboardStats />
         </div>
 
       </div>
