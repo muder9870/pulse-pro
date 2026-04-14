@@ -1,287 +1,33 @@
-/* AI Pulse Pro - Global Styles & UI Refinements */
+/* AI Pulse Pro — Global Styles
+   Companion to index.css Pulse Pro tokens */
 
-/* Custom Modern Scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+/* Custom scrollbar (class-scoped) */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.2); /* Indigo-500 with low opacity */
-  border-radius: 10px;
-  transition: all 0.3s ease;
+  background: var(--border2);
+  border-radius: 2px;
 }
-
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.5); /* Brighter on hover */
+  background: rgba(255,255,255,0.2);
 }
 
-/* Dark mode adjustments for scrollbar */
-.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* Elegant glass effect utility */
+/* Glass effect utility */
 .glass-effect {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
+  background: rgba(8, 11, 20, 0.5);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
 }
 
-.dark .glass-effect {
-  background: rgba(15, 23, 42, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-/* Global focus styles */
+/* Focus */
 :focus-visible {
-  outline: 2px solid rgba(99, 102, 241, 0.5);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* Selection color */
+/* Selection */
 ::selection {
-  background: rgba(99, 102, 241, 0.2);
-  color: inherit;
-}
-
-/* Electric Azure Light Theme Styles */
-.theme-electric-azure-light .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(8, 145, 178, 0.2);
-}
-
-.theme-electric-azure-light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(8, 145, 178, 0.5);
-}
-
-.theme-electric-azure-light .glass-effect {
-  background: rgba(8, 145, 178, 0.03);
-  border: 1px solid rgba(8, 145, 178, 0.1);
-}
-
-.theme-electric-azure-light :focus-visible {
-  outline: 2px solid rgba(8, 145, 178, 0.5);
-  outline-offset: 2px;
-}
-
-.theme-electric-azure-light ::selection {
-  background: rgba(8, 145, 178, 0.2);
-  color: inherit;
-}
-
-/* Electric Azure Dark Theme Styles */
-.theme-electric-azure-dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(8, 145, 178, 0.3);
-}
-
-.theme-electric-azure-dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(8, 145, 178, 0.6);
-}
-
-.theme-electric-azure-dark .glass-effect {
-  background: rgba(8, 145, 178, 0.05);
-  border: 1px solid rgba(8, 145, 178, 0.15);
-}
-
-.theme-electric-azure-dark :focus-visible {
-  outline: 2px solid rgba(34, 211, 238, 0.5);
-  outline-offset: 2px;
-}
-
-.theme-electric-azure-dark ::selection {
-  background: rgba(34, 211, 238, 0.2);
-  color: inherit;
-}
-
-/* Override hard-coded Tailwind classes for Electric Azure themes */
-/* Background overrides - Light */
-.theme-electric-azure-light .bg-white {
-  background-color: #F1F5F9 !important;
-}
-
-.theme-electric-azure-light .bg-gray-50 {
-  background-color: #F1F5F9 !important;
-}
-
-.theme-electric-azure-light .bg-gray-100 {
-  background-color: #E2E8F0 !important;
-}
-
-.theme-electric-azure-light .bg-slate-100 {
-  background-color: #E2E8F0 !important;
-}
-
-/* Background overrides - Dark */
-.theme-electric-azure-dark .bg-slate-900 {
-  background-color: #0F172A !important;
-}
-
-.theme-electric-azure-dark .bg-slate-800 {
-  background-color: #1E293B !important;
-}
-
-/* Text color overrides - Light */
-.theme-electric-azure-light .text-gray-500 {
-  color: #475569 !important;
-}
-
-.theme-electric-azure-light .text-gray-600 {
-  color: #475569 !important;
-}
-
-.theme-electric-azure-light .text-gray-900 {
-  color: #0F172A !important;
-}
-
-.theme-electric-azure-light .text-slate-400 {
-  color: #64748B !important;
-}
-
-.theme-electric-azure-light .text-slate-500 {
-  color: #475569 !important;
-}
-
-/* Text color overrides - Dark */
-.theme-electric-azure-dark .text-white {
-  color: #F8FAFC !important;
-}
-
-.theme-electric-azure-dark .text-slate-400 {
-  color: #CBD5E1 !important;
-}
-
-.theme-electric-azure-dark .text-slate-500 {
-  color: #94A3B8 !important;
-}
-
-/* Border color overrides - Light */
-.theme-electric-azure-light .border-gray-200 {
-  border-color: #CBD5E1 !important;
-}
-
-.theme-electric-azure-light .border-gray-300 {
-  border-color: #CBD5E1 !important;
-}
-
-.theme-electric-azure-light .border-slate-200 {
-  border-color: #CBD5E1 !important;
-}
-
-.theme-electric-azure-light .border-slate-300 {
-  border-color: #CBD5E1 !important;
-}
-
-/* Border color overrides - Dark */
-.theme-electric-azure-dark .border-slate-700 {
-  border-color: #475569 !important;
-}
-
-.theme-electric-azure-dark .border-slate-800 {
-  border-color: #334155 !important;
-}
-
-/* Gradient overrides - Both themes */
-.theme-electric-azure-light .from-indigo-500,
-.theme-electric-azure-dark .from-indigo-500 {
-  --tw-gradient-from: #0891B2 !important;
-}
-
-.theme-electric-azure-light .via-purple-500,
-.theme-electric-azure-dark .via-purple-500 {
-  --tw-gradient-via: #0EA5E9 !important;
-}
-
-.theme-electric-azure-light .to-pink-500,
-.theme-electric-azure-dark .to-pink-500 {
-  --tw-gradient-to: #14B8A6 !important;
-}
-
-.theme-electric-azure-light .from-blue-400,
-.theme-electric-azure-dark .from-blue-400 {
-  --tw-gradient-from: #06B6D4 !important;
-}
-
-.theme-electric-azure-light .via-indigo-400,
-.theme-electric-azure-dark .via-indigo-400 {
-  --tw-gradient-via: #0891B2 !important;
-}
-
-.theme-electric-azure-light .to-purple-400,
-.theme-electric-azure-dark .to-purple-400 {
-  --tw-gradient-to: #0EA5E9 !important;
-}
-
-.theme-electric-azure-light .from-indigo-600,
-.theme-electric-azure-dark .from-indigo-600 {
-  --tw-gradient-from: #0E7490 !important;
-}
-
-.theme-electric-azure-light .to-purple-600,
-.theme-electric-azure-dark .to-purple-600 {
-  --tw-gradient-to: #14B8A6 !important;
-}
-
-.theme-electric-azure-light .from-blue-500,
-.theme-electric-azure-dark .from-blue-500 {
-  --tw-gradient-from: #0891B2 !important;
-}
-
-.theme-electric-azure-light .to-purple-600,
-.theme-electric-azure-dark .to-purple-600 {
-  --tw-gradient-to: #14B8A6 !important;
-}
-
-/* Indigo color overrides - Both themes */
-.theme-electric-azure-light .text-indigo-400,
-.theme-electric-azure-dark .text-indigo-400 {
-  color: #22D3EE !important;
-}
-
-.theme-electric-azure-light .text-indigo-500,
-.theme-electric-azure-dark .text-indigo-500 {
-  color: #0891B2 !important;
-}
-
-.theme-electric-azure-light .text-indigo-600,
-.theme-electric-azure-dark .text-indigo-600 {
-  color: #0E7490 !important;
-}
-
-.theme-electric-azure-light .bg-indigo-500,
-.theme-electric-azure-dark .bg-indigo-500 {
-  background-color: #0891B2 !important;
-}
-
-.theme-electric-azure-light .bg-indigo-600,
-.theme-electric-azure-dark .bg-indigo-600 {
-  background-color: #0E7490 !important;
-}
-
-.theme-electric-azure-light .bg-indigo-500\/10,
-.theme-electric-azure-dark .bg-indigo-500\/10 {
-  background-color: rgba(8, 145, 178, 0.1) !important;
-}
-
-.theme-electric-azure-light .bg-indigo-500\/20,
-.theme-electric-azure-dark .bg-indigo-500\/20 {
-  background-color: rgba(8, 145, 178, 0.2) !important;
-}
-
-.theme-electric-azure-light .border-indigo-500\/20,
-.theme-electric-azure-dark .border-indigo-500\/20 {
-  border-color: rgba(8, 145, 178, 0.2) !important;
-}
-
-.theme-electric-azure-light .border-indigo-500\/30,
-.theme-electric-azure-dark .border-indigo-500\/30 {
-  border-color: rgba(8, 145, 178, 0.3) !important;
+  background: var(--accent-glow);
+  color: var(--text);
 }

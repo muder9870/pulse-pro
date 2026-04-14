@@ -19,6 +19,7 @@ const CalendarView = lazy(() => import('./views/CalendarView'));
 const MediaView = lazy(() => import('./views/MediaView'));
 const PodcastView = lazy(() => import('./views/PodcastView'));
 const ResearchView = lazy(() => import('./views/ResearchView'));
+const ArticlesView = lazy(() => import('./views/ArticlesView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 const NotFoundView = lazy(() => import('./views/NotFoundView'));
 // Dev-only routes — lazy loaded and excluded from production builds
@@ -109,10 +110,10 @@ function AppContent() {
   // Handle source changes from sidebar
   const handleSourceSelect = (source) => {
     setActiveSource(source);
-    setCurrentView('dashboard');
-    // We intentionally do NOT wipe setFilters() or setSearchQuery() here
-    // so that "Dashboard Tuning and Perspective" (FilterBar) settings persist
-    // across different sources!
+    setFilters(prev => ({ ...prev, source: source }));
+    if (source) {
+      navigate('/articles');
+    }
   };
   
   // Bulk operation state — from Zustand store
@@ -365,8 +366,6 @@ function AppContent() {
 
   // Optimize story filtering with useMemo to prevent lag during re-renders
   const filteredStories = React.useMemo(() => {
-    if (currentView !== 'dashboard') return [];
-    
     let filtered = stories;
 
     if (searchQuery) {
@@ -1105,7 +1104,7 @@ function AppContent() {
   }, [currentView, scheduleOpen, showDeleteConfirmModal, showTagModal, showScheduleModal, selectedIds.size, clearSelection, filteredStories.length, handleSelectAllFiltered]);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans overflow-x-hidden">
+    <div className="flex min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--font-body)' }}>
       <SkipLink targetId="main-content" />
       <Sidebar
         activeSource={activeSource}
@@ -1117,9 +1116,9 @@ function AppContent() {
         activeTheme={activeTheme}
       />
 
-      <div className="flex-1 ml-64 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen" style={{ marginLeft: 'var(--sidebar-w)' }}>
         {/* Simplified Global Header */}
-        <header className={`backdrop-blur-md border-b sticky top-0 z-10 px-4 lg:px-8 py-3 flex items-center justify-between shadow-sm transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-900/80 border-white/10' : 'bg-white/80 border-gray-200'}`}>
+        <header className="sticky top-0 z-10 flex items-center gap-3 px-5 shadow-sm flex-shrink-0" style={{ height: 'var(--header-h)', background: 'var(--bg2)', borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-center gap-4 lg:gap-6 flex-1">
             <button className="lg:hidden p-2 -ml-2 text-slate-500 hover:text-indigo-600 transition-colors" onClick={() => setMobileMenuOpen(true)}>
               <Menu className="w-5 h-5" />
@@ -1174,7 +1173,7 @@ function AppContent() {
           </div>
         </header>
 
-        <main id="main-content" tabIndex={-1} className={`flex-1 p-8 transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-950' : 'bg-slate-50'}`}>
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)', padding: '24px' }}>
           <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
             {/* View Rendering — URL-based routing with lazy-loaded views */}
             <Suspense fallback={<Skeleton type="page" />}>
@@ -1186,6 +1185,45 @@ function AppContent() {
               <Route path="/media" element={<MediaView />} />
               <Route path="/podcast" element={<PodcastView />} />
               <Route path="/research" element={<ResearchView />} />
+              <Route path="/articles" element={
+                <ArticlesView
+                  stories={stories}
+                  loading={loading}
+                  filteredStories={filteredStories}
+                  uniqueSources={uniqueSources}
+                  selectedPlatforms={selectedPlatforms}
+                  activeTheme={activeTheme}
+                  activeSource={activeSource}
+                  fetchNextPage={fetchNextPage}
+                  hasNextPage={hasNextPage}
+                  isFetchingNextPage={isFetchingNextPage}
+                  filters={filters}
+                  setFilters={setFilters}
+                  selectedIds={selectedIds}
+                  toggleSelection={toggleSelection}
+                  handleSelectAllFiltered={handleSelectAllFiltered}
+                  getSelectAllState={getSelectAllState}
+                  clearSelection={clearSelection}
+                  bulkOperationState={bulkOperationState}
+                  setBulkOperationState={setBulkOperationState}
+                  bulkOperationError={bulkOperationError}
+                  setBulkOperationError={setBulkOperationError}
+                  showTagModal={showTagModal}
+                  setShowTagModal={setShowTagModal}
+                  showScheduleModal={showScheduleModal}
+                  setShowScheduleModal={setShowScheduleModal}
+                  showDeleteConfirmModal={showDeleteConfirmModal}
+                  setShowDeleteConfirmModal={setShowDeleteConfirmModal}
+                  handleBulkGenerate={handleBulkGenerate}
+                  handleBulkSchedule={handleBulkSchedule}
+                  handleBulkTag={handleBulkTag}
+                  handleBulkExport={handleBulkExport}
+                  handleBulkMarkPosted={handleBulkMarkPosted}
+                  handleBulkDelete={handleBulkDelete}
+                  handleRunPipeline={handleRunPipeline}
+                  handleSourceSelect={handleSourceSelect}
+                />
+              } />
               <Route path="/settings" element={<SettingsView activeTheme={activeTheme} initialTab="monetization" />} />
               <Route path="/monetization" element={<SettingsView activeTheme={activeTheme} initialTab="monetization" />} />
               <Route path="/monetize" element={<SettingsView activeTheme={activeTheme} initialTab="monetization" />} />
@@ -1243,12 +1281,10 @@ function AppContent() {
           </div>
         </main>
 
-        <footer className="mt-auto py-8 border-t border-slate-200 bg-white">
-          <div className="max-w-7xl mx-auto px-8 text-center">
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-              <Zap className="w-3 h-3" /> Powered by AI Pulse Pro Engine v2.0
-            </p>
-          </div>
+        <footer className="flex-shrink-0 py-3 text-center" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg2)' }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2" style={{ color: 'var(--text3)' }}>
+            <Zap className="w-3 h-3" /> Powered by AI Pulse Pro Engine v2.0
+          </p>
         </footer>
       </div>
 
