@@ -95,7 +95,8 @@ def generate_content():
     if err:
         body, status = err
         return jsonify(body), status
-    results = ContentGenerator().generate_for_article(obj.article_id, platforms=[obj.platform] if obj.platform else None)
+    platforms = obj.platforms  # None → ContentGenerator uses all 8 defaults
+    results = ContentGenerator().generate_for_article(obj.article_id, platforms=platforms)
     return jsonify({"status": "success", "results": results}), 200
 
 @content_bp.get("/api/media/assets/<int:article_id>")

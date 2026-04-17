@@ -139,7 +139,7 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
     const ActiveContent = allTabs.find(tab => tab.id === activeTab)?.component;
 
     return (
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 animate-fade-in pb-8 lg:pb-20">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 animate-fade-in pb-8 lg:pb-20">
             {/* Mobile Tab Selector - Horizontal scrollable tabs for mobile */}
             <div className="lg:hidden px-2 -mx-2 overflow-x-auto">
                 <div className="flex gap-2 pb-2 min-w-max">
@@ -165,72 +165,48 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
             </div>
 
             {/* Side Navigation for Hub - Hidden on mobile */}
-            <div className="hidden lg:block lg:w-72 shrink-0">
-                <div className="sticky top-24 space-y-4">
-                    <div style={{ padding: '0 4px' }}>
-                        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>
+            <div className="hidden lg:block lg:w-64 shrink-0">
+                <div className="sticky top-24 space-y-6">
+                    <div style={{ padding: '0 4px', marginBottom: 24 }}>
+                        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
                             Settings Hub
                         </h1>
-                        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text3)', marginTop: 6 }}>
+                        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--accent)', marginTop: 8 }}>
                             Pulse Pro Configuration
                         </p>
                     </div>
 
                     {tabGroups.map((group) => (
-                        <div key={group.label} style={{ marginBottom: 20 }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text3)', padding: '0 4px', marginBottom: 8 }}>
+                        <div key={group.label} className="settings-nav-group">
+                            <div className="settings-group-label">
                                 {group.label}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                 {group.tabs.map((tab) => {
                                     const isActive = activeTab === tab.id;
+                                    const Icon = tab.icon;
                                     return (
                                         <button
                                             key={tab.id}
                                             onClick={() => handleTabChange(tab.id)}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 10,
-                                                padding: '9px 12px',
-                                                borderRadius: 8,
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s',
-                                                color: isActive ? 'var(--accent)' : 'var(--text2)',
-                                                fontSize: 12,
-                                                marginBottom: 2,
-                                                border: isActive ? '1px solid rgba(108,99,255,0.2)' : '1px solid transparent',
-                                                background: isActive ? 'var(--accent-glow)' : 'transparent',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                if (!isActive) {
-                                                    e.currentTarget.style.background = 'var(--surface)';
-                                                    e.currentTarget.style.color = 'var(--text)';
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (!isActive) {
-                                                    e.currentTarget.style.background = 'transparent';
-                                                    e.currentTarget.style.color = 'var(--text2)';
-                                                }
-                                            }}
+                                            className={`settings-nav-item ${isActive ? 'active' : ''}`}
+                                            style={{ textAlign: 'left', width: '100%', outline: 'none' }}
                                         >
-                                            <div style={{
-                                                width: 28,
-                                                height: 28,
-                                                borderRadius: 7,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                flexShrink: 0,
-                                                fontSize: 13,
-                                                background: tab.iconBg,
-                                            }}>
-                                                {tab.iconEmoji}
+                                            <div 
+                                                className="settings-icon"
+                                                style={{
+                                                    background: isActive ? 'var(--accent)' : tab.iconBg,
+                                                    color: isActive ? '#fff' : 'inherit'
+                                                }}
+                                            >
+                                                {isActive ? <Icon style={{ width: 14, height: 14 }} /> : tab.iconEmoji}
                                             </div>
-                                            <span style={{ fontSize: 12, fontWeight: 400 }}>
+                                            <span style={{ fontWeight: isActive ? 600 : 400, flex: 1 }}>
                                                 {tab.label}
                                             </span>
+                                            {isActive && (
+                                                <div style={{ width: 3, height: 16, background: 'var(--accent)', borderRadius: 2 }} />
+                                            )}
                                         </button>
                                     );
                                 })}
@@ -241,16 +217,18 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 min-w-0 px-2 lg:px-0">
+            <div className="flex-1 min-w-0">
                 <div style={{
-                    background: 'var(--surface)',
+                    background: 'var(--bg2)',
+                    backdropFilter: 'blur(20px)',
                     border: '1px solid var(--border)',
                     borderRadius: 'var(--radius-lg)',
-                    padding: '24px',
-                    minHeight: '500px',
-                    transition: 'all 0.15s',
+                    padding: '32px',
+                    minHeight: '600px',
+                    boxShadow: '0 20px 40px -20px rgba(0,0,0,0.5)',
+                    transition: 'all 0.2s',
                 }}>
-                    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+                    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                         {/* Dynamic Rendering of setting module */}
                         {ActiveContent && <ActiveContent activeTheme={activeTheme} />}
                     </div>

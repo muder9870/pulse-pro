@@ -26,7 +26,7 @@ const ThemeSelector = ({ activeTheme }) => {
       </div>
 
       {/* Theme Toggle Rows */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         {themes.map((opt) => {
           const Icon = opt.icon;
           const isActive = theme === opt.id;
@@ -35,59 +35,17 @@ const ThemeSelector = ({ activeTheme }) => {
             <button
               key={opt.id}
               onClick={() => setTheme(opt.id)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '16px 20px', borderRadius: 12,
-                border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`,
-                background: isActive ? 'var(--accent-glow)' : 'var(--surface)',
-                transition: 'all 0.15s', cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.borderColor = 'var(--border2)';
-                  e.currentTarget.style.background = 'var(--surface2)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.background = 'var(--surface)';
-                }
-              }}
+              className={`interface-row ${isActive ? 'active' : ''}`}
+              style={{ width: '100%', textAlign: 'left', outline: 'none' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: isActive ? 'var(--accent)' : 'var(--bg3)',
-                  transition: 'background 0.15s',
-                }}>
-                  <Icon style={{ width: 20, height: 20, color: isActive ? 'white' : 'var(--text2)' }} />
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, color: isActive ? 'var(--accent)' : 'var(--text)' }}>
-                    {opt.label}
-                  </h3>
-                  <p style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2 }}>
-                    {opt.description}
-                  </p>
-                </div>
+              <div className="interface-icon">
+                <Icon style={{ width: 16, height: 16 }} />
               </div>
-
-              {/* Toggle Indicator */}
-              <div style={{
-                width: 48, height: 26, borderRadius: 13,
-                background: isActive ? 'var(--accent)' : 'var(--bg3)',
-                display: 'flex', alignItems: 'center', padding: 3,
-                transition: 'background 0.15s', flexShrink: 0,
-              }}>
-                <div style={{
-                  width: 20, height: 20, borderRadius: 10,
-                  background: isActive ? 'white' : 'var(--text3)',
-                  transition: 'transform 0.15s',
-                  transform: isActive ? 'translateX(22px)' : 'translateX(0)',
-                }} />
+              <div className="interface-info">
+                <div className="interface-name">{opt.label}</div>
+                <div className="interface-desc">{opt.description}</div>
               </div>
+              <div className={`toggle ${isActive ? 'on' : 'off'}`} />
             </button>
           );
         })}

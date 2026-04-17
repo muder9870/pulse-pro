@@ -108,7 +108,7 @@ class PodcastGenerator:
 
         # Generate audio
         filename = f"podcast_digest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
-        path = await self.audio_engine.generate_audio(0, clean_script, filename=filename)
+        path = await self.audio_engine.generate_audio(None, clean_script, filename=filename)
 
         if path:
             self.log.info("Podcast digest generated: %s", path)

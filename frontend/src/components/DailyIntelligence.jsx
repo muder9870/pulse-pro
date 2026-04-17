@@ -10,23 +10,9 @@ import { Button, Badge, Spinner } from './ui';
  * Displays the top 3 high-impact AI stories from the Decision Engine.
  * Features ultra-modern premium aesthetics and impact scoring.
  */
-const DailyIntelligence = ({ onRunPipeline }) => {
+const DailyIntelligence = ({ onRunPipeline, activeTheme }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeTheme, setActiveTheme] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-        }
-        return 'light';
-    });
-
-    useEffect(() => {
-        const handleThemeChange = () => {
-            setActiveTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-        };
-        window.addEventListener('theme-change', handleThemeChange);
-        return () => window.removeEventListener('theme-change', handleThemeChange);
-    }, []);
 
     useEffect(() => {
         fetch('/api/intelligence/daily')

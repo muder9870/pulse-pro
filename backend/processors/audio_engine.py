@@ -31,17 +31,23 @@ class AudioEngine:
             return asyncio.run(coro)
 
     async def generate_audio(
-        self, article_id: int, text: str, filename: str | None = None
+        self, article_id: int | None, text: str, filename: str | None = None
     ) -> str | None:
-        """Generate MP3 from text. Tries edge-tts first, Pollinations TTS as fallback."""
+        """Generate MP3 from text. Tries edge-tts first, Google TTS as fallback."""
+        import re
         if not text or not text.strip():
             self.log.warning("No text provided for audio generation article_id=%s", article_id)
             return None
 
         if filename is None:
-            filename = f"article_{article_id}_{os.urandom(4).hex()}.mp3"
+            id_str = article_id if article_id is not None else "gen"
+            filename = f"article_{id_str}_{os.urandom(4).hex()}.mp3"
 
         local_path = self.audio_dir / filename
+        
+        # Clean markdown to prevent edge-tts NoAudioReceived crashes
+        clean_text = re.sub(r'[*#_~`\[\]]+', ' ', text)
+        clean_text = " ".join(clean_text.split())
 
         # 1. Try edge-tts (free, Microsoft neural voices)
         try:
@@ -49,40 +55,65 @@ class AudioEngine:
             self.log.info(
                 "Generating audio via edge-tts article_id=%s voice=%s", article_id, self.voice
             )
-            communicate = edge_tts.Communicate(text, self.voice)
+            communicate = edge_tts.Communicate(clean_text, self.voice)
             await communicate.save(str(local_path))
             self._save_to_db(article_id, filename, local_path)
             return str(local_path)
         except Exception as e:
-            self.log.warning("edge-tts failed: %s — trying Pollinations TTS", e)
+            self.log.warning("edge-tts failed: %s — trying Google TTS", e)
 
-        # 2. Fallback: Pollinations.ai ElevenLabs TTS (no key required)
+        # 2. Fallback: Google Translate TTS (free, no API key, requires chunking)
         try:
-            audio_bytes = self._pollinations_tts(text)
+            audio_bytes = self._google_tts(clean_text)
             if audio_bytes:
                 local_path.write_bytes(audio_bytes)
                 self._save_to_db(article_id, filename, local_path)
-                self.log.info("Audio generated via Pollinations TTS article_id=%s", article_id)
+                self.log.info("Audio generated via Google TTS article_id=%s", article_id)
                 return str(local_path)
         except Exception as e:
-            self.log.error("Pollinations TTS failed: %s", e)
+            self.log.error("Google TTS failed: %s", e)
 
         self.log.error("All TTS methods failed for article_id=%s", article_id)
         return None
 
-    def _pollinations_tts(self, text: str, voice: str = "nova") -> bytes | None:
-        """Call Pollinations.ai TTS — free, no API key, ElevenLabs voices."""
-        # Limit text length to avoid URL issues
-        truncated = text[:4000]
-        encoded = urllib.parse.quote(truncated)
-        url = f"https://gen.pollinations.ai/audio/{encoded}?voice={voice}&model=elevenlabs"
-        response = requests.get(url, timeout=60)
-        if response.status_code == 200 and len(response.content) > 1000:
-            return response.content
-        self.log.warning("Pollinations TTS returned %d", response.status_code)
-        return None
+    def _google_tts(self, text: str) -> bytes | None:
+        """Call Google Translate TTS — chunks text and concatenates audio bytes."""
+        import urllib.parse
+        import requests
+        import re
+        
+        # Chunking by 150 chars max, respecting word boundaries
+        chunks = []
+        for sentence in re.findall(r'[^.?!]+[.?!]*', text):
+            sentence = sentence.strip()
+            while len(sentence) > 150:
+                idx = sentence.rfind(' ', 0, 150)
+                if idx == -1:  # No spaces found
+                    idx = 150
+                chunks.append(sentence[:idx].strip())
+                sentence = sentence[idx:].strip()
+            if sentence:
+                chunks.append(sentence)
+                
+        audio_bytes = b""
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        
+        for chunk in chunks:
+            if not chunk:
+                continue
+            encoded = urllib.parse.quote(chunk)
+            url = f"http://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q={encoded}"
+            response = requests.get(url, headers=headers, timeout=15)
+            if response.status_code == 200 and len(response.content) > 100:
+                audio_bytes += response.content
+            else:
+                self.log.warning("Google TTS chunk failed %d", response.status_code)
+                
+        return audio_bytes if audio_bytes else None
 
-    def _save_to_db(self, article_id: int, filename: str, local_path: Path) -> None:
+    def _save_to_db(self, article_id: int | None, filename: str, local_path: Path) -> None:
         db = SessionLocal()
         try:
             audio = ArticleAudio(
@@ -99,7 +130,7 @@ class AudioEngine:
         finally:
             db.close()
 
-    def generate_audio_sync(self, article_id: int, text: str) -> str | None:
+    def generate_audio_sync(self, article_id: int | None, text: str) -> str | None:
         """Synchronous wrapper — safe to call from Celery workers."""
         try:
             return self._run_async(self.generate_audio(article_id, text))
@@ -111,5 +142,5 @@ class AudioEngine:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     engine = AudioEngine()
-    path = engine.generate_audio_sync(0, "This is a test of the Pulse Pro audio engine.")
+    path = engine.generate_audio_sync(None, "This is a test of the Pulse Pro audio engine.")
     print(f"Test audio: {path}")

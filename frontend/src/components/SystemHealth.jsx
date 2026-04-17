@@ -170,96 +170,44 @@ export default function SystemHealth({ onBack }) {
                     <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Server style={{ width: 14, height: 14 }} /> System Vitals
                     </h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12 }}>
+                    <div className="pp-card" style={{ display: 'flex', flexDirection: 'column', padding: '0 16px' }}>
 
-                        {/* Active Threads */}
                         {vitals.active_threads !== undefined && (
-                            <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 16 }}>
-                                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 8 }}>Active Threads</p>
-                                <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)' }}>{vitals.active_threads}</p>
+                            <div className="health-metric">
+                                <span className="metric-name">Active Threads</span>
+                                <span className="metric-val">{vitals.active_threads}</span>
                             </div>
                         )}
-
-                        {/* Database */}
                         {vitals.database && (
-                            <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 16 }}>
-                                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12 }}>Database</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>Connection Pool</span>
-                                        <span style={{
-                                            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
-                                            background: vitals.database.connection_pool === 'healthy' ? 'var(--green-dim)' : 'var(--red-dim)',
-                                            color: vitals.database.connection_pool === 'healthy' ? 'var(--green)' : 'var(--red)',
-                                        }}>
-                                            {vitals.database.connection_pool}
-                                        </span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>DB Size</span>
-                                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>
-                                            {vitals.database.db_size_kb > 0
-                                                ? `${(vitals.database.db_size_kb / 1024).toFixed(1)} MB`
-                                                : 'PostgreSQL'}
-                                        </span>
-                                    </div>
+                            <>
+                                <div className="health-metric">
+                                    <span className="metric-name">Database Connection Pool</span>
+                                    <span className="metric-val">{vitals.database.connection_pool}</span>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* LLM */}
-                        {vitals.llm && (
-                            <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 16 }}>
-                                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12 }}>LLM Circuit Breaker</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>Status</span>
-                                        <span style={{
-                                            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
-                                            background: vitals.llm.circuit_breaker_tripped ? 'var(--red-dim)' : 'var(--green-dim)',
-                                            color: vitals.llm.circuit_breaker_tripped ? 'var(--red)' : 'var(--green)',
-                                        }}>
-                                            {vitals.llm.circuit_breaker_tripped ? 'Tripped' : 'Healthy'}
-                                        </span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>Failure Rate</span>
-                                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>
-                                            {(vitals.llm.failure_rate * 100).toFixed(1)}%
-                                        </span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>Threshold</span>
-                                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>
-                                            {(vitals.llm.threshold * 100).toFixed(0)}%
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Queue */}
-                        {vitals.queue && (
-                            <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: 16 }}>
-                                <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12 }}>
-                                    Article Queue
-                                    <span style={{ marginLeft: 8, color: 'var(--accent)', textTransform: 'none', fontWeight: 700 }}>
-                                        {vitals.queue.total_pending ?? 0} pending
+                                <div className="health-metric">
+                                    <span className="metric-name">Database Size</span>
+                                    <span className="metric-val">
+                                        {vitals.database.db_size_kb > 0 ? `${(vitals.database.db_size_kb / 1024).toFixed(1)} MB` : 'PostgreSQL'}
                                     </span>
-                                </p>
-                                {vitals.queue.states && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                        {Object.entries(vitals.queue.states).map(([state, count]) => (
-                                            <div key={state} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <span style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'capitalize' }}>{state}</span>
-                                                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{count}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                {vitals.queue.error && (
-                                    <p style={{ fontSize: 11, color: 'var(--red)', marginTop: 8 }}>{vitals.queue.error}</p>
-                                )}
+                                </div>
+                            </>
+                        )}
+                        {vitals.llm && (
+                            <>
+                                <div className="health-metric">
+                                    <span className="metric-name">LLM Circuit Breaker</span>
+                                    <span className="metric-val">{vitals.llm.circuit_breaker_tripped ? 'Tripped' : 'Healthy'}</span>
+                                </div>
+                                <div className="health-metric">
+                                    <span className="metric-name">LLM Failure Rate</span>
+                                    <span className="metric-val">{(vitals.llm.failure_rate * 100).toFixed(1)}%</span>
+                                </div>
+                            </>
+                        )}
+                        {vitals.queue && (
+                            <div className="health-metric">
+                                <span className="metric-name">Article Queue Pending</span>
+                                <span className="metric-val">{vitals.queue.total_pending ?? 0}</span>
                             </div>
                         )}
 
@@ -418,18 +366,9 @@ export default function SystemHealth({ onBack }) {
                     </h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
                         {Object.entries(featureFlags).map(([flag, enabled]) => (
-                            <div key={flag} style={{
-                                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8,
-                                border: '1px solid', fontSize: 11, fontWeight: 500,
-                                background: enabled ? 'var(--green-dim)' : 'var(--red-dim)',
-                                borderColor: enabled ? 'var(--green)' : 'var(--red)',
-                                color: enabled ? 'var(--green)' : 'var(--red)',
-                            }}>
-                                {enabled
-                                    ? <CheckCircle style={{ width: 12, height: 12, flexShrink: 0 }} />
-                                    : <AlertCircle style={{ width: 12, height: 12, flexShrink: 0 }} />
-                                }
-                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{flag.replace(/_/g, ' ')}</span>
+                            <div key={flag} className="feature-flag">
+                                <span className="flag-name" style={{ textTransform: 'capitalize' }}>{flag.replace(/_/g, ' ')}</span>
+                                <div className={`toggle ${enabled ? 'on' : 'off'}`} />
                             </div>
                         ))}
                     </div>

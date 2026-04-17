@@ -81,7 +81,20 @@ class ArticleScorer:
 
         return int(max(0, min(score, 100)))
 
-    def calculate_relevance_score(self, row: Dict[str, Any], user_prefs: Dict[str, str]) -> int:
+    def calculate_keyword_boost(self, title: str, raw_content: str, keywords: list[str]) -> int:
+        text = (title + " " + (raw_content or "")).lower()
+        matches = sum(1 for kw in keywords if kw.lower() in text)
+        if matches == 0:
+            return 0
+        if matches == 1:
+            return 10
+        if matches == 2:
+            return 20
+        if matches == 3:
+            return 25
+        return 30  # 4+ matches
+
+    def calculate_relevance_score(self, row: Dict[str, Any], user_prefs: Dict[str, str], keywords: list[str] = None) -> int:
         category = (row.get("category") or "").lower()
         source = (row.get("source") or "").lower()
         title = (row.get("title") or "").lower()
@@ -106,7 +119,8 @@ class ArticleScorer:
         behavior_boost = self._calculate_behavior_boost(category, source)
         score += behavior_boost
 
-        return int(max(0, min(score, 100)))
+        base = int(max(0, min(score, 100)))
+        return min(base + self.calculate_keyword_boost(row.get("title", ""), row.get("raw_content", ""), keywords or []), 100)
 
     def _calculate_behavior_boost(self, category: str, source: str) -> float:
         """Adjust score based on historical engagement with similar content."""
@@ -160,10 +174,22 @@ def _load_user_prefs() -> Dict[str, str]:
     return prefs
 
 
+def _load_keywords() -> list[str]:
+    try:
+        with get_session() as session:
+            from backend.db.repositories.keyword_repository import KeywordRepository
+            repo = KeywordRepository(session)
+            return [kw.keyword for kw in repo.get_all()]
+    except Exception as e:
+        log.warning("keyword_load_failed: %s — scoring without keyword boost", e)
+        return []
+
+
 def score_all_articles() -> int:
     """Score all processed_articles that do not yet have scores."""
     scorer = ArticleScorer()
     user_prefs = _load_user_prefs()
+    keywords = _load_keywords()
 
     debug = str(os.getenv("DEBUG_PIPELINE", "")).lower() in {"1", "true", "yes"}
     fallback_top_n = int(os.getenv("SCORING_FALLBACK_TOP_N", "10"))
@@ -178,6 +204,7 @@ def score_all_articles() -> int:
             RawArticle.source,
             RawArticle.category,
             RawArticle.fetched_at,
+            RawArticle.raw_content,
             ProcessedArticle.summary,
             ProcessedArticle.viral_score,
             ProcessedArticle.tech_score,
@@ -209,6 +236,7 @@ def score_all_articles() -> int:
                 RawArticle.source,
                 RawArticle.category,
                 RawArticle.fetched_at,
+                RawArticle.raw_content,
                 ProcessedArticle.summary,
                 ProcessedArticle.viral_score,
                 ProcessedArticle.tech_score,
@@ -260,11 +288,12 @@ def score_all_articles() -> int:
                 "category": article.category,
                 "fetched_at": article.fetched_at,
                 "summary": article.summary,
+                "raw_content": article.raw_content,
             }
 
             new_viral = scorer.calculate_viral_score(row)
             new_tech = scorer.calculate_tech_score(row)
-            new_rel = scorer.calculate_relevance_score(row, user_prefs)
+            new_rel = scorer.calculate_relevance_score(row, user_prefs, keywords)
 
             if debug:
                 log.info(

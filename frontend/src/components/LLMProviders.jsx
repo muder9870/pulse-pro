@@ -82,78 +82,43 @@ export default function LLMProviders() {
             </div>
 
             {/* Provider List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="pp-card" style={{ padding: '0 16px', display: 'flex', flexDirection: 'column' }}>
                 {providers.map((provider) => (
-                    <div
-                        key={provider.key}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: 16,
-                            borderRadius: 12,
-                            border: `1px solid ${provider.configured ? 'var(--border)' : 'var(--border2)'}`,
-                            background: 'var(--surface)',
-                            transition: 'all 0.15s',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border2)'}
-                        onMouseLeave={(e) => e.currentTarget.style.borderColor = provider.configured ? 'var(--border)' : 'var(--border2)'}
-                    >
-                        {/* Left: Status + Info */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                            {/* Status Indicator */}
-                            <div style={{
-                                width: 40, height: 40, borderRadius: 10,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: provider.configured ? 'var(--green-dim)' : 'var(--bg3)',
-                                flexShrink: 0,
-                            }}>
-                                {provider.configured ? (
-                                    <CheckCircle style={{ width: 22, height: 22, color: 'var(--green)' }} />
-                                ) : (
-                                    <XCircle style={{ width: 22, height: 22, color: 'var(--text3)' }} />
+                    <div key={provider.key} className="provider-row">
+                        {provider.configured ? (
+                            <div className="provider-check">
+                                <CheckCircle style={{ width: 10, height: 10, color: 'var(--green)' }} />
+                            </div>
+                        ) : (
+                            <div className="provider-x" />
+                        )}
+                        
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span className="provider-name">{provider.name}</span>
+                                {provider.free && (
+                                    <span style={{
+                                        fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                                        background: 'var(--green-dim)', color: 'var(--green)',
+                                        padding: '1px 6px', borderRadius: 4,
+                                    }}>
+                                        Free
+                                    </span>
                                 )}
                             </div>
-
-                            {/* Provider Info */}
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                    <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{provider.name}</h3>
-                                    {provider.free && (
-                                        <span style={{
-                                            fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
-                                            background: 'var(--green-dim)', color: 'var(--green)',
-                                            padding: '2px 6px', borderRadius: 6,
-                                        }}>
-                                            Free
-                                        </span>
-                                    )}
-                                </div>
-                                <p style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>
-                                    Model: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{provider.model}</span>
-                                </p>
-                                <p style={{ fontSize: 11, color: 'var(--text3)' }}>{provider.notes}</p>
-                            </div>
+                            <span className="provider-model">{provider.model}</span>
                         </div>
 
-                        {/* Right: Get Key Link */}
                         {!provider.configured && (
                             <a
                                 href={provider.get_key_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                                    padding: '8px 14px', borderRadius: 8,
-                                    background: 'var(--accent-glow)', color: 'var(--accent)',
-                                    fontSize: 11, fontWeight: 600, textDecoration: 'none',
-                                    transition: 'all 0.15s', flexShrink: 0,
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(108,99,255,0.15)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-glow)'}
+                                className="pp-btn pp-btn-ghost pp-btn-sm"
+                                style={{ textDecoration: 'none', background: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'transparent' }}
                             >
                                 Get API Key
-                                <ExternalLink style={{ width: 12, height: 12 }} />
+                                <ExternalLink style={{ width: 10, height: 10 }} />
                             </a>
                         )}
                     </div>

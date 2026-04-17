@@ -87,6 +87,16 @@ class AnalyticsRepository:
             "score_distribution": score_bins
         }
 
+    def log_interaction(self, event_type: str, article_id: int | None = None, platform: str | None = None, metadata: dict | None = None):
+        """Log a user interaction event."""
+        self.session.add(EngagementMetric(
+            raw_article_id=article_id, 
+            platform=platform, 
+            metric_type=event_type, 
+            metric_value=1.0
+        ))
+        self.session.commit()
+
     def log_engagement(self, article_id: int | None, platform: str | None, metric_type: str, value: float = 1.0):
         self.session.add(EngagementMetric(raw_article_id=article_id, platform=platform, metric_type=metric_type, metric_value=value))
         self.session.commit()

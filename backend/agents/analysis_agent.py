@@ -15,8 +15,10 @@ class AnalysisAgent(BaseAgent):
         self.analyzer = ArticleAnalyzer()
 
     def run(self, limit: int = None):
-        limit = limit or int(getenv("ANALYSIS_LIMIT", "3"))
-        self.log(f"Starting analysis (Limit: {limit})")
+        raw_limit = limit if limit is not None else int(getenv("ANALYSIS_LIMIT", "0"))
+        # 0 or negative → no cap (analyze all)
+        effective_limit = raw_limit if raw_limit > 0 else None
+        self.log(f"Starting analysis (Limit: {effective_limit if effective_limit is not None else 'all'})")
         
         # 1. Clean
         cleaned = self.cleaner.clean_all_articles()
@@ -27,7 +29,7 @@ class AnalysisAgent(BaseAgent):
         self.log(f"Deduplicated {deduped} articles")
         
         # 3. Enqueue Celery analysis, then wait so DB has state=analyzed before scoring
-        processed, raw_ids = self.analyzer.analyze_all_articles(limit=limit)
+        processed, raw_ids = self.analyzer.analyze_all_articles(limit=effective_limit)
         self.log(f"Enqueued {processed} articles for analysis")
         skip_wait = getenv("ANALYSIS_SKIP_WAIT", "").lower() in {"1", "true", "yes"}
         if raw_ids and not skip_wait:

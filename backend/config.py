@@ -104,7 +104,7 @@ class Settings:
     GMAIL_LABEL: str = os.getenv("GMAIL_LABEL", "")
     INGEST_CAP_PER_SOURCE: int = int(os.getenv("INGEST_CAP_PER_SOURCE", "50"))
     BACKLOG_THRESHOLD: int = int(os.getenv("BACKLOG_THRESHOLD", "200"))
-    ANALYSIS_LIMIT: int = int(os.getenv("ANALYSIS_LIMIT", "10"))
+    ANALYSIS_LIMIT: int = int(os.getenv("ANALYSIS_LIMIT", "0"))
     MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "5"))
 
     # ── Circuit Breaker ───────────────────────────────────────────────────────
