@@ -101,6 +101,39 @@
   --brand-gradient:     linear-gradient(135deg, #6C63FF 0%, #8B5CF6 100%);
 }
 
+@media (max-width: 1023px) {
+  .app-shell-content {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-hero {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .dashboard-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-hero-note {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .shell-header-search {
+    width: 100%;
+    order: 3;
+  }
+
+  .dashboard-hero-metric {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 120px;
+  }
+}
+
 /* =============================================================
    BASE STYLES
    ============================================================= */
@@ -283,6 +316,85 @@
   .pp-badge-accent { background: var(--accent-glow); color: var(--accent); }
   .pp-badge-teal   { background: var(--teal-dim);    color: var(--teal); }
   .pp-badge-gray   { background: rgba(255,255,255,0.06); color: var(--text2); }
+
+  .app-shell-content {
+    margin-left: var(--sidebar-w);
+  }
+
+  .shell-header-search {
+    width: min(340px, 100%);
+  }
+
+  .dashboard-hero {
+    background:
+      radial-gradient(circle at top left, rgba(108,99,255,0.2), transparent 36%),
+      linear-gradient(135deg, rgba(20,28,46,0.98), rgba(12,17,31,0.92));
+    border: 1px solid rgba(108,99,255,0.2);
+    border-radius: 22px;
+    padding: 24px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .dashboard-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2.1fr) minmax(260px, 1fr);
+    gap: 20px;
+    align-items: center;
+  }
+
+  .dashboard-hero-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .dashboard-hero-metric {
+    min-width: 132px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .dashboard-hero-metric-value {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .dashboard-hero-metric-label {
+    font-size: 11px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .dashboard-hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .dashboard-hero-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(8,11,20,0.42);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.5;
+  }
 
   /* Animations */
   @keyframes fadeIn {

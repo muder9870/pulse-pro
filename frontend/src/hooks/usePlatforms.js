@@ -12,7 +12,7 @@ export const usePlatforms = (storyId) => {
       return response.data || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     enabled: !!storyId,
   });
 };
@@ -28,7 +28,7 @@ export const useAvailablePlatforms = () => {
       return response.data || [];
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
-    cacheTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 60 * 60 * 1000, // 1 hour
   });
 };
 
@@ -43,7 +43,7 @@ export const usePlatformContent = (storyId, platform) => {
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     enabled: !!storyId && !!platform,
   });
 };

@@ -63,6 +63,12 @@ class ProcessedArticle(Base):
     priority_score: Mapped[float] = mapped_column(Float, default=0.0)
     priority_reason: Mapped[Optional[str]] = mapped_column(Text)
     generated: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Pipeline / StoryCard workflow (exposed on GET /api/stories as review_status, needs_review, etc.)
+    story_review_status: Mapped[str] = mapped_column(String(32), default="none")  # none | pending | approved
+    content_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    pipeline_needs_review: Mapped[bool] = mapped_column(Boolean, default=False)
+    ready_to_schedule: Mapped[bool] = mapped_column(Boolean, default=False)
     
     # LLM Validation fields (Phase A)
     llm_raw_output: Mapped[Optional[str]] = mapped_column(Text)

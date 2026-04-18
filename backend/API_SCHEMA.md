@@ -18,6 +18,8 @@ Returns: Array of Story objects (COMPACT)
 
 **Note:** Does NOT include quality or content data.
 
+**Pipeline fields (each story):** `review_status` (`none` \| `pending` \| `approved`), `content_approved` (bool), `needs_review` (bool), `ready_to_schedule` (bool), `scheduled_at` (ISO string or omitted). See `PATCH /api/stories/{id}/pipeline` to update flags (body may include any subset of `review_status`, `content_approved`, `needs_review`, `ready_to_schedule`).
+
 **To get complete story:**
 1. Fetch story from this list
 2. Call `GET /api/content/{id}/{platform}` for platform-specific content

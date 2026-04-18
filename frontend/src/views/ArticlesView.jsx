@@ -213,29 +213,16 @@ const ArticlesView = ({
             </div>
           ) : (
             <>
-              {scoreFiltered.map((story) => {
-                const score = story.total_score || 0;
-                const borderColor = score >= 50 ? 'var(--green)' : score >= 40 ? 'var(--amber)' : 'var(--text3)';
-                return (
-                  <div
-                    key={story.id}
-                    style={{
-                      borderLeft: `3px solid ${borderColor}`,
-                      borderRadius: 'var(--radius-lg)',
-                      overflow: 'hidden',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    <StoryCard
-                      story={story}
-                      initialPlatforms={selectedPlatforms}
-                      isSelected={selectedIds.has(story.id)}
-                      onToggleSelection={() => toggleSelection(story.id)}
-                      hasAnySelection={selectedIds.size > 0}
-                    />
-                  </div>
-                );
-              })}
+              {scoreFiltered.map((story) => (
+                <StoryCard
+                  key={story.id}
+                  story={story}
+                  initialPlatforms={selectedPlatforms}
+                  isSelected={selectedIds.has(story.id)}
+                  onToggleSelection={() => toggleSelection(story.id)}
+                  hasAnySelection={selectedIds.size > 0}
+                />
+              ))}
 
               {hasNextPage && (
                 <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 24 }}>

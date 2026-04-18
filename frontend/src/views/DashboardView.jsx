@@ -1,8 +1,8 @@
 import React from 'react';
 import {
-  Zap, TrendingUp, ArrowUpRight,
+  Zap,
   BarChart3, Calendar, BookOpen,
-  Image as ImageIcon, Mic, Search, Settings,
+  Mic, Search, Settings,
 } from 'lucide-react';
 import FeatureErrorBoundary from '../components/FeatureErrorBoundary';
 import PipelineStatus from '../components/PipelineStatus';
@@ -149,7 +149,7 @@ const DashboardView = ({ stories = [], loading, handleRunPipeline }) => {
       <div style={{ paddingBottom: 48 }}>
 
         {/* ── Page Header ── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 22 }}>
+        <div style={{ display: 'none' }}>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>
               Command Center
@@ -175,6 +175,62 @@ const DashboardView = ({ stories = [], loading, handleRunPipeline }) => {
         </div>
 
         {/* ── Focus Banner ── */}
+        <section className="dashboard-hero">
+          <div className="dashboard-hero-grid">
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12 }}>
+                Front Page Overview
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--text)', lineHeight: 1.05, marginBottom: 10 }}>
+                Command Center
+              </div>
+              <div style={{ fontSize: 14, color: 'var(--text2)', maxWidth: 620, lineHeight: 1.6 }}>
+                One page for intake health, launch readiness, and the next move across your publishing system.
+              </div>
+
+              <div className="dashboard-hero-metrics">
+                <div className="dashboard-hero-metric">
+                  <span className="dashboard-hero-metric-value">{totalArticles}</span>
+                  <span className="dashboard-hero-metric-label">tracked stories</span>
+                </div>
+                <div className="dashboard-hero-metric">
+                  <span className="dashboard-hero-metric-value">{qualityPct}%</span>
+                  <span className="dashboard-hero-metric-label">analysis coverage</span>
+                </div>
+                <div className="dashboard-hero-metric">
+                  <span className="dashboard-hero-metric-value">{contentReady}</span>
+                  <span className="dashboard-hero-metric-label">ready to publish</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="dashboard-hero-actions">
+              <button
+                onClick={contentReady > 0 ? () => navigate('/articles') : handleRunPipeline}
+                className="pp-btn pp-btn-primary"
+                style={{ justifyContent: 'center' }}
+              >
+                {contentReady > 0 ? 'Review Launch Queue' : 'Run Pipeline'}
+              </button>
+              <button
+                onClick={() => navigate(contentReady > 0 ? '/calendar' : '/settings')}
+                className="pp-btn"
+                style={{ justifyContent: 'center' }}
+              >
+                {contentReady > 0 ? 'Open Calendar' : 'Open Settings'}
+              </button>
+              <div className="dashboard-hero-note">
+                <span className="pp-badge pp-badge-accent">Priority</span>
+                <span>
+                  {contentReady > 0
+                    ? `${contentReady} article${contentReady !== 1 ? 's are' : ' is'} waiting for publication review.`
+                    : 'No launch-ready content yet. Run the pipeline to refresh the front of the queue.'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {contentReady > 0 && (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '3px solid var(--accent)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ fontSize: 20 }}>🚀</div>

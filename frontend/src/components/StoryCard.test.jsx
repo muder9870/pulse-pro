@@ -2,6 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // ---------------------------------------------------------------------------
 // Mock heavy sub-components so StoryCard can render in isolation
@@ -47,8 +48,16 @@ const makeStory = (overrides = {}) => ({
   ...overrides,
 });
 
-const renderCard = (storyOverrides = {}) =>
-  render(<StoryCard story={makeStory(storyOverrides)} />);
+const renderCard = (storyOverrides = {}) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <StoryCard story={makeStory(storyOverrides)} />
+    </QueryClientProvider>
+  );
+};
 
 const ALL_PLATFORMS = ['Twitter', 'LinkedIn', 'Blog', 'Instagram', 'Facebook', 'Reddit', 'YouTube', 'Threads'];
 
@@ -75,7 +84,7 @@ describe('StoryCard — Platform pills always visible', () => {
 
   it('does NOT render a standalone "Generate" button', () => {
     renderCard({ posts: [] });
-    // The only buttons should be platform pills + Explore Opportunities + blog action
+    // Primary CTA is pipeline-based (e.g. Generate Content), not a bare "Generate" button
     expect(screen.queryByRole('button', { name: /^generate$/i })).not.toBeInTheDocument();
   });
 

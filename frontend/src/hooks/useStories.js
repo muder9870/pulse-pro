@@ -32,7 +32,7 @@ export const useStories = (options = {}) => {
       return undefined; // no more pages
     },
     staleTime: 5 * 60 * 1000,
-    cacheTime: 10 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 
@@ -44,7 +44,7 @@ export const useStoryComplete = (storyId) => {
     queryKey: ['story-complete', storyId],
     queryFn: () => api.get(`/stories/${storyId}/complete`),
     staleTime: 5 * 60 * 1000,
-    cacheTime: 10 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     enabled: !!storyId
   });
 };
@@ -60,6 +60,6 @@ export const useSources = () => {
       return Array.isArray(data) ? data : [];
     },
     staleTime: 10 * 60 * 1000,
-    cacheTime: 30 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 };

@@ -57,6 +57,14 @@ class ApiClient {
   delete(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: 'DELETE' });
   }
+
+  patch(endpoint, body, options = {}) {
+    return this.request(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: body != null ? JSON.stringify(body) : undefined,
+    });
+  }
 }
 
 export const api = new ApiClient(BASE_URL);

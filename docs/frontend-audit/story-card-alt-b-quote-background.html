@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pulse Pro — Story card · Alt B (Quote + background)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:ital@0;1,wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #080B14;
+      --surface: #141C2E;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.12);
+      --text: #F0F4FF;
+      --text2: #8A96B0;
+      --text3: #5A6578;
+      --accent: #6C63FF;
+      --accent-glow: rgba(108,99,255,0.25);
+      --teal: #00D4A8;
+      --amber: #F59E0B;
+      --amber-dim: rgba(245,158,11,0.14);
+      --radius-lg: 14px;
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 28px 20px 40px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .intro h1 {
+      font-family: var(--font-display);
+      font-size: 21px;
+      margin: 0 0 6px;
+    }
+    .intro p {
+      color: var(--text2);
+      font-size: 13px;
+      max-width: 720px;
+      margin: 0 0 22px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 28px;
+      max-width: 1100px;
+    }
+
+    /* ═══ Variant 1: Quote card — soft image as background (blurred overlay) ═══ */
+    .quote-hero {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      min-height: 280px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.45);
+    }
+    .quote-hero__bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://picsum.photos/seed/pulsequote/1200/700');
+      background-size: cover;
+      background-position: center;
+      transform: scale(1.06);
+      filter: blur(14px) saturate(1.1);
+    }
+    .quote-hero__veil {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(8,11,20,0.88) 0%, rgba(20,28,46,0.82) 40%, rgba(8,11,20,0.9) 100%),
+        radial-gradient(ellipse 80% 60% at 20% 30%, rgba(108,99,255,0.18), transparent 55%);
+    }
+    .quote-hero__inner {
+      position: relative;
+      z-index: 1;
+      padding: 28px 26px 22px;
+      display: flex;
+      flex-direction: column;
+      min-height: 280px;
+    }
+    .quote-hero__mark {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 64px;
+      line-height: 0.4;
+      color: var(--accent);
+      opacity: 0.45;
+      user-select: none;
+    }
+    .quote-hero__text {
+      font-size: 17px;
+      font-weight: 500;
+      font-style: italic;
+      line-height: 1.55;
+      color: rgba(240,244,255,0.96);
+      margin: 0 0 16px;
+      flex: 1;
+      text-shadow: 0 2px 24px rgba(0,0,0,0.5);
+    }
+    .quote-hero__cite {
+      font-size: 11px;
+      font-style: normal;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 4px;
+    }
+    .quote-hero__title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 14px;
+      line-height: 1.35;
+      color: var(--text);
+    }
+    .quote-hero__row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .quote-hero__meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text2);
+    }
+    .pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--amber-dim);
+      color: var(--amber);
+      border: 1px solid rgba(245,158,11,0.35);
+    }
+
+    /* ═══ Variant 2: Compact — quote strip + solid card body (no full-bleed bg) ═══ */
+    .split-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    }
+    .split-card__quote-strip {
+      position: relative;
+      padding: 18px 20px 20px;
+      background: linear-gradient(120deg, rgba(108,99,255,0.12) 0%, rgba(8,11,20,0.95) 55%),
+        url('https://picsum.photos/seed/pulsestrip/900/200') center/cover no-repeat;
+    }
+    .split-card__quote-strip::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(8,11,20,0.92) 0%, rgba(8,11,20,0.75) 100%);
+    }
+    .split-card__quote-strip > * { position: relative; z-index: 1; }
+    .split-card__q {
+      font-size: 14px;
+      font-style: italic;
+      font-weight: 500;
+      color: rgba(240,244,255,0.95);
+      margin: 0;
+      line-height: 1.5;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+    }
+    .split-card__body {
+      padding: 16px 18px 18px;
+    }
+    .split-card__title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 6px;
+    }
+    .split-card__sub {
+      font-size: 12px;
+      color: var(--text2);
+      margin: 0 0 12px;
+    }
+    .split-card__actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-sm {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border2);
+      background: rgba(28,38,64,0.9);
+      color: var(--text2);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-sm.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .note {
+      margin-top: 24px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(13,17,32,0.9);
+      color: var(--text2);
+      font-size: 12px;
+      max-width: 1100px;
+    }
+    .note strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="intro">
+    <h1>Alt B — Quote card + image background</h1>
+    <p>
+      <strong>Top:</strong> Pull-quote as the hero, with a <strong>blurred, full-bleed image</strong> behind a dark veil (readable like a “story card with mood”).
+      <strong>Bottom:</strong> Narrow <strong>quote strip</strong> over a subtle image, then a normal solid body — easier to implement in React without heavy blur on every row.
+    </p>
+  </div>
+
+  <div class="grid">
+    <article class="quote-hero" aria-label="Story with featured quote">
+      <div class="quote-hero__bg" aria-hidden="true"></div>
+      <div class="quote-hero__veil" aria-hidden="true"></div>
+      <div class="quote-hero__inner">
+        <span class="quote-hero__mark">“</span>
+        <p class="quote-hero__text">
+          The key insight is that sparse routing does not hurt calibration when you align the expert load with the validation loss landscape.
+        </p>
+        <div class="quote-hero__cite">From abstract · summarized</div>
+        <h2 class="quote-hero__title">Efficient MoE at scale: routing without regret</h2>
+        <div class="quote-hero__row">
+          <span class="quote-hero__meta">arXiv · Score 88 · 2h ago</span>
+          <span class="pill">Ready to review</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="split-card">
+      <div class="split-card__quote-strip">
+        <p class="split-card__q">
+          “New streaming API cuts time-to-first-token by 40% in our benchmarks.”
+        </p>
+      </div>
+      <div class="split-card__body">
+        <h2 class="split-card__title">SDK v2.1 release notes &amp; migration</h2>
+        <p class="split-card__sub">GitHub · Engineering blog</p>
+        <div class="split-card__actions">
+          <button type="button" class="btn-sm primary">Explore opportunities</button>
+          <button type="button" class="btn-sm">Channels</button>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <p class="note">
+    <strong>Data mapping:</strong> Use <code>story.summary</code> first line, <code>story.angle</code>, or an LLM-generated <strong>pull quote</strong> field.
+    Background image: hero URL, first article image, or stock placeholder. For list performance, prefer the <strong>strip variant</strong> (lighter GPU) or disable blur on low-end devices via <code>prefers-reduced-motion</code> / coarse pointer media queries.
+  </p>
+</body>
+</html>

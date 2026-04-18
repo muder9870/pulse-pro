@@ -5,7 +5,6 @@ import SkipLink from './components/SkipLink';
 import ToastContainer from './components/ToastContainer';
 import QuickActions from './components/QuickActions';
 import Skeleton from './components/Skeleton';
-import { Button } from './components/ui';
 import { ToastProvider, useToastContext } from './hooks/useToast';
 import { AudioProvider } from './context/AudioContext';
 import { useBulkSelection } from './hooks/useBulkSelection';
@@ -445,6 +444,63 @@ function AppContent() {
   const uniqueSources = React.useMemo(() => 
     fetchedSources.length > 0 ? fetchedSources : [...new Set(stories.map(s => s.source))].filter(Boolean),
   [stories, fetchedSources]);
+
+  const readyCount = React.useMemo(
+    () => stories.filter((story) => story.posts && story.posts.length > 0 && !story.posted).length,
+    [stories]
+  );
+
+  const searchableViews = new Set(['articles', 'research']);
+  const shellMeta = {
+    dashboard: {
+      eyebrow: 'Front Page',
+      title: 'Command Center',
+      subtitle: readyCount > 0
+        ? `${readyCount} launch-ready stor${readyCount === 1 ? 'y' : 'ies'} waiting for review`
+        : 'Monitor intake, quality, and publishing readiness from one place.',
+    },
+    articles: {
+      eyebrow: 'Production',
+      title: activeSource ? `${activeSource} Feed` : 'Article Pipeline',
+      subtitle: `${filteredStories.length} stor${filteredStories.length === 1 ? 'y' : 'ies'} in the current view`,
+    },
+    analytics: {
+      eyebrow: 'Performance',
+      title: 'Metrics Engine',
+      subtitle: 'Track publishing quality, output velocity, and pipeline performance.',
+    },
+    calendar: {
+      eyebrow: 'Planning',
+      title: 'Editorial Calendar',
+      subtitle: 'Manage timing, scheduling, and editorial sequencing.',
+    },
+    media: {
+      eyebrow: 'Assets',
+      title: 'Media Library',
+      subtitle: 'Review generated media and reusable creative assets.',
+    },
+    research: {
+      eyebrow: 'Discovery',
+      title: 'Research Hub',
+      subtitle: 'Search and validate the upstream intelligence feeding the pipeline.',
+    },
+    podcast: {
+      eyebrow: 'Audio',
+      title: 'Podcast Studio',
+      subtitle: 'Shape audio output and monitor synthesis-ready material.',
+    },
+    settings: {
+      eyebrow: 'System',
+      title: 'Strategy Lab',
+      subtitle: 'Configure providers, workflows, and publishing defaults.',
+    },
+  };
+  const activeShellMeta = shellMeta[currentView] || {
+    eyebrow: 'Pulse Pro',
+    title: currentView.charAt(0).toUpperCase() + currentView.slice(1),
+    subtitle: 'Contextual workspace controls for the current route.',
+  };
+  const showShellSearch = searchableViews.has(currentView);
 
   // Handle Select All for filtered stories (Requirement 3.2, 3.3, 3.5)
   const handleSelectAllFiltered = React.useCallback(() => {
@@ -1133,36 +1189,85 @@ function AppContent() {
         activeTheme={activeTheme}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen" style={{ marginLeft: 'var(--sidebar-w)' }}>
+      <div className="app-shell-content flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Header — Pulse Pro style */}
         <header
-          className="sticky top-0 z-10 flex items-center gap-2.5 flex-shrink-0"
-          style={{ height: 'var(--header-h)', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', padding: '0 20px' }}
+          className="sticky top-0 z-20 flex items-center gap-3 flex-shrink-0 flex-wrap"
+          style={{
+            minHeight: 'var(--header-h)',
+            background: 'rgba(13, 17, 32, 0.92)',
+            borderBottom: '1px solid var(--border)',
+            padding: '10px 20px',
+            backdropFilter: 'blur(14px)',
+          }}
         >
           {/* Mobile menu toggle */}
-          <button
-            className="lg:hidden flex-shrink-0"
-            onClick={() => setMobileMenuOpen(true)}
-            style={{ color: 'var(--text2)' }}
-          >
-            <Menu className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              className="lg:hidden flex-shrink-0"
+              onClick={() => setMobileMenuOpen(true)}
+              style={{
+                color: 'var(--text2)',
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
+              }}
+              aria-label="Open navigation"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+
+            <div className="min-w-0">
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>
+                {activeShellMeta.eyebrow}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
+                  {activeShellMeta.title}
+                </div>
+                {currentView === 'dashboard' && readyCount > 0 && (
+                  <button
+                    onClick={() => navigate('/articles')}
+                    className="hidden md:inline-flex items-center gap-1.5 flex-shrink-0"
+                    style={{
+                      background: 'var(--accent-glow)',
+                      border: '1px solid var(--accent)',
+                      borderRadius: 999,
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: 'var(--accent)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Zap style={{ width: 12, height: 12 }} />
+                    {readyCount} ready to launch
+                  </button>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
+                {activeShellMeta.subtitle}
+              </div>
+            </div>
+          </div>
 
           {/* Search */}
+          {showShellSearch && (
           <div
-            className="hidden sm:flex items-center gap-2 flex-shrink-0"
+            className="shell-header-search flex items-center gap-2 flex-shrink-0"
             style={{
-              width: 220,
               background: 'var(--surface)',
               border: '1px solid var(--border)',
-              borderRadius: 8,
-              padding: '6px 12px',
+              borderRadius: 12,
+              padding: '8px 12px',
               transition: 'all 0.2s',
             }}
             onFocusCapture={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--bg3)'; }}
             onBlurCapture={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
           >
-            <Search style={{ width: 13, height: 13, color: 'var(--text3)', flexShrink: 0 }} />
+            <Search style={{ width: 14, height: 14, color: 'var(--text3)', flexShrink: 0 }} />
             <input
               type="text"
               placeholder="Search articles, research…"
@@ -1175,6 +1280,7 @@ function AppContent() {
               }}
             />
           </div>
+          )}
 
           {/* Ready to Launch pill */}
           {(() => {
@@ -1182,7 +1288,7 @@ function AppContent() {
             return readyCount > 0 ? (
               <button
                 onClick={() => navigate('/articles')}
-                className="hidden sm:flex items-center gap-1.5 flex-shrink-0"
+                className="hidden"
                 style={{
                   background: 'var(--accent-glow)',
                   border: '1px solid var(--accent)',
@@ -1205,7 +1311,7 @@ function AppContent() {
           <button
             onClick={handleRunPipeline}
             disabled={pipelineRunning}
-            className="hidden sm:flex items-center gap-1.5 flex-shrink-0"
+            className="hidden"
             style={{
               background: pipelineRunning ? 'var(--amber-dim)' : 'var(--teal-dim)',
               border: `1px solid ${pipelineRunning ? 'var(--amber)' : 'var(--teal)'}`,
@@ -1224,13 +1330,13 @@ function AppContent() {
           </button>
 
           {/* Spacer */}
-          <div className="flex-1" />
+          <div className="hidden" />
 
           {/* Calendar icon btn */}
           <button
             onClick={() => navigate('/calendar')}
             title="Calendar"
-            className="flex items-center justify-center flex-shrink-0"
+            className="hidden"
             style={{
               width: 32, height: 32,
               borderRadius: 8,
@@ -1250,7 +1356,7 @@ function AppContent() {
           <button
             onClick={handleExport}
             title="Export"
-            className="flex items-center justify-center flex-shrink-0"
+            className="hidden"
             style={{
               width: 32, height: 32,
               borderRadius: 8,
@@ -1269,7 +1375,7 @@ function AppContent() {
           {/* Notifications icon btn */}
           <button
             title="Notifications"
-            className="flex items-center justify-center flex-shrink-0 relative"
+            className="hidden"
             style={{
               width: 32, height: 32,
               borderRadius: 8,
@@ -1294,7 +1400,7 @@ function AppContent() {
 
           {/* Ready status badge */}
           <div
-            className="hidden sm:flex items-center gap-1.5 flex-shrink-0"
+            className="hidden"
             style={{
               padding: '5px 10px',
               borderRadius: 8,
@@ -1315,6 +1421,96 @@ function AppContent() {
               className={pipelineRunning ? '' : 'animate-pulse-dot'}
             />
             {pipelineRunning ? 'Syncing' : 'Ready'}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap ml-auto">
+            <div
+              className="hidden md:flex items-center gap-1.5 flex-shrink-0"
+              style={{
+                padding: '6px 10px',
+                borderRadius: 999,
+                background: pipelineRunning ? 'var(--amber-dim)' : 'var(--green-dim)',
+                border: `1px solid ${pipelineRunning ? 'var(--amber)' : 'var(--green)'}`,
+                color: pipelineRunning ? 'var(--amber)' : 'var(--green)',
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: pipelineRunning ? 'var(--amber)' : 'var(--green)',
+                  boxShadow: `0 0 6px ${pipelineRunning ? 'var(--amber)' : 'var(--green)'}`,
+                  flexShrink: 0,
+                  display: 'inline-block',
+                }}
+                className={pipelineRunning ? '' : 'animate-pulse-dot'}
+              />
+              {pipelineRunning ? `Syncing ${pipelineElapsed}s` : 'Pipeline ready'}
+            </div>
+
+            <button
+              onClick={handleRunPipeline}
+              disabled={pipelineRunning}
+              className="flex items-center gap-1.5 flex-shrink-0"
+              style={{
+                background: pipelineRunning ? 'var(--amber-dim)' : 'var(--teal-dim)',
+                border: `1px solid ${pipelineRunning ? 'var(--amber)' : 'var(--teal)'}`,
+                borderRadius: 10,
+                padding: '8px 12px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: pipelineRunning ? 'var(--amber)' : 'var(--teal)',
+                cursor: pipelineRunning ? 'not-allowed' : 'pointer',
+                whiteSpace: 'nowrap',
+                opacity: pipelineRunning ? 0.8 : 1,
+              }}
+            >
+              <RefreshCw style={{ width: 13, height: 13 }} className={pipelineRunning ? 'animate-spin' : ''} />
+              <span>{pipelineRunning ? 'Syncing' : 'Run pipeline'}</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/calendar')}
+              title="Calendar"
+              className="hidden sm:flex items-center justify-center flex-shrink-0"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text2)',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+            >
+              <Calendar style={{ width: 16, height: 16, opacity: 0.7 }} />
+            </button>
+
+            {currentView !== 'dashboard' && (
+              <button
+                onClick={handleExport}
+                title="Export"
+                className="hidden sm:flex items-center justify-center flex-shrink-0"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text2)',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+              >
+                <Download style={{ width: 16, height: 16, opacity: 0.7 }} />
+              </button>
+            )}
           </div>
         </header>
 
