@@ -7,10 +7,12 @@ frontend/.htpasswd
 
 # Python
 __pycache__/
+*/__pycache__/
 *.pyc
 *.pyo
 .venv/
 .pytest_cache/
+.hypothesis/
 *.egg-info/
 
 # Node
@@ -32,6 +34,7 @@ ollama_data/
 
 # Editor and IDE
 .vscode/
+.idea/
 
 # Node
 node_modules/
@@ -39,6 +42,7 @@ frontend/node_modules/
 
 # Build artifacts
 dist/
+frontend/node_modules/.vitest/
 
 # Secrets and certificates
 *.pem
