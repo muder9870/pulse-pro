@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
@@ -45,7 +46,7 @@ export default function EnhancedAnalytics({ onBack }) {
   const fetchAnalyticsData = async () => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch('/api/analytics');
+      const res = await apiFetch('/analytics');
       if (!res.ok) throw new Error(`Failed to fetch analytics: ${res.status}`);
       const data = await res.json();
 

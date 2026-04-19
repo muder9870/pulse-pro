@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { BookOpen, Search, FlaskConical, ExternalLink, RefreshCw } from 'lucide-react';
 import PaperDetailsModal from './PaperDetailsModal';
 
@@ -26,7 +27,7 @@ function ResearchView() {
   const fetchPapers = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/stories?limit=100&source=arxiv&sort=score');
+      const res = await apiFetch('/stories?limit=100&source=arxiv&sort=score');
       const data = await res.json();
       setPapers(data);
     } catch (err) { console.error(err); }
@@ -40,13 +41,13 @@ function ResearchView() {
     setAnalysis(null);
     setModalOpen(true);
     try {
-      const res = await fetch(`/api/research/analysis/${paper.id}`);
+      const res = await apiFetch(`research/analysis/${paper.id}`);
       const data = await res.json();
       if (res.ok && data.analysis) {
         setAnalysis(data.analysis);
       } else {
         setDeepDiving(true);
-        const diveRes = await fetch('/api/research/deep-dive', {
+        const diveRes = await apiFetch('/research/deep-dive', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ article_id: paper.id })
@@ -62,8 +63,8 @@ function ResearchView() {
   const handleRegenerate = async () => {
     setDeepDiving(true); setAnalysis(null);
     try {
-      await fetch(`/api/research/analysis/${selectedPaper.id}`, { method: 'DELETE' });
-      const diveRes = await fetch('/api/research/deep-dive', {
+      await apiFetch(`research/analysis/${selectedPaper.id}`, { method: 'DELETE' });
+      const diveRes = await apiFetch('/research/deep-dive', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ article_id: selectedPaper.id })

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Plus, Trash2, RefreshCw, RotateCcw, Tag } from 'lucide-react';
 
 const DEFAULT_KEYWORDS = [
@@ -127,7 +128,7 @@ function KeywordsManager() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/keywords');
+      const response = await apiFetch('/keywords');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setKeywords(data);
@@ -146,7 +147,7 @@ function KeywordsManager() {
     setAdding(true);
     setAddError(null);
     try {
-      const response = await fetch('/api/keywords', {
+      const response = await apiFetch('/keywords', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keyword: trimmed, category: newCategory.trim() || null }),
@@ -172,7 +173,7 @@ function KeywordsManager() {
     if (!window.confirm('Delete this keyword?')) return;
 
     try {
-      const response = await fetch(`/api/keywords/${id}`, { method: 'DELETE' });
+      const response = await apiFetch(`keywords/${id}`, { method: 'DELETE' });
       if (response.status === 404 || response.ok) {
         await fetchKeywords();
       } else {
@@ -189,7 +190,7 @@ function KeywordsManager() {
 
     setResetting(true);
     try {
-      const response = await fetch('/api/keywords/bulk', {
+      const response = await apiFetch('/keywords/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keywords: DEFAULT_KEYWORDS.map(k => k.keyword) }),

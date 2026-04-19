@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { ChevronLeft, ChevronRight, RefreshCw, Clock, Trash2, AlertCircle, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -64,7 +65,7 @@ export default function ContentCalendar() {
   const fetchQueue = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/schedule/list');
+      const res = await apiFetch('/schedule/list');
       const data = await res.json();
       if (res.ok) {
         // API returns either { posts: [] } or a flat array
@@ -111,7 +112,7 @@ export default function ContentCalendar() {
     e.stopPropagation();
     if (!window.confirm('Remove this scheduled post? The article and its generated content will NOT be deleted.')) return;
     try {
-      const res = await fetch(`/api/schedule/${postId}`, { method: 'DELETE' });
+      const res = await apiFetch(`schedule/${postId}`, { method: 'DELETE' });
       if (res.ok) {
         setPosts(prev => prev.filter(p => p.id !== postId));
       } else {

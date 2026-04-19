@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import {
     Activity, CheckCircle, AlertCircle, Clock, RefreshCw, ShieldCheck,
     Database, Cpu, Zap, BarChart3, Flag, GitBranch, Server, TrendingDown
@@ -32,7 +33,7 @@ export default function SystemHealth({ onBack }) {
     const fetchHealth = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/system/health');
+            const res = await apiFetch('/system/health');
             const data = await res.json();
             if (res.ok) {
                 setHealth(data);

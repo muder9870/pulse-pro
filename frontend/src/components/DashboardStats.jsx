@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { FileText, Sparkles, CheckCircle, TrendingUp, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SkeletonStats } from './ui/Skeleton';
@@ -22,7 +23,7 @@ const DashboardStats = React.memo(({ activeTheme }) => {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/stats/dashboard');
+      const res = await apiFetch('/stats/dashboard');
       if (!res.ok) {
         throw new Error(`Status ${res.status}`);
       }
@@ -53,7 +54,7 @@ const DashboardStats = React.memo(({ activeTheme }) => {
 
   const fetchStatsIndividually = async () => {
     try {
-      const storiesRes = await fetch('/api/stories?limit=all');
+      const storiesRes = await apiFetch('/stories?limit=all');
       if (!storiesRes.ok) {
         throw new Error(`Failed to fetch stories: ${storiesRes.status}`);
       }

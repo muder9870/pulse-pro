@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Share2, Plus, Trash2, Globe, RefreshCw, AlertCircle, CheckCircle2, Shield, Activity, Play } from 'lucide-react';
 import Input from './ui/Input';
 import Checkbox from './ui/Checkbox';
@@ -24,7 +25,7 @@ const WebhookManager = () => {
     const fetchWebhooks = async () => {
         setLoading(true);
         try {
-            const response = await fetch('/api/integrations/webhooks');
+            const response = await apiFetch('/integrations/webhooks');
             const data = await response.json();
             setWebhooks(data);
         } catch (err) {
@@ -37,7 +38,7 @@ const WebhookManager = () => {
     const handleAddWebhook = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/integrations/webhooks', {
+            const response = await apiFetch('/integrations/webhooks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newWebhook),
@@ -59,7 +60,7 @@ const WebhookManager = () => {
     const handleDeleteWebhook = async (id) => {
         if (!window.confirm('Delete this webhook?')) return;
         try {
-            await fetch(`/api/integrations/webhooks/${id}`, { method: 'DELETE' });
+            await apiFetch(`integrations/webhooks/${id}`, { method: 'DELETE' });
             setSuccess('Webhook removed');
             fetchWebhooks();
             setTimeout(() => setSuccess(null), 2000);
@@ -70,7 +71,7 @@ const WebhookManager = () => {
 
     const handleToggleWebhook = async (id, enabled) => {
         try {
-            await fetch(`/api/integrations/webhooks/${id}/toggle`, {
+            await apiFetch(`integrations/webhooks/${id}/toggle`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled: !enabled }),
@@ -84,7 +85,7 @@ const WebhookManager = () => {
     const handleTestWebhook = async () => {
         setTesting(true);
         try {
-            const response = await fetch('/api/integrations/test', { method: 'POST' });
+            const response = await apiFetch('/integrations/test', { method: 'POST' });
             if (!response.ok) throw new Error('Test failed');
             setSuccess('Test event dispatched to all enabled webhooks!');
             setTimeout(() => setSuccess(null), 3000);

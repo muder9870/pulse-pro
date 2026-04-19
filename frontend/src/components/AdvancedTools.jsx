@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import {
     Terminal, RefreshCw, Download, Zap, Database, Activity,
     CheckCircle, AlertCircle, Clock, BarChart3, Cpu, Trash2,
@@ -59,7 +60,7 @@ export default function AdvancedTools({ activeTheme }) {
     const fetchLlmProviders = async () => {
         setLlmLoading(true);
         try {
-            const res = await fetch('/api/system/llm-providers');
+            const res = await apiFetch('/system/llm-providers');
             if (res.ok) setLlmProviders(await res.json());
         } catch { /* silent */ } finally {
             setLlmLoading(false);
@@ -75,7 +76,7 @@ export default function AdvancedTools({ activeTheme }) {
 
     const fetchPipelineStatus = async () => {
         try {
-            const res = await fetch('/api/pipeline/status');
+            const res = await apiFetch('/pipeline/status');
             const data = await res.json();
             setPipelineStatus(data);
         } catch { /* silent */ }
@@ -91,7 +92,7 @@ export default function AdvancedTools({ activeTheme }) {
         setPipelineRunning(true);
         setPipelineMsg(null);
         try {
-            const res = await fetch('/api/pipeline/run', { method: 'POST' });
+            const res = await apiFetch('/pipeline/run', { method: 'POST' });
             const data = await res.json();
             setPipelineMsg({ ok: res.ok, text: data.message || (res.ok ? 'Pipeline started' : data.error) });
         } catch (e) {
@@ -109,7 +110,7 @@ export default function AdvancedTools({ activeTheme }) {
     const fetchPerf = async () => {
         setPerfLoading(true);
         try {
-            const res = await fetch('/api/performance/metrics');
+            const res = await apiFetch('/performance/metrics');
             if (res.ok) setPerfMetrics(await res.json());
         } catch { /* silent */ } finally {
             setPerfLoading(false);
@@ -125,7 +126,7 @@ export default function AdvancedTools({ activeTheme }) {
     const fetchCache = async () => {
         setCacheLoading(true);
         try {
-            const res = await fetch('/api/performance/cache-stats');
+            const res = await apiFetch('/performance/cache-stats');
             const data = await res.json();
             if (res.ok) {
                 setCacheStats(data);
@@ -144,7 +145,7 @@ export default function AdvancedTools({ activeTheme }) {
 
     const fetchRealtime = async () => {
         try {
-            const res = await fetch('/api/metrics/realtime');
+            const res = await apiFetch('/metrics/realtime');
             if (res.ok) {
                 const data = await res.json();
                 // Only show if there's non-zero data
@@ -169,7 +170,7 @@ export default function AdvancedTools({ activeTheme }) {
         setCleanupLoading(true);
         setCleanupResult(null);
         try {
-            const res = await fetch('/api/system/cleanup-orphans', { method: 'POST' });
+            const res = await apiFetch('/system/cleanup-orphans', { method: 'POST' });
             const data = await res.json();
             setCleanupResult({ ok: res.ok, data });
         } catch (e) {
@@ -187,7 +188,7 @@ export default function AdvancedTools({ activeTheme }) {
         setRssHealthLoading(true);
         setRssHealthResult(null);
         try {
-            const res = await fetch('/api/rss/health-check', { method: 'POST' });
+            const res = await apiFetch('/rss/health-check', { method: 'POST' });
             const data = await res.json();
             setRssHealthResult({ ok: res.ok, data });
         } catch (e) {
@@ -206,7 +207,7 @@ export default function AdvancedTools({ activeTheme }) {
         setExportMsg(null);
         try {
             // Use CSV format for a clean file download
-            const res = await fetch('/api/export?format=csv&limit=500');
+            const res = await apiFetch('/export?format=csv&limit=500');
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 setExportMsg({ ok: false, text: err.error || 'Export failed' });
@@ -233,7 +234,7 @@ export default function AdvancedTools({ activeTheme }) {
 
     const fetchSchedule = async () => {
         try {
-            const res = await fetch('/api/schedule');
+            const res = await apiFetch('/schedule');
             if (res.ok) setScheduleInfo(await res.json());
         } catch { /* silent */ }
     };
@@ -243,7 +244,7 @@ export default function AdvancedTools({ activeTheme }) {
     const toggleScheduler = async (enable) => {
         setScheduleLoading(true);
         try {
-            await fetch(`/api/scheduler/${enable ? 'enable' : 'disable'}`, { method: 'POST' });
+            await apiFetch(`scheduler/${enable ? 'enable' : 'disable'}`, { method: 'POST' });
             await fetchSchedule();
         } catch { /* silent */ } finally {
             setScheduleLoading(false);

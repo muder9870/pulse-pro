@@ -17,7 +17,7 @@ import {
     Bell
 } from 'lucide-react';
 import NotificationPanel from './NotificationPanel';
-import { useAppStore } from '../stores/appStore';
+import { useAppStore } from '../store/appStore';
 
 const SOURCE_COLORS = {
     arxiv:  '#EF4444',
@@ -45,7 +45,7 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
     const currentView = location.pathname.replace(/^\//, '') || 'dashboard';
     const [sourcesExpanded, setSourcesExpanded] = useState(true);
     const [notificationOpen, setNotificationOpen] = useState(false);
-    const { ui } = useAppStore();
+    const notifications = useAppStore((s) => s.notifications);
 
     // Focus trap refs
     const sidebarRef = React.useRef(null);
@@ -299,7 +299,7 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
                         </div>
                         {[
                             { id: 'settings', label: 'Settings Hub', icon: Settings },
-                            { id: 'notifications', label: 'Notifications', icon: Bell, badge: ui.notifications.length, isAction: true }
+                            { id: 'notifications', label: 'Notifications', icon: Bell, badge: notifications.length, isAction: true }
                         ].map((item) => {
                             const active = isActive(item.id);
                             return (
@@ -393,7 +393,7 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
             <NotificationPanel
                 isOpen={notificationOpen}
                 onClose={() => setNotificationOpen(false)}
-                notifications={ui.notifications}
+                notifications={notifications}
                 onRemoveNotification={(id) => {
                     const { removeNotification } = useAppStore.getState();
                     removeNotification(id);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Sparkles, Brain, Info, RefreshCw, UserCheck } from 'lucide-react';
 import Button from './ui/Button';
 
@@ -10,7 +11,7 @@ export default function StyleProfile() {
     const fetchStyles = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/personalization/style');
+            const res = await apiFetch('/personalization/style');
             const data = await res.json();
             if (res.ok) {
                 setStyles(data.style || {});

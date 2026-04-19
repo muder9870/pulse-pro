@@ -24,7 +24,7 @@ import MediaPanel from './Story/MediaPanel';
 import { QualityModal, TagsModal, EditModal } from './Story/StoryModals';
 import Checkbox from './ui/Checkbox';
 import { useQueryClient } from '@tanstack/react-query';
-import { api } from '../api/client';
+import { api, apiFetch } from '../api/client';
 import {
   PIPELINE_STATES,
   getStoryState,
@@ -287,17 +287,17 @@ const StoryCard = React.memo(
     const fetchContent = async (platform) => {
       if (generatedContent[platform]) return;
       try {
-        let res = await fetch(`/api/content/${story.id}/${platform}`);
+        let res = await apiFetch(`content/${story.id}/${platform}`);
         let data = await res.json();
         if (!data.content) {
-          res = await fetch('/api/generate', {
+          res = await apiFetch('/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ article_id: story.id, platform }),
           });
           if (!res.ok) throw new Error('Generation failed');
           await res.json();
-          const recRes = await fetch(`/api/content/${story.id}/${platform}`);
+          const recRes = await apiFetch(`content/${story.id}/${platform}`);
           data = await recRes.json();
         }
         setGeneratedContent((prev) => ({
@@ -318,7 +318,7 @@ const StoryCard = React.memo(
 
     const fetchMedia = async () => {
       try {
-        const res = await fetch(`/api/media/assets/${story.id}`);
+        const res = await apiFetch(`media/assets/${story.id}`);
         const data = await res.json();
         if (res.ok) setMedia(data.images || []);
       } catch (_e) {
@@ -328,7 +328,7 @@ const StoryCard = React.memo(
 
     const fetchAudio = async () => {
       try {
-        const res = await fetch(`/api/audio/${story.id}`);
+        const res = await apiFetch(`audio/${story.id}`);
         const data = await res.json();
         if (res.ok) setAudioAssets(data.audio || []);
       } catch (_e) {
@@ -339,7 +339,7 @@ const StoryCard = React.memo(
     const fetchHashtags = async (platform) => {
       if (recommendedHashtags[platform]) return;
       try {
-        const res = await fetch(`/api/hashtags/${story.id}/${platform}`);
+        const res = await apiFetch(`hashtags/${story.id}/${platform}`);
         const data = await res.json();
         if (res.ok) {
           const normalized = (data.hashtags || []).map(normalizeHashtag).filter(Boolean);
@@ -354,7 +354,7 @@ const StoryCard = React.memo(
       if (!content || qualityData[platform]) return;
       setQualityLoading((prev) => ({ ...prev, [platform]: true }));
       try {
-        const res = await fetch('/api/content/quality-check', {
+        const res = await apiFetch('/content/quality-check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content, platform }),
@@ -370,7 +370,7 @@ const StoryCard = React.memo(
 
     const handleFeedback = async (platform, isPositive, comment = null, editedContent = null) => {
       try {
-        await fetch('/api/personalization/feedback', {
+        await apiFetch('/personalization/feedback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -391,7 +391,7 @@ const StoryCard = React.memo(
       const current = generatedContent?.[platform];
       if (!current?.text) return;
       try {
-        const res = await fetch('/api/content/posted', {
+        const res = await apiFetch('/content/posted', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ article_id: story.id, platform, posted: !current.posted }),
@@ -415,7 +415,7 @@ const StoryCard = React.memo(
       if (!editPlatform) return;
       setEditLoading(true);
       try {
-        const res = await fetch('/api/content/update', {
+        const res = await apiFetch('/content/update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ article_id: story.id, platform: editPlatform, content: editText }),
@@ -438,7 +438,7 @@ const StoryCard = React.memo(
     const saveTags = async () => {
       setTagsLoading(true);
       try {
-        const res = await fetch(`/api/tags/${story.id}`, {
+        const res = await apiFetch(`tags/${story.id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tags: Array.isArray(tagsOverride) ? tagsOverride : [] }),
@@ -458,7 +458,7 @@ const StoryCard = React.memo(
     const autoGenerateTags = async () => {
       setTagsLoading(true);
       try {
-        const res = await fetch('/api/tags/generate', {
+        const res = await apiFetch('/tags/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ article_id: story.id, overwrite: true, max_tags: 6 }),
@@ -486,7 +486,7 @@ const StoryCard = React.memo(
 
     const logEngagement = async (type, platform = null) => {
       try {
-        await fetch('/api/analytics/log', {
+        await apiFetch('/analytics/log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ article_id: story.id, platform, metric_type: type, value: 1.0 }),
@@ -520,7 +520,7 @@ const StoryCard = React.memo(
       });
 
       try {
-        const res = await fetch('/api/generate', {
+        const res = await apiFetch('/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ article_id: story.id, platforms: platformsToGenerate }),
@@ -529,7 +529,7 @@ const StoryCard = React.memo(
         if (!res.ok) throw new Error(data.error || 'Generation failed');
 
         for (const p of platformsToGenerate) {
-          const contentRes = await fetch(`/api/content/${story.id}/${p}`);
+          const contentRes = await apiFetch(`content/${story.id}/${p}`);
           const contentData = await contentRes.json();
           if (contentRes.ok && contentData.content) {
             setGeneratedContent((prev) => ({

@@ -12,6 +12,7 @@ import { useStories, useSources } from './hooks/useStories';
 import { usePipeline } from './hooks/usePipeline';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from './store/appStore';
+import { apiFetch } from './api/client';
 // View components — lazy loaded per route to reduce initial bundle size
 const AnalyticsView = lazy(() => import('./views/AnalyticsView'));
 const CalendarView = lazy(() => import('./views/CalendarView'));
@@ -225,7 +226,7 @@ function AppContent() {
     const POLL_INTERVAL = 2000;      // 2 seconds
 
     try {
-        const response = await fetch('/api/pipeline/run', { method: 'POST' });
+        const response = await apiFetch('/pipeline/run', { method: 'POST' });
         if (!response.ok) {
             toast.error('Failed to start pipeline');
             return;
@@ -248,7 +249,7 @@ function AppContent() {
             }
 
             try {
-                const statusResp = await fetch('/api/pipeline/status');
+                const statusResp = await apiFetch('/pipeline/status');
                 if (!statusResp.ok) {
                     toast.error('Failed to fetch pipeline status');
                     setPipelineRunning(false);
@@ -297,7 +298,7 @@ function AppContent() {
     setScheduleOpen(true);
     setScheduleError(null);
     try {
-      const res = await fetch('/api/schedule');
+      const res = await apiFetch('/schedule');
       if (!res.ok) throw new Error('Failed to load schedule');
       const data = await res.json();
       const sched = data.schedule || {};
@@ -316,7 +317,7 @@ function AppContent() {
     setScheduleLoading(true);
     setScheduleError(null);
     try {
-      const res = await fetch('/api/schedule', {
+      const res = await apiFetch('/schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -363,7 +364,7 @@ function AppContent() {
 
   const handleExport = async () => {
     try {
-      const res = await fetch('/api/export');
+      const res = await apiFetch('/export');
       const data = await res.json();
       if (data.markdown) {
         const blob = new Blob([data.markdown], { type: 'text/markdown' });
@@ -571,7 +572,7 @@ function AppContent() {
         
         try {
           // Call /api/generate endpoint for each article (Requirement 4.1)
-          const response = await fetch('/api/generate', {
+          const response = await apiFetch('/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ article_id: articleId })
@@ -678,7 +679,7 @@ function AppContent() {
         }));
         
         try {
-          const response = await fetch('/api/schedule/queue', {
+          const response = await apiFetch('/schedule/queue', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -789,7 +790,7 @@ function AppContent() {
         
         try {
           // First, fetch existing tags for this article (Requirement 6.4)
-          const getResponse = await fetch(`/api/tags/${articleId}`);
+          const getResponse = await apiFetch(`/tags/${articleId}`);
           let existingTags = [];
           
           if (getResponse.ok) {
@@ -801,7 +802,7 @@ function AppContent() {
           const mergedTags = [...new Set([...existingTags, ...tags])]; // Use Set to avoid duplicates
 
           // POST the merged tags
-          const postResponse = await fetch(`/api/tags/${articleId}`, {
+          const postResponse = await apiFetch(`/tags/${articleId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tags: mergedTags })
@@ -888,7 +889,7 @@ function AppContent() {
 
     try {
       // Call /api/export/batch endpoint with array of selected article IDs (Requirement 7.1)
-      const response = await fetch('/api/export/batch', {
+      const response = await apiFetch('/export/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ article_ids: articleIds })
@@ -979,13 +980,13 @@ function AppContent() {
         
         for (const platform of platforms) {
           try {
-            const checkResponse = await fetch(`/api/content/${articleId}/${platform}`);
+            const checkResponse = await apiFetch(`/content/${articleId}/${platform}`);
             if (!checkResponse.ok) continue;
 
             const contentData = await checkResponse.json();
             
             if (contentData.content && !contentData.posted) {
-              const res = await fetch('/api/content/posted', {
+              const res = await apiFetch('/content/posted', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1089,7 +1090,7 @@ function AppContent() {
 
     try {
       // Call /api/articles/bulk-delete endpoint with array of article IDs (Requirement 9.3)
-      const response = await fetch('/api/articles/bulk-delete', {
+      const response = await apiFetch('/articles/bulk-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ article_ids: articleIds })

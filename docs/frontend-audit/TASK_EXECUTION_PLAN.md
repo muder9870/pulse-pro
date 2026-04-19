@@ -5,12 +5,20 @@ Granular tasks for implementing audit recommendations. Each task includes **file
 **Priority:** P0 = blocker, P1 = high, P2 = medium, P3 = low  
 **Complexity:** Low / Medium / High  
 
+### Execution workflow
+
+- After **each task** in a phase: update this file (status line / legend).
+- After **each phase** (P0, P1, …): run a **frontend build**, **commit**, then wait for **confirmation** before starting the next phase.
+
 ### Status legend
 
 Tasks marked **Done** reflect the current repo; others remain open.
 
 | ID | Status |
 |----|--------|
+| **T1** | **Done** — Single `useAppStore` in `store/appStore.js` (notifications merged); `stores/appStore.js` removed; `stores/index.js` re-exports from `store/appStore`. |
+| **T2** | **Done** — Removed unwired `useDataMigration.jsx` and `DataMigration.jsx` (no backend routes; not imported elsewhere). |
+| **T3** | **Done** — `buildApiUrl` + `apiFetch` in `api/client.js`; raw `fetch('/api/...')` replaced across `frontend/src` (incl. `App.jsx`, `PipelineContext`, components). |
 | **T4** | **Done** — `gcTime` in `useStories`, `usePlatforms`, `useAnalytics`. |
 | **T6** | **Done** — StoryCard platform chips use design tokens. |
 | **T6b** | **Done** — StoryCard shell + expanded panel use Pulse surfaces (`--surface`, `--bg2`, `--border`). |
@@ -29,6 +37,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P0 |
 | **Complexity** | High |
 | **Dependencies** | None |
+| **Status** | **Done** — Notifications live in `store/appStore.js`; Sidebar imports `../store/appStore`. |
 
 ---
 
@@ -41,6 +50,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P0 |
 | **Complexity** | Medium (remove) / High (full stack implement) |
 | **Dependencies** | T1 optional (parallel) |
+| **Status** | **Done** — Files deleted; no app imports. |
 
 ---
 
@@ -53,6 +63,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P0 |
 | **Complexity** | High |
 | **Dependencies** | None (coordinate with T2 for migration paths) |
+| **Status** | **Done** — See `buildApiUrl`, `apiFetch`, `normalizeApiPath` in `frontend/src/api/client.js`. |
 
 ---
 

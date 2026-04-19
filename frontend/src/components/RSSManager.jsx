@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Plus, Trash2, RefreshCw, Upload, Download, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 
 function RSSManager() {
@@ -21,7 +22,7 @@ function RSSManager() {
 
   const fetchFeeds = async () => {
     try {
-      const response = await fetch('/api/rss/feeds');
+      const response = await apiFetch('/rss/feeds');
       if (response.ok) {
         const data = await response.json();
         setFeeds(data.feeds || []);
@@ -38,7 +39,7 @@ function RSSManager() {
     
     setAdding(true);
     try {
-      const response = await fetch('/api/rss/feeds', {
+      const response = await apiFetch('/rss/feeds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -66,7 +67,7 @@ function RSSManager() {
     if (!confirm('Are you sure you want to delete this RSS feed?')) return;
 
     try {
-      const response = await fetch(`/api/rss/feeds/${feedId}`, {
+      const response = await apiFetch(`rss/feeds/${feedId}`, {
         method: 'DELETE'
       });
 
@@ -82,7 +83,7 @@ function RSSManager() {
 
   const toggleFeed = async (feedId, active) => {
     try {
-      const response = await fetch(`/api/rss/feeds/${feedId}`, {
+      const response = await apiFetch(`rss/feeds/${feedId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !active })
@@ -99,7 +100,7 @@ function RSSManager() {
   const fetchAllFeeds = async () => {
     setFetchingAll(true);
     try {
-      const response = await fetch('/api/rss/fetch-all', {
+      const response = await apiFetch('/rss/fetch-all', {
         method: 'POST'
       });
 
@@ -122,7 +123,7 @@ function RSSManager() {
 
     setAdding(true);
     try {
-      const response = await fetch('/api/rss/add-defaults', {
+      const response = await apiFetch('/rss/add-defaults', {
         method: 'POST'
       });
 
@@ -161,7 +162,7 @@ function RSSManager() {
     setImporting(true);
     try {
       const content = await file.text();
-      const response = await fetch('/api/rss/import-opml', {
+      const response = await apiFetch('/rss/import-opml', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ opml_content: content })

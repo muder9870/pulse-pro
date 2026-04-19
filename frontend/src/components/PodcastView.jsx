@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Mic, RefreshCw, Sparkles, Activity, Calendar, Headphones, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react';
 import AudioPlayer from './AudioPlayer';
 
@@ -19,7 +20,7 @@ const PodcastView = () => {
   const fetchLatest = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/podcast/latest');
+      const res = await apiFetch('/podcast/latest');
       const data = await res.json();
       if (res.ok) setLatestPodcast(data.podcast);
     } catch (err) { console.error(err); }
@@ -28,7 +29,7 @@ const PodcastView = () => {
 
   const fetchStories = async () => {
     try {
-      const res = await fetch('/api/stories?limit=20&sort=score');
+      const res = await apiFetch('/stories?limit=20&sort=score');
       const data = await res.json();
       if (res.ok) setStories(Array.isArray(data) ? data : (data.stories || []));
     } catch (err) { console.error(err); }
@@ -44,7 +45,7 @@ const PodcastView = () => {
     setGenerating(true);
     try {
       const body = selectedIds.length > 0 ? { article_ids: selectedIds } : { limit: 5 };
-      const res = await fetch('/api/generate/podcast', {
+      const res = await apiFetch('/generate/podcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

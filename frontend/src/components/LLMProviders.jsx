@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { CheckCircle, XCircle, ExternalLink, Zap, RefreshCw } from 'lucide-react';
 
 export default function LLMProviders() {
@@ -10,7 +11,7 @@ export default function LLMProviders() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('/api/system/llm-providers');
+            const response = await apiFetch('/system/llm-providers');
             if (!response.ok) throw new Error('Failed to fetch providers');
             const data = await response.json();
             setProviders(data.providers || []);

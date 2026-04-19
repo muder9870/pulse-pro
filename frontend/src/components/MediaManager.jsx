@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Image as ImageIcon, ExternalLink, RefreshCw, Trash2, Video, FileText, Sparkles, Wand2, Plus } from 'lucide-react';
 import { useToastContext } from '../hooks/useToast';
 
@@ -31,7 +32,7 @@ export default function MediaGallery() {
   const fetchAllAssets = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/media/assets/all');
+      const res = await apiFetch('/media/assets/all');
       const data = await res.json();
       if (res.ok) setAssets(data.assets || []);
     } catch (err) { console.error(err); }
@@ -40,7 +41,7 @@ export default function MediaGallery() {
 
   const fetchStories = async () => {
     try {
-      const res = await fetch('/api/stories?limit=all');
+      const res = await apiFetch('/stories?limit=all');
       const data = await res.json();
       if (res.ok) setStories(data);
     } catch (err) { console.error(err); }
@@ -52,7 +53,7 @@ export default function MediaGallery() {
     if (!selectedStoryId || !imagePrompt) return;
     setIsGenerating(true);
     try {
-      const res = await fetch('/api/media/generate-image', {
+      const res = await apiFetch('/media/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ article_id: selectedStoryId, prompt: imagePrompt })
@@ -71,7 +72,7 @@ export default function MediaGallery() {
     if (!selectedStoryId) return;
     setIsGenerating(true);
     try {
-      const res = await fetch('/api/media/generate-video-script', {
+      const res = await apiFetch('/media/generate-video-script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ article_id: selectedStoryId, platform })

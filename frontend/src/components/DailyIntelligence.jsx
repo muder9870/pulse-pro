@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Sparkles, TrendingUp, Target, BrainCircuit, ChevronRight } from 'lucide-react';
 import { Button, Badge, Spinner } from './ui';
 
-/**
- * DailyIntelligence Component
- * Displays the top 3 high-impact AI stories from the Decision Engine.
 /**
  * DailyIntelligence Component
  * Displays the top 3 high-impact AI stories from the Decision Engine.
@@ -15,7 +13,7 @@ const DailyIntelligence = ({ onRunPipeline, activeTheme }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/intelligence/daily')
+        apiFetch('/intelligence/daily')
             .then(res => res.json())
             .then(res => {
                 if (res.status === 'success') {
@@ -58,7 +56,7 @@ const DailyIntelligence = ({ onRunPipeline, activeTheme }) => {
                             if (onRunPipeline) {
                                 onRunPipeline();
                             } else {
-                                fetch('/api/pipeline/run', {method: 'POST'})
+                                apiFetch('/pipeline/run', {method: 'POST'})
                                     .then(res => res.json())
                                     .then(data => {
                                         if (data.status === 'started' || data.status === 'running') {

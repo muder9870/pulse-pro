@@ -8,7 +8,31 @@
  * - Default: '/api' (relative, works with same-origin deployment)
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+
+/**
+ * Normalize path so callers may pass `/foo` or `/api/foo` (legacy).
+ * Result always starts with `/` and is relative to the API base (no `/api` prefix).
+ */
+function normalizeApiPath(path) {
+  if (path == null || path === '') return '/';
+  let p = typeof path === 'string' && path.startsWith('/') ? path : `/${path}`;
+  if (p === '/api' || p.startsWith('/api/')) {
+    p = p.slice(4) || '/';
+  }
+  if (!p.startsWith('/')) p = `/${p}`;
+  return p;
+}
+
+/** Full URL for an API path, honoring `VITE_API_URL` (same-origin `/api` or absolute backend URL). */
+export function buildApiUrl(path) {
+  return `${BASE_URL}${normalizeApiPath(path)}`;
+}
+
+/** `fetch` wrapper using the same base URL as `api` client. */
+export function apiFetch(path, options = {}) {
+  return fetch(buildApiUrl(path), options);
+}
 
 class ApiClient {
   constructor(baseUrl = BASE_URL) {
@@ -16,7 +40,7 @@ class ApiClient {
   }
 
   async request(endpoint, options = {}) {
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = `${this.baseUrl}${normalizeApiPath(endpoint)}`;
     const headers = {
       'Content-Type': 'application/json',
       ...options.headers,

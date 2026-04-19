@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { DollarSign, Plus, Trash2, ExternalLink, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Input from './ui/Input';
 
@@ -17,7 +18,7 @@ const MonetizationManager = () => {
     const fetchLinks = async () => {
         setLoading(true);
         try {
-            const response = await fetch('/api/monetization/links');
+            const response = await apiFetch('/monetization/links');
             const data = await response.json();
             setLinks(data);
         } catch (err) {
@@ -32,7 +33,7 @@ const MonetizationManager = () => {
         if (!newLink.keyword || !newLink.url) return;
 
         try {
-            const response = await fetch('/api/monetization/links', {
+            const response = await apiFetch('/monetization/links', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newLink),
@@ -55,7 +56,7 @@ const MonetizationManager = () => {
         if (!window.confirm('Are you sure you want to delete this affiliate link?')) return;
 
         try {
-            const response = await fetch(`/api/monetization/links/${id}`, {
+            const response = await apiFetch(`monetization/links/${id}`, {
                 method: 'DELETE',
             });
 

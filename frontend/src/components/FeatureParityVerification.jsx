@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -35,7 +36,7 @@ const FeatureParityVerification = ({ onComplete, onIssueFound }) => {
     queryKey: ['feature-parity-status'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/feature-parity/check');
+        const response = await apiFetch('/feature-parity/check');
         return response.json();
       } catch (error) {
         console.error('Error checking feature parity:', error);
@@ -218,7 +219,7 @@ const FeatureParityVerification = ({ onComplete, onIssueFound }) => {
 
   const testStoriesEndpoint = async () => {
     try {
-      const response = await fetch('/api/stories');
+      const response = await apiFetch('/stories');
       return { passed: response.ok, details: `Status: ${response.status}` };
     } catch (error) {
       return { passed: false, details: error.message };
@@ -227,7 +228,7 @@ const FeatureParityVerification = ({ onComplete, onIssueFound }) => {
 
   const testCreateStoryEndpoint = async () => {
     try {
-      const response = await fetch('/api/stories', { method: 'POST' });
+      const response = await apiFetch('/stories', { method: 'POST' });
       return { passed: response.status !== 404, details: `Status: ${response.status}` };
     } catch (error) {
       return { passed: false, details: error.message };
@@ -236,7 +237,7 @@ const FeatureParityVerification = ({ onComplete, onIssueFound }) => {
 
   const testUpdateStoryEndpoint = async () => {
     try {
-      const response = await fetch('/api/stories/test', { method: 'PUT' });
+      const response = await apiFetch('/stories/test', { method: 'PUT' });
       return { passed: response.status !== 404, details: `Status: ${response.status}` };
     } catch (error) {
       return { passed: false, details: error.message };
@@ -245,7 +246,7 @@ const FeatureParityVerification = ({ onComplete, onIssueFound }) => {
 
   const testDeleteStoryEndpoint = async () => {
     try {
-      const response = await fetch('/api/stories/test', { method: 'DELETE' });
+      const response = await apiFetch('/stories/test', { method: 'DELETE' });
       return { passed: response.status !== 404, details: `Status: ${response.status}` };
     } catch (error) {
       return { passed: false, details: error.message };
