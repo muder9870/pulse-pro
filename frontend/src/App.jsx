@@ -468,16 +468,12 @@ function AppContent() {
     });
 
     try {
-      // Process articles sequentially (Requirement 4.5)
-      for (let i = 0; i < articleIds.length; i++) {
-        const articleId = articleIds[i];
-        
-        // Update progress (Requirement 10.2)
-        setBulkOperationState(prev => ({
-          ...prev,
-          current: i + 1
-        }));
-        
+      // T13: Process articles with concurrency limit (2 at a time) to avoid rate limits
+      const CONCURRENCY_LIMIT = 2;
+      const queue = [...articleIds];
+      const inProgress = new Set();
+      
+      const processArticle = async (articleId) => {
         try {
           // Call /api/generate endpoint for each article (Requirement 4.1)
           const response = await apiFetch('/generate', {
@@ -493,7 +489,9 @@ function AppContent() {
 
           successCount++;
         } catch (error) {
-          console.error(`Failed to generate content for article ${articleId}:`, error);
+          if (import.meta.env.DEV) {
+            console.error(`Failed to generate content for article ${articleId}:`, error);
+          }
           // Get article title for better error display
           const article = stories.find(s => s.id === articleId);
           failedArticles.push({ 
@@ -501,6 +499,29 @@ function AppContent() {
             title: article?.title,
             error: error.message 
           });
+        } finally {
+          // Update progress
+          setBulkOperationState(prev => ({
+            ...prev,
+            current: totalCount - queue.length - inProgress.size + 1
+          }));
+        }
+      };
+
+      // Process queue with concurrency limit
+      while (queue.length > 0 || inProgress.size > 0) {
+        // Start new tasks up to concurrency limit
+        while (inProgress.size < CONCURRENCY_LIMIT && queue.length > 0) {
+          const articleId = queue.shift();
+          const promise = processArticle(articleId).finally(() => {
+            inProgress.delete(promise);
+          });
+          inProgress.add(promise);
+        }
+        
+        // Wait for at least one task to complete
+        if (inProgress.size > 0) {
+          await Promise.race(inProgress);
         }
       }
 

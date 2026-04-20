@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Activity, Loader2, CheckCircle } from 'lucide-react';
+import { FixedSizeList as List } from 'react-window';
 import StoryCard from '../components/StoryCard';
 import FilterBar from '../components/FilterBar';
 import Skeleton from '../components/Skeleton';
@@ -98,6 +99,30 @@ const ArticlesView = ({
     { key: 'mid',  label: `Mid Score (${midCount})`,          color: 'var(--amber)',  bg: 'var(--amber-dim)', border: 'var(--amber)' },
     { key: 'low',  label: `Low Score (${lowCount})`,          color: 'var(--text2)',  bg: 'var(--surface2)',  border: 'var(--border)' },
   ];
+
+  // T14: Use virtualization for large lists (>50 items) to improve performance
+  const VIRTUALIZATION_THRESHOLD = 50;
+  const useVirtualization = scoreFiltered.length > VIRTUALIZATION_THRESHOLD;
+  const ITEM_HEIGHT = 200; // Approximate height of StoryCard in pixels
+
+  // Virtualized row renderer
+  const VirtualRow = useCallback(({ index, style }) => {
+    const story = scoreFiltered[index];
+    return (
+      <div style={style}>
+        <div style={{ padding: '0 0 8px 0' }}>
+          <StoryCard
+            key={story.id}
+            story={story}
+            initialPlatforms={selectedPlatforms}
+            isSelected={selectedIds.has(story.id)}
+            onToggleSelection={() => toggleSelection(story.id)}
+            hasAnySelection={selectedIds.size > 0}
+          />
+        </div>
+      </div>
+    );
+  }, [scoreFiltered, selectedPlatforms, selectedIds, toggleSelection]);
 
   return (
     <FeatureErrorBoundary name="Articles">
@@ -222,16 +247,32 @@ const ArticlesView = ({
             </div>
           ) : (
             <>
-              {scoreFiltered.map((story) => (
-                <StoryCard
-                  key={story.id}
-                  story={story}
-                  initialPlatforms={selectedPlatforms}
-                  isSelected={selectedIds.has(story.id)}
-                  onToggleSelection={() => toggleSelection(story.id)}
-                  hasAnySelection={selectedIds.size > 0}
-                />
-              ))}
+              {/* T14: Use virtualized list for large datasets (>50 items) */}
+              {useVirtualization ? (
+                <div style={{ height: 'calc(100vh - 400px)', minHeight: '600px' }}>
+                  <List
+                    height={Math.min(window.innerHeight - 400, scoreFiltered.length * ITEM_HEIGHT)}
+                    itemCount={scoreFiltered.length}
+                    itemSize={ITEM_HEIGHT}
+                    width="100%"
+                    overscanCount={3}
+                  >
+                    {VirtualRow}
+                  </List>
+                </div>
+              ) : (
+                // Regular rendering for small lists
+                scoreFiltered.map((story) => (
+                  <StoryCard
+                    key={story.id}
+                    story={story}
+                    initialPlatforms={selectedPlatforms}
+                    isSelected={selectedIds.has(story.id)}
+                    onToggleSelection={() => toggleSelection(story.id)}
+                    hasAnySelection={selectedIds.size > 0}
+                  />
+                ))
+              )}
 
               {hasNextPage && (
                 <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 24 }}>

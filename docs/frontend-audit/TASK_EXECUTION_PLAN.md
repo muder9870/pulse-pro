@@ -28,8 +28,8 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **T9** | **Done** — Extracted `usePipelineRun`, `useScheduleModal`, `useAppKeyboardShortcuts` hooks from `App.jsx`; App.jsx now uses these hooks. |
 | **T10** | **Done** — Created `BulkOperationsContext` and `StoriesContext` to reduce prop drilling; DashboardView and ArticlesView now use context hooks instead of 35+ props. |
 | **T11** | **Done** — ResearchView uses React Query + api client. |
-| **T12** | **Done** | **T13** | Open — Bulk generate: batch API or parallelize with backoff. |
-| **T14** | Open — Wire virtualized list for Articles view. |
+| **T12** | **Done** | **T13** | **Done** — Implemented concurrency limit (2 concurrent requests) for bulk generate to avoid rate limits and improve performance. |
+| **T14** | **Done** — Wired virtualized list using react-window; activates automatically for lists >50 items. |
 | **T15** | **Done** — Replaced console.log with `import.meta.env.DEV` guards in production paths. |
 | **T16** | **Done** — Added preconnect hints for Google Fonts; fonts already use `display=swap`. |
 
@@ -218,6 +218,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P3 |
 | **Complexity** | High |
 | **Dependencies** | None |
+| **Status** | **Done** — Implemented concurrency limit of 2 concurrent requests using Promise.race queue pattern; prevents rate limit issues while improving performance. |
 
 ---
 
@@ -230,6 +231,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P3 |
 | **Complexity** | Medium |
 | **Dependencies** | None |
+| **Status** | **Done** — Integrated react-window FixedSizeList in ArticlesView; automatically activates for lists >50 items to optimize DOM rendering. |
 
 ---
 
