@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api/client';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -33,6 +34,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function EnhancedAnalytics({ onBack }) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
@@ -42,6 +44,19 @@ export default function EnhancedAnalytics({ onBack }) {
   const [dataEstimates, setDataEstimates] = useState({ timeline: false, scores: false });
 
   useEffect(() => { fetchAnalyticsData(); }, []);
+
+  const handleKPIClick = (action) => {
+    if (action === 'articles') {
+      navigate('/articles');
+    } else if (action === 'analyzed') {
+      navigate('/articles?filter=analyzed');
+    } else if (action === 'ready') {
+      navigate('/articles?filter=ready');
+    } else if (action === 'scores') {
+      // Navigate to articles view (user can sort by score using the UI button)
+      navigate('/articles');
+    }
+  };
 
   const fetchAnalyticsData = async () => {
     setLoading(true); setError(null);
@@ -141,38 +156,61 @@ export default function EnhancedAnalytics({ onBack }) {
             Real-time performance metrics · Last updated {new Date().toLocaleTimeString()}
           </div>
         </div>
-        <button
-          onClick={fetchAnalyticsData}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
-        >
-          Recalibrate Metrics
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={() => navigate('/articles')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            View All Articles
+          </button>
+          <button
+            onClick={fetchAnalyticsData}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
+          >
+            Recalibrate Metrics
+          </button>
+        </div>
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
+      {/* ── KPI Cards (Primary Metrics) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
         {[
-          { label: 'Intelligence Base', value: stats?.total,       trend: '↑ +12 today',   trendUp: true,  sub: 'Live feed' },
-          { label: 'AI Processed',      value: stats?.analyzed,    trend: `↑ ${coveragePct}% coverage`, trendUp: true, sub: 'High accuracy' },
-          { label: 'Quality Index',     value: `${stats?.avgScore}%`, trend: coveragePct < 50 ? '↓ Run pipeline to improve' : '↑ Good', trendUp: coveragePct >= 50, sub: '' },
-          { label: 'Content Ready',     value: stats?.withContent, trend: '↑ +5 today',    trendUp: true,  sub: 'Generation ready' },
+          { label: 'Intelligence Base', value: stats?.total,       trend: '↑ +12 today',   trendUp: true,  sub: 'Live feed', action: 'articles' },
+          { label: 'AI Processed',      value: stats?.analyzed,    trend: `↑ ${coveragePct}% coverage`, trendUp: true, sub: 'High accuracy', action: 'analyzed' },
+          { label: 'Quality Index',     value: `${stats?.avgScore}%`, trend: coveragePct < 50 ? '↓ Run pipeline to improve' : '↑ Good', trendUp: coveragePct >= 50, sub: '', action: 'scores' },
+          { label: 'Content Ready',     value: stats?.withContent, trend: '↑ +5 today',    trendUp: true,  sub: 'Generation ready', action: 'ready' },
         ].map((item, i) => (
           <div
             key={i}
-            style={{ ...card, transition: 'border-color 0.15s' }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+            style={{ 
+              ...card, 
+              padding: '20px 22px',
+              transition: 'all 0.15s', 
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+            }}
+            onClick={() => handleKPIClick(item.action)}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = 'var(--accent)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(108, 99, 255, 0.15)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--border)';
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+            }}
           >
-            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 8 }}>{item.label}</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>{item.value ?? 0}</div>
-            <div style={{ fontSize: 11, color: item.trendUp ? 'var(--green)' : 'var(--red)', marginTop: 6 }}>{item.trend}</div>
-            {item.sub && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{item.sub}</div>}
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 10 }}>{item.label}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>{item.value ?? 0}</div>
+            <div style={{ fontSize: 11, color: item.trendUp ? 'var(--green)' : 'var(--red)', marginTop: 8, fontWeight: 500 }}>{item.trend}</div>
+            {item.sub && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>{item.sub}</div>}
           </div>
         ))}
       </div>
 
-      {/* ── Charts Row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+      {/* ── Charts Row (Secondary Metrics) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
 
         {/* Vibrancy Timeline */}
         <div style={card}>
@@ -240,8 +278,8 @@ export default function EnhancedAnalytics({ onBack }) {
         </div>
       </div>
 
-      {/* ── Quality Spectrum — horizontal bars ── */}
-      <div style={{ ...card, marginBottom: 16 }}>
+      {/* ── Quality Spectrum (Tertiary Metrics) ── */}
+      <div style={{ ...card, marginBottom: 18 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
           Quality Spectrum
           <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)' }}>
@@ -269,19 +307,18 @@ export default function EnhancedAnalytics({ onBack }) {
         </div>
       </div>
 
-      {/* ── 3 Stat Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+      {/* ── Performance Stats (Supporting Metrics) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
 
         {/* LLM Statistics */}
         <div style={card}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>LLM Statistics</div>
           {[
-            { label: 'Total Calls',   value: stats?.analyzed || 0,  color: 'var(--text)' },
-            { label: 'Successful',    value: stats?.analyzed || 0,  color: 'var(--green)' },
+            { label: 'LLM Analyses',  value: stats?.analyzed || 0,  color: 'var(--text)' },
             { label: 'Failed',        value: 0,                     color: 'var(--text3)' },
             { label: 'Success Rate',  value: stats?.analyzed ? '100%' : '0%', color: 'var(--green)' },
           ].map((row, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
               <span style={{ fontSize: 12, color: 'var(--text2)' }}>{row.label}</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: row.color, fontFamily: 'var(--font-mono)' }}>{row.value}</span>
             </div>
@@ -292,28 +329,9 @@ export default function EnhancedAnalytics({ onBack }) {
         <div style={card}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Article Throughput</div>
           {[
-            { label: 'Total Articles', value: stats?.total || 0,        color: 'var(--text)' },
-            { label: 'Analyzed (24h)', value: stats?.analyzed || 0,     color: 'var(--text)' },
-            { label: 'Content Ready',  value: stats?.withContent || 0,  color: 'var(--accent)' },
             { label: 'Fallback Rate',  value: stats?.total ? `${((stats.total - stats.analyzed) / stats.total * 3).toFixed(1)}%` : '0%', color: 'var(--amber)' },
           ].map((row, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
-              <span style={{ fontSize: 12, color: 'var(--text2)' }}>{row.label}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: row.color, fontFamily: 'var(--font-mono)' }}>{row.value}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* DB Connection Pool */}
-        <div style={card}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>DB Connection Pool</div>
-          {[
-            { label: 'Checked In',  value: 9,   color: 'var(--text)' },
-            { label: 'Checked Out', value: 0,   color: 'var(--text)' },
-            { label: 'Overflow',    value: -11, color: 'var(--red)' },
-            { label: 'Pool Size',   value: 20,  color: 'var(--text)' },
-          ].map((row, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: 'none' }}>
               <span style={{ fontSize: 12, color: 'var(--text2)' }}>{row.label}</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: row.color, fontFamily: 'var(--font-mono)' }}>{row.value}</span>
             </div>

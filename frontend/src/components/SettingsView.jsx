@@ -154,10 +154,10 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
                                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                                         : `${activeTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-600'} hover:bg-indigo-50 hover:text-indigo-600`
                                     }`}
+                                title={tab.label}
                             >
                                 <Icon className="w-4 h-4" />
-                                <span className="hidden sm:inline">{tab.label}</span>
-                                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                                <span className="hidden md:inline">{tab.label}</span>
                             </button>
                         );
                     })}

@@ -1,9 +1,10 @@
-import React from 'react';
-import { Sun, Moon, Zap, Laptop, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sun, Moon, Zap, Laptop, Check, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeProvider';
 
 const ThemeSelector = ({ activeTheme }) => {
   const { theme, setTheme } = useTheme();
+  const [success, setSuccess] = useState(null);
 
   const themes = [
     { id: 'light', label: 'Light Mode', icon: Sun, description: 'Clean light theme with indigo accents' },
@@ -12,6 +13,13 @@ const ThemeSelector = ({ activeTheme }) => {
     { id: 'electric-azure-dark', label: 'Azure Dark', icon: Zap, description: 'Vibrant cyan/teal theme (dark)' },
     { id: 'system', label: 'System', icon: Laptop, description: 'Automatically follow OS preference' }
   ];
+
+  const handleThemeChange = (themeId) => {
+    setTheme(themeId);
+    const themeName = themes.find(t => t.id === themeId)?.label || themeId;
+    setSuccess(`Theme changed to ${themeName}`);
+    setTimeout(() => setSuccess(null), 2000);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -25,6 +33,23 @@ const ThemeSelector = ({ activeTheme }) => {
         </p>
       </div>
 
+      {/* Success Toast */}
+      {success && (
+        <div style={{ 
+          padding: 16, 
+          background: 'var(--green-dim)', 
+          border: '1px solid var(--green)', 
+          color: 'var(--green)', 
+          borderRadius: 10, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 12 
+        }}>
+          <CheckCircle2 style={{ width: 20, height: 20 }} />
+          <span style={{ fontSize: 13 }}>{success}</span>
+        </div>
+      )}
+
       {/* Theme Toggle Rows */}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {themes.map((opt) => {
@@ -34,7 +59,7 @@ const ThemeSelector = ({ activeTheme }) => {
           return (
             <button
               key={opt.id}
-              onClick={() => setTheme(opt.id)}
+              onClick={() => handleThemeChange(opt.id)}
               className={`interface-row ${isActive ? 'active' : ''}`}
               style={{ width: '100%', textAlign: 'left', outline: 'none' }}
             >

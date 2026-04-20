@@ -10,29 +10,69 @@ import {
 
 function Section({ title, icon: Icon, children }) {
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-slate-50">
-                <Icon className="w-4 h-4 text-indigo-500" />
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-600">{title}</h3>
+        <div style={{ 
+            borderRadius: 'var(--radius-lg)', 
+            border: '1px solid var(--border)', 
+            background: 'var(--surface)', 
+            overflow: 'hidden' 
+        }}>
+            <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 12, 
+                padding: '16px 24px', 
+                borderBottom: '1px solid var(--border)', 
+                background: 'var(--surface2)' 
+            }}>
+                <Icon style={{ width: 16, height: 16, color: 'var(--accent)' }} />
+                <h3 style={{ 
+                    fontSize: 13, 
+                    fontWeight: 700, 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em', 
+                    color: 'var(--text)' 
+                }}>{title}</h3>
             </div>
-            <div className="p-6">{children}</div>
+            <div style={{ padding: 24 }}>{children}</div>
         </div>
     );
 }
 
 function ActionButton({ onClick, loading, disabled, variant = 'primary', icon: Icon, children }) {
-    const base = 'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed';
-    const variants = {
-        primary: 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200',
-        danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-200',
-        outline: 'border border-slate-300 text-slate-700 hover:bg-slate-50',
-        success: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-200',
+    const base = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '8px 16px',
+        borderRadius: 10,
+        fontSize: 13,
+        fontWeight: 700,
+        border: 'none',
+        cursor: 'pointer',
+        transition: 'transform 0.1s, opacity 0.2s',
+        opacity: (disabled || loading) ? 0.5 : 1
     };
+    
+    const variants = {
+        primary: { background: 'var(--accent)', color: '#fff' },
+        danger: { background: 'var(--red)', color: '#fff' },
+        outline: { border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)' },
+        success: { background: 'var(--green)', color: '#fff' },
+    };
+    
+    const style = { ...base, ...variants[variant] };
+    
     return (
-        <button onClick={onClick} disabled={disabled || loading} className={`${base} ${variants[variant]}`}>
+        <button 
+            onClick={onClick} 
+            disabled={disabled || loading} 
+            style={style}
+            onMouseDown={(e) => !disabled && !loading && (e.currentTarget.style.transform = 'scale(0.98)')}
+            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        >
             {loading
-                ? <RefreshCw className="w-4 h-4 animate-spin" />
-                : Icon && <Icon className="w-4 h-4" />
+                ? <RefreshCw style={{ width: 16, height: 16 }} className="animate-spin" />
+                : Icon && <Icon style={{ width: 16, height: 16 }} />
             }
             {children}
         </button>
@@ -41,10 +81,18 @@ function ActionButton({ onClick, loading, disabled, variant = 'primary', icon: I
 
 function ResultBadge({ ok, text }) {
     return (
-        <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
-            ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-        }`}>
-            {ok ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+        <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 12,
+            fontWeight: 700,
+            padding: '2px 8px',
+            borderRadius: 20,
+            background: ok ? 'var(--green-dim)' : 'var(--red-dim)',
+            color: ok ? 'var(--green)' : 'var(--red)'
+        }}>
+            {ok ? <CheckCircle style={{ width: 12, height: 12 }} /> : <AlertCircle style={{ width: 12, height: 12 }} />}
             {text}
         </span>
     );
@@ -256,13 +304,21 @@ export default function AdvancedTools({ activeTheme }) {
     const isDark = activeTheme === 'dark';
 
     return (
-        <div className="space-y-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Warning banner */}
-            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <Terminal className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+            <div style={{ 
+                display: 'flex', 
+                alignItems: 'flex-start', 
+                gap: 12, 
+                padding: 16, 
+                background: 'var(--amber-dim)', 
+                border: '1px solid var(--amber)', 
+                borderRadius: 'var(--radius-lg)' 
+            }}>
+                <Terminal style={{ width: 20, height: 20, color: 'var(--amber)', marginTop: 2, flexShrink: 0 }} />
                 <div>
-                    <p className="text-sm font-bold text-amber-800">Developer & Operations Tools</p>
-                    <p className="text-xs text-amber-700 mt-0.5">
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>Developer & Operations Tools</p>
+                    <p style={{ fontSize: 12, color: 'var(--amber)', marginTop: 2, opacity: 0.9 }}>
                         These tools directly affect the pipeline, database, and scheduler. Use with care.
                     </p>
                 </div>
@@ -270,8 +326,8 @@ export default function AdvancedTools({ activeTheme }) {
 
             {/* LLM Provider Status */}
             <Section title="LLM Providers" icon={Key}>
-                <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-slate-500">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <p style={{ fontSize: 13, color: 'var(--text2)' }}>
                         {llmProviders
                             ? `${llmProviders.configured_count} of ${llmProviders.total_count} providers configured`
                             : 'Loading…'}
@@ -281,81 +337,118 @@ export default function AdvancedTools({ activeTheme }) {
                     </ActionButton>
                 </div>
                 {llmProviders?.providers ? (
-                    <div className="space-y-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {llmProviders.providers.map(p => (
-                            <div key={p.name} className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
-                                p.configured
-                                    ? 'bg-green-50 border-green-100'
-                                    : 'bg-slate-50 border-slate-100'
-                            }`}>
-                                <div className="flex items-center gap-3 min-w-0">
+                            <div key={p.name} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '12px 16px',
+                                borderRadius: 'var(--radius-lg)',
+                                border: '1px solid var(--border)',
+                                background: p.configured ? 'var(--green-dim)' : 'var(--surface2)'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                                     {p.configured
-                                        ? <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                                        : <AlertCircle className="w-4 h-4 text-slate-300 shrink-0" />
+                                        ? <CheckCircle style={{ width: 16, height: 16, color: 'var(--green)', flexShrink: 0 }} />
+                                        : <AlertCircle style={{ width: 16, height: 16, color: 'var(--text3)', flexShrink: 0 }} />
                                     }
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-sm font-bold ${p.configured ? 'text-slate-800' : 'text-slate-400'}`}>
+                                    <div style={{ minWidth: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{ 
+                                                fontSize: 13, 
+                                                fontWeight: 700, 
+                                                color: p.configured ? 'var(--text)' : 'var(--text3)' 
+                                            }}>
                                                 {p.name}
                                             </span>
                                             {p.free && (
-                                                <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                                                <span style={{
+                                                    fontSize: 9,
+                                                    fontWeight: 700,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em',
+                                                    padding: '2px 6px',
+                                                    borderRadius: 20,
+                                                    background: 'var(--green-dim)',
+                                                    color: 'var(--green)'
+                                                }}>
                                                     Free
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-[10px] text-slate-400 truncate">{p.model}</p>
+                                        <p style={{ fontSize: 10, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.model}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 shrink-0 ml-4">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, marginLeft: 16 }}>
                                     {!p.configured && p.get_key_url && (
                                         <a
                                             href={p.get_key_url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                                            style={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: 4, 
+                                                fontSize: 12, 
+                                                fontWeight: 700, 
+                                                color: 'var(--accent)', 
+                                                textDecoration: 'none'
+                                            }}
                                         >
-                                            Get Key <ExternalLink className="w-3 h-3" />
+                                            Get Key <ExternalLink style={{ width: 12, height: 12 }} />
                                         </a>
                                     )}
                                     {p.configured && (
-                                        <span className="text-[10px] font-bold text-green-600">Configured</span>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)' }}>Configured</span>
                                     )}
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <p className="text-sm text-slate-400 text-center py-4">Loading provider status…</p>
+                    <p style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', padding: 16 }}>Loading provider status…</p>
                 )}
             </Section>
 
             {/* Pipeline Control */}
             <Section title="Pipeline Control" icon={Play}>
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${
-                                pipelineStatus?.running ? 'bg-orange-500 animate-pulse' :
-                                pipelineStatus?.status === 'error' ? 'bg-red-500' : 'bg-green-500'
-                            }`} />
-                            <span className="text-sm font-bold text-slate-700 capitalize">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                background: pipelineStatus?.running ? 'var(--amber)' :
+                                    pipelineStatus?.status === 'error' ? 'var(--red)' : 'var(--green)',
+                                boxShadow: pipelineStatus?.running ? '0 0 8px var(--amber)' : 'none'
+                            }} className={pipelineStatus?.running ? 'animate-pulse' : ''} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' }}>
                                 {pipelineStatus?.status ?? 'Unknown'}
                             </span>
                         </div>
                         {pipelineStatus?.last_finished_at && (
-                            <p className="text-xs text-slate-400 flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
+                            <p style={{ fontSize: 12, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <Clock style={{ width: 12, height: 12 }} />
                                 Last run: {new Date(pipelineStatus.last_finished_at).toLocaleString()}
                             </p>
                         )}
                         {pipelineStatus?.last_error && (
-                            <p className="text-xs text-red-500 font-mono max-w-sm truncate" title={pipelineStatus.last_error}>
+                            <p style={{ 
+                                fontSize: 12, 
+                                color: 'var(--red)', 
+                                fontFamily: 'monospace', 
+                                maxWidth: 400, 
+                                overflow: 'hidden', 
+                                textOverflow: 'ellipsis', 
+                                whiteSpace: 'nowrap' 
+                            }} title={pipelineStatus.last_error}>
                                 {pipelineStatus.last_error}
                             </p>
                         )}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         {pipelineMsg && <ResultBadge ok={pipelineMsg.ok} text={pipelineMsg.text} />}
                         <ActionButton
                             onClick={runPipeline}
@@ -371,27 +464,32 @@ export default function AdvancedTools({ activeTheme }) {
 
             {/* Scheduler */}
             <Section title="Automation Scheduler" icon={Clock}>
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="space-y-1">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {scheduleInfo ? (
                             <>
-                                <div className="flex items-center gap-2">
-                                    <span className={`w-2 h-2 rounded-full ${scheduleInfo.running ? 'bg-green-500' : 'bg-slate-300'}`} />
-                                    <span className="text-sm font-bold text-slate-700">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: '50%',
+                                        background: scheduleInfo.running ? 'var(--green)' : 'var(--text3)'
+                                    }} />
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                                         {scheduleInfo.running ? 'Active' : 'Stopped'}
                                     </span>
                                 </div>
                                 {scheduleInfo.next_run_time && (
-                                    <p className="text-xs text-slate-400">
+                                    <p style={{ fontSize: 12, color: 'var(--text3)' }}>
                                         Next run: {new Date(scheduleInfo.next_run_time).toLocaleString()}
                                     </p>
                                 )}
                             </>
                         ) : (
-                            <p className="text-sm text-slate-400">Loading scheduler status…</p>
+                            <p style={{ fontSize: 13, color: 'var(--text3)' }}>Loading scheduler status…</p>
                         )}
                     </div>
-                    <div className="flex gap-2">
+                    <div style={{ display: 'flex', gap: 8 }}>
                         <ActionButton
                             onClick={() => toggleScheduler(true)}
                             loading={scheduleLoading}
@@ -414,18 +512,18 @@ export default function AdvancedTools({ activeTheme }) {
 
             {/* Performance Metrics */}
             <Section title="Performance Metrics" icon={BarChart3}>
-                <div className="flex justify-end mb-4">
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
                     <ActionButton onClick={fetchPerf} loading={perfLoading} variant="outline" icon={RefreshCw}>
                         Refresh
                     </ActionButton>
                 </div>
                 {perfMetrics ? (
-                    <div className="space-y-4">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {/* Throughput */}
                         {perfMetrics.throughput && Object.keys(perfMetrics.throughput).length > 0 && (
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Article Throughput</p>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text3)', marginBottom: 8 }}>Article Throughput</p>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
                                     {[
                                         { k: 'articles_last_1h', label: 'Articles (1h)' },
                                         { k: 'articles_last_24h', label: 'Articles (24h)' },
@@ -435,9 +533,9 @@ export default function AdvancedTools({ activeTheme }) {
                                         { k: 'total_analyzed', label: 'Total Analyzed' },
                                         { k: 'total_content_generated', label: 'Total Content' },
                                     ].map(({ k, label }) => perfMetrics.throughput[k] !== undefined && (
-                                        <div key={k} className="bg-emerald-50 rounded-lg p-2 border border-emerald-100 text-center">
-                                            <p className="text-[9px] font-bold uppercase text-emerald-400 mb-0.5">{label}</p>
-                                            <p className="text-sm font-black text-emerald-700">{perfMetrics.throughput[k].toLocaleString()}</p>
+                                        <div key={k} style={{ background: 'var(--green-dim)', borderRadius: 10, padding: 8, border: '1px solid var(--green)', textAlign: 'center' }}>
+                                            <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'var(--green)', marginBottom: 2, opacity: 0.7 }}>{label}</p>
+                                            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>{perfMetrics.throughput[k].toLocaleString()}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -447,17 +545,17 @@ export default function AdvancedTools({ activeTheme }) {
                         {/* LLM Stats */}
                         {perfMetrics.llm && Object.keys(perfMetrics.llm).length > 0 && (
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">LLM Statistics</p>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text3)', marginBottom: 8 }}>LLM Statistics</p>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
                                     {[
                                         { k: 'total_llm_calls', label: 'Total Calls' },
                                         { k: 'successful_calls', label: 'Successful' },
                                         { k: 'failed_calls', label: 'Failed' },
                                         { k: 'success_rate_pct', label: 'Success Rate', suffix: '%' },
                                     ].map(({ k, label, suffix = '' }) => perfMetrics.llm[k] !== undefined && (
-                                        <div key={k} className="bg-indigo-50 rounded-lg p-2 border border-indigo-100 text-center">
-                                            <p className="text-[9px] font-bold uppercase text-indigo-400 mb-0.5">{label}</p>
-                                            <p className="text-sm font-black text-indigo-700">{perfMetrics.llm[k].toLocaleString()}{suffix}</p>
+                                        <div key={k} style={{ background: 'var(--accent-glow)', borderRadius: 10, padding: 8, border: '1px solid var(--accent)', textAlign: 'center' }}>
+                                            <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 2, opacity: 0.7 }}>{label}</p>
+                                            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>{perfMetrics.llm[k].toLocaleString()}{suffix}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -467,17 +565,17 @@ export default function AdvancedTools({ activeTheme }) {
                         {/* Redis */}
                         {perfMetrics.redis?.available && (
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Redis</p>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text3)', marginBottom: 8 }}>Redis</p>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
                                     {[
                                         { k: 'total_keys', label: 'Keys' },
                                         { k: 'used_memory_mb', label: 'Memory (MB)' },
                                         { k: 'connected_clients', label: 'Clients' },
                                         { k: 'total_commands_processed', label: 'Commands' },
                                     ].map(({ k, label }) => perfMetrics.redis[k] !== undefined && (
-                                        <div key={k} className="bg-orange-50 rounded-lg p-2 border border-orange-100 text-center">
-                                            <p className="text-[9px] font-bold uppercase text-orange-400 mb-0.5">{label}</p>
-                                            <p className="text-sm font-black text-orange-700">{perfMetrics.redis[k].toLocaleString()}</p>
+                                        <div key={k} style={{ background: 'var(--amber-dim)', borderRadius: 10, padding: 8, border: '1px solid var(--amber)', textAlign: 'center' }}>
+                                            <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'var(--amber)', marginBottom: 2, opacity: 0.7 }}>{label}</p>
+                                            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>{perfMetrics.redis[k].toLocaleString()}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -487,12 +585,12 @@ export default function AdvancedTools({ activeTheme }) {
                         {/* DB Connection Pool */}
                         {perfMetrics.db_connection_pool && Object.keys(perfMetrics.db_connection_pool).length > 0 && (
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">DB Connection Pool</p>
-                                <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text3)', marginBottom: 8 }}>DB Connection Pool</p>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8 }}>
                                     {Object.entries(perfMetrics.db_connection_pool).map(([k, v]) => (
-                                        <div key={k} className="bg-blue-50 rounded-lg p-2 border border-blue-100 text-center">
-                                            <p className="text-[9px] font-bold uppercase text-blue-400 mb-0.5">{k.replace(/_/g, ' ')}</p>
-                                            <p className="text-sm font-black text-blue-700">{v}</p>
+                                        <div key={k} style={{ background: 'var(--teal-dim)', borderRadius: 10, padding: 8, border: '1px solid var(--teal)', textAlign: 'center' }}>
+                                            <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'var(--teal)', marginBottom: 2, opacity: 0.7 }}>{k.replace(/_/g, ' ')}</p>
+                                            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal)' }}>{v}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -500,22 +598,22 @@ export default function AdvancedTools({ activeTheme }) {
                         )}
                     </div>
                 ) : (
-                    <p className="text-sm text-slate-400 text-center py-4">No metrics available yet</p>
+                    <p style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', padding: 16 }}>No metrics available yet</p>
                 )}
             </Section>
 
             {/* Cache Stats */}
             <Section title="LLM Cache" icon={Database}>
-                <div className="flex justify-end mb-4">
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
                     <ActionButton onClick={fetchCache} loading={cacheLoading} variant="outline" icon={RefreshCw}>
                         Refresh
                     </ActionButton>
                 </div>
                 {cacheStats ? (
                     cacheStats.error ? (
-                        <p className="text-sm text-slate-400 text-center py-4">{cacheStats.error}</p>
+                        <p style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', padding: 16 }}>{cacheStats.error}</p>
                     ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
                             {[
                                 { k: 'cache_keys_count', label: 'Total Keys' },
                                 { k: 'hit_rate_pct', label: 'Hit Rate', suffix: '%' },
@@ -526,28 +624,28 @@ export default function AdvancedTools({ activeTheme }) {
                                 { k: 'evicted_keys', label: 'Evicted' },
                                 { k: 'connected_clients', label: 'Clients' },
                             ].map(({ k, label, suffix = '' }) => cacheStats[k] !== undefined && (
-                                <div key={k} className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
-                                    <p className="text-lg font-black text-slate-700">{cacheStats[k].toLocaleString()}{suffix}</p>
+                                <div key={k} style={{ background: 'var(--surface2)', borderRadius: 'var(--radius-lg)', padding: 12, border: '1px solid var(--border)', textAlign: 'center' }}>
+                                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text3)', marginBottom: 4 }}>{label}</p>
+                                    <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{cacheStats[k].toLocaleString()}{suffix}</p>
                                 </div>
                             ))}
                         </div>
                     )
                 ) : (
-                    <p className="text-sm text-slate-400 text-center py-4">No cache data available</p>
+                    <p style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', padding: 16 }}>No cache data available</p>
                 )}
             </Section>
 
             {/* Real-time Metrics */}
             {realtimeMetrics && Object.keys(realtimeMetrics).length > 0 && (
                 <Section title="Real-time Counters" icon={Cpu}>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
                         {Object.entries(realtimeMetrics).map(([key, val]) => (
-                            <div key={key} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                            <div key={key} style={{ background: 'var(--surface2)', borderRadius: 'var(--radius-lg)', padding: 12, border: '1px solid var(--border)' }}>
+                                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text3)', marginBottom: 4 }}>
                                     {key.replace(/_/g, ' ')}
                                 </p>
-                                <p className="text-lg font-black text-slate-700">
+                                <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
                                     {typeof val === 'number' ? val.toLocaleString() : String(val)}
                                 </p>
                             </div>
@@ -558,11 +656,11 @@ export default function AdvancedTools({ activeTheme }) {
 
             {/* Database Cleanup */}
             <Section title="Database Cleanup" icon={Trash2}>
-                <div className="flex items-center justify-between flex-wrap gap-4">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
                     <div>
-                        <p className="text-sm text-slate-500">Remove orphaned article records and placeholder content generated when all LLM providers were unavailable.</p>
+                        <p style={{ fontSize: 13, color: 'var(--text2)' }}>Remove orphaned article records and placeholder content generated when all LLM providers were unavailable.</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         {cleanupResult && (
                             <ResultBadge
                                 ok={cleanupResult.ok}
@@ -580,11 +678,11 @@ export default function AdvancedTools({ activeTheme }) {
 
             {/* RSS Health Check */}
             <Section title="RSS Feed Health Check" icon={Activity}>
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                    <p className="text-sm text-slate-500">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                    <p style={{ fontSize: 13, color: 'var(--text2)' }}>
                         Ping all active RSS feeds and deactivate any that are unreachable.
                     </p>
-                    <div className="flex items-center gap-3">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         {rssHealthResult && (
                             <ResultBadge
                                 ok={rssHealthResult.ok}
@@ -607,11 +705,11 @@ export default function AdvancedTools({ activeTheme }) {
 
             {/* Export */}
             <Section title="Export Content" icon={Download}>
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                    <p className="text-sm text-slate-500">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                    <p style={{ fontSize: 13, color: 'var(--text2)' }}>
                         Download all generated content as a Markdown file.
                     </p>
-                    <div className="flex items-center gap-3">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         {exportMsg && <ResultBadge ok={exportMsg.ok} text={exportMsg.text} />}
                         <ActionButton
                             onClick={runExport}

@@ -11,7 +11,6 @@ import BulkOperationProgress from '../components/BulkOperationProgress';
 import BulkOperationError from '../components/BulkOperationError';
 import FeatureErrorBoundary from '../components/FeatureErrorBoundary';
 import EmptyFeed from '../components/EmptyFeed';
-import { useQueryClient } from '@tanstack/react-query';
 import { useBulkOperations } from '../context/BulkOperationsContext';
 import { useStories as useStoriesContext } from '../context/StoriesContext';
 
@@ -20,7 +19,6 @@ const ArticlesView = ({
   activeTheme,
   handleRunPipeline,
 }) => {
-  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Get data from context (T10 refactoring)
@@ -88,6 +86,21 @@ const ArticlesView = ({
       }, 100);
     }
   }, [searchParams, loading, stories]);
+
+  // Deep linking: Handle URL filter parameters
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    if (filterParam) {
+      // Apply filter based on URL parameter
+      if (filterParam === 'analyzed') {
+        setFilters(prev => ({ ...prev, hasAnalysis: true }));
+      } else if (filterParam === 'ready') {
+        setFilters(prev => ({ ...prev, hasContent: true }));
+      } else if (filterParam === 'pending') {
+        setFilters(prev => ({ ...prev, hasAnalysis: false, hasContent: false }));
+      }
+    }
+  }, [searchParams, setFilters]);
 
   const scoreFiltered = React.useMemo(() => {
     let list = [...filteredStories];
@@ -263,7 +276,7 @@ const ArticlesView = ({
               <Activity style={{ width: 40, height: 40, color: 'var(--text3)', margin: '0 auto 12px' }} />
               <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>No articles match this filter</div>
               <button
-                onClick={() => { setScoreFilter('all'); handleSourceSelect(null); queryClient.invalidateQueries(['stories']); }}
+                onClick={() => { setScoreFilter('all'); handleSourceSelect(null); setFilters({}); }}
                 style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--accent)', background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
               >
                 Reset Filters

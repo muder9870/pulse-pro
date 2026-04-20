@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
 import { Mic, RefreshCw, Sparkles, Activity, Calendar, Headphones, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react';
 import AudioPlayer from './AudioPlayer';
+import { useToastContext } from '../hooks/useToast';
 
 const card = {
   background: 'var(--surface)',
@@ -10,6 +11,7 @@ const card = {
 };
 
 const PodcastView = () => {
+  const toast = useToastContext();
   const [latestPodcast, setLatestPodcast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -51,10 +53,19 @@ const PodcastView = () => {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (res.ok) { await fetchLatest(); setShowSelector(false); }
-      else alert(data.error || 'Podcast generation failed');
-    } catch { alert('Failed to trigger podcast generation'); }
-    finally { setGenerating(false); }
+      if (res.ok) {
+        await fetchLatest();
+        setShowSelector(false);
+        toast.success('Podcast generated successfully!');
+      } else {
+        const errorMsg = data.error || 'Podcast generation failed';
+        toast.error(errorMsg);
+      }
+    } catch (err) {
+      toast.error('Failed to trigger podcast generation');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (
@@ -168,14 +179,33 @@ const PodcastView = () => {
           Episode Archive
         </div>
         {latestPodcast ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+          <div 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 12, 
+              padding: '10px 0', 
+              borderBottom: '1px solid var(--border)',
+              cursor: 'pointer',
+              transition: 'background 0.15s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
             <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text3)', width: 70, flexShrink: 0 }}>
               {new Date(latestPodcast.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </div>
             <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', flex: 1 }}>
               Pulse Digest — {new Date(latestPodcast.created_at).toLocaleDateString()}
             </div>
-            <button style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text2)', fontSize: 11, cursor: 'pointer' }}>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text2)', fontSize: 11, cursor: 'pointer' }}
+            >
               ▶
             </button>
           </div>

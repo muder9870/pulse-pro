@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
 import { ChevronLeft, ChevronRight, RefreshCw, Clock, Trash2, AlertCircle, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -58,8 +58,10 @@ export default function ContentCalendar() {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState(null);
   const [viewDate, setViewDate] = useState(new Date());
+  const [highlightedDate, setHighlightedDate] = useState(null);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const today = new Date();
 
   const fetchQueue = async () => {
@@ -79,6 +81,18 @@ export default function ContentCalendar() {
   };
 
   useEffect(() => { fetchQueue(); }, []);
+
+  // Handle date parameter from URL
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const targetDate = new Date(dateParam);
+      if (!isNaN(targetDate.getTime())) {
+        setViewDate(new Date(targetDate.getFullYear(), targetDate.getMonth(), 1));
+        setHighlightedDate(dateParam);
+      }
+    }
+  }, [searchParams]);
 
   // Build calendar grid
   const year = viewDate.getFullYear();
@@ -100,13 +114,37 @@ export default function ContentCalendar() {
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
 
-  // Upcoming posts (next 5)
+  // Handle date cell click
+  const handleDateClick = (day, month, year) => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setHighlightedDate(dateStr);
+    navigate(`/calendar?date=${dateStr}`);
+  };
+
+  // Check if a date is highlighted
+  const isHighlighted = (d, m, y) => {
+    if (!highlightedDate) return false;
+    const cellDate = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    return cellDate === highlightedDate;
+  };
+
+  // Upcoming posts (next 5, filtered by highlighted date if present)
   const upcoming = [...posts]
-    .filter(p => new Date(p.scheduled_at || p.scheduled_time) >= today)
+    .filter(p => {
+      const postDate = new Date(p.scheduled_at || p.scheduled_time);
+      if (highlightedDate) {
+        // Filter to show only posts on the highlighted date
+        const postDateStr = `${postDate.getFullYear()}-${String(postDate.getMonth() + 1).padStart(2, '0')}-${String(postDate.getDate()).padStart(2, '0')}`;
+        return postDateStr === highlightedDate;
+      }
+      // Otherwise show upcoming posts
+      return postDate >= today;
+    })
     .sort((a, b) => new Date(a.scheduled_at || a.scheduled_time) - new Date(b.scheduled_at || b.scheduled_time))
     .slice(0, 5);
 
   const [selectedPost, setSelectedPost] = useState(null);
+  const [showAllPosts, setShowAllPosts] = useState(false);
 
   const handleDeleteSchedule = async (postId, e) => {
     e.stopPropagation();
@@ -198,9 +236,11 @@ export default function ContentCalendar() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
             {cells.map((cell, i) => {
               const isTodayCell = cell.type === 'current' && isToday(cell.day);
+              const isHighlightedCell = cell.type === 'current' && isHighlighted(cell.day, month, year);
               return (
                 <div
                   key={i}
+                  onClick={() => cell.type === 'current' && handleDateClick(cell.day, month, year)}
                   style={{
                     aspectRatio: '1',
                     borderRadius: 8,
@@ -208,15 +248,16 @@ export default function ContentCalendar() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 12,
-                    cursor: 'pointer',
+                    cursor: cell.type === 'current' ? 'pointer' : 'default',
                     position: 'relative',
                     transition: 'all 0.15s',
-                    background: isTodayCell ? 'var(--accent)' : 'transparent',
+                    background: isTodayCell ? 'var(--accent)' : isHighlightedCell ? 'var(--accent-glow)' : 'transparent',
                     color: isTodayCell ? '#fff' : cell.type !== 'current' ? 'var(--text3)' : 'var(--text)',
-                    fontWeight: isTodayCell ? 700 : 400,
+                    fontWeight: isTodayCell || isHighlightedCell ? 700 : 400,
+                    border: isHighlightedCell ? '2px solid var(--accent)' : 'none',
                   }}
-                  onMouseEnter={e => { if (!isTodayCell) e.currentTarget.style.background = 'var(--surface2)'; }}
-                  onMouseLeave={e => { if (!isTodayCell) e.currentTarget.style.background = 'transparent'; }}
+                  onMouseEnter={e => { if (!isTodayCell && !isHighlightedCell && cell.type === 'current') e.currentTarget.style.background = 'var(--surface2)'; }}
+                  onMouseLeave={e => { if (!isTodayCell && !isHighlightedCell && cell.type === 'current') e.currentTarget.style.background = 'transparent'; }}
                 >
                   {cell.day}
                   {cell.event && (
@@ -234,7 +275,22 @@ export default function ContentCalendar() {
 
         {/* Upcoming Events */}
         <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>Upcoming</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+              {highlightedDate ? `Events on ${new Date(highlightedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Upcoming'}
+            </div>
+            {highlightedDate && (
+              <button
+                onClick={() => {
+                  setHighlightedDate(null);
+                  navigate('/calendar');
+                }}
+                style={{ fontSize: 10, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {loading ? (
               [1,2,3].map(i => <div key={i} style={{ height: 64, background: 'var(--surface)', borderRadius: 'var(--radius-lg)', animation: 'shimmer 1.5s infinite' }} />)
@@ -280,54 +336,82 @@ export default function ContentCalendar() {
         </div>
       </div>
 
-      {/* ── Scheduled Posts List ── */}
+      {/* ── Scheduled Posts List (Collapsible) ── */}
       {posts.length > 0 && (
         <div style={{ marginTop: 16 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>
-            All Scheduled Posts
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {posts.map((post, i) => {
-              const d = new Date(post.scheduled_at || post.scheduled_time);
-              const statusColor = post.status === 'posted' ? 'var(--green)' : post.status === 'failed' ? 'var(--red)' : 'var(--accent)';
-              const statusBg = post.status === 'posted' ? 'var(--green-dim)' : post.status === 'failed' ? 'var(--red-dim)' : 'var(--accent-glow)';
-              return (
-                <div key={post.id || i} style={{ ...card, display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                  onClick={() => setSelectedPost(post)}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: statusBg, color: statusColor }}>
-                        {post.status}
-                      </span>
-                      <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{post.platform}</span>
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>{post.article_title || post.title || 'Untitled'}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Clock style={{ width: 11, height: 11 }} />
-                      {d.toLocaleString()}
-                    </div>
-                    {post.error_message && (
-                      <div style={{ marginTop: 6, padding: '4px 8px', background: 'var(--red-dim)', border: '1px solid var(--red)', borderRadius: 6, fontSize: 10, color: 'var(--red)', display: 'flex', gap: 4 }}>
-                        <AlertCircle style={{ width: 10, height: 10, flexShrink: 0, marginTop: 1 }} />
-                        {post.error_message}
-                      </div>
-                    )}
-                  </div>
-                  <button style={{ padding: 6, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text3)', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
-                    onClick={(e) => handleDeleteSchedule(post.id, e)}
-                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.borderColor = 'var(--red)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-                    title="Remove from schedule (article & content kept)"
+          <button
+            onClick={() => setShowAllPosts(!showAllPosts)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              padding: '10px 14px',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              cursor: 'pointer',
+              transition: 'border-color 0.15s',
+              marginBottom: showAllPosts ? 10 : 0,
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+          >
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+              {showAllPosts ? 'Hide' : 'Show'} All Scheduled Posts ({posts.length})
+            </div>
+            <ChevronRight style={{
+              width: 14,
+              height: 14,
+              color: 'var(--text3)',
+              transform: showAllPosts ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s',
+            }} />
+          </button>
+          {showAllPosts && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {posts.map((post, i) => {
+                const d = new Date(post.scheduled_at || post.scheduled_time);
+                const statusColor = post.status === 'posted' ? 'var(--green)' : post.status === 'failed' ? 'var(--red)' : 'var(--accent)';
+                const statusBg = post.status === 'posted' ? 'var(--green-dim)' : post.status === 'failed' ? 'var(--red-dim)' : 'var(--accent-glow)';
+                return (
+                  <div key={post.id || i} style={{ ...card, display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                    onClick={() => setSelectedPost(post)}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                   >
-                    <Trash2 style={{ width: 13, height: 13 }} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: statusBg, color: statusColor }}>
+                          {post.status}
+                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{post.platform}</span>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>{post.article_title || post.title || 'Untitled'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Clock style={{ width: 11, height: 11 }} />
+                        {d.toLocaleString()}
+                      </div>
+                      {post.error_message && (
+                        <div style={{ marginTop: 6, padding: '4px 8px', background: 'var(--red-dim)', border: '1px solid var(--red)', borderRadius: 6, fontSize: 10, color: 'var(--red)', display: 'flex', gap: 4 }}>
+                          <AlertCircle style={{ width: 10, height: 10, flexShrink: 0, marginTop: 1 }} />
+                          {post.error_message}
+                        </div>
+                      )}
+                    </div>
+                    <button style={{ padding: 6, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text3)', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
+                      onClick={(e) => handleDeleteSchedule(post.id, e)}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.borderColor = 'var(--red)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--text3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                      title="Remove from schedule (article & content kept)"
+                    >
+                      <Trash2 style={{ width: 13, height: 13 }} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -337,7 +421,10 @@ export default function ContentCalendar() {
           post={selectedPost}
           onClose={() => setSelectedPost(null)}
           onDelete={(id, e) => { setSelectedPost(null); handleDeleteSchedule(id, e); }}
-          onViewArticle={() => { setSelectedPost(null); navigate('/articles'); }}
+          onViewArticle={() => { 
+            setSelectedPost(null); 
+            navigate(`/articles?story=${selectedPost.article_id}`);
+          }}
         />
       )}
     </div>

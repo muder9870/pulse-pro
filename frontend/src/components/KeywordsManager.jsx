@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
-import { Plus, Trash2, RefreshCw, RotateCcw, Tag } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, RotateCcw, Tag, CheckCircle2 } from 'lucide-react';
 
 const DEFAULT_KEYWORDS = [
   // Foundation Models
@@ -118,6 +118,7 @@ function KeywordsManager() {
   const [newCategory, setNewCategory] = useState('');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
@@ -146,6 +147,7 @@ function KeywordsManager() {
 
     setAdding(true);
     setAddError(null);
+    setSuccess(null);
     try {
       const response = await apiFetch('/keywords', {
         method: 'POST',
@@ -161,6 +163,8 @@ function KeywordsManager() {
 
       setNewKeyword('');
       setNewCategory('');
+      setSuccess('Keyword added successfully');
+      setTimeout(() => setSuccess(null), 3000);
       await fetchKeywords();
     } catch (err) {
       setAddError('Failed to add keyword.');
@@ -254,6 +258,23 @@ function KeywordsManager() {
           {resetting ? 'Resetting...' : 'Reset to Defaults'}
         </button>
       </div>
+
+      {/* Success Toast */}
+      {success && (
+        <div style={{ 
+          padding: 16, 
+          background: 'var(--green-dim)', 
+          border: '1px solid var(--green)', 
+          color: 'var(--green)', 
+          borderRadius: 10, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 12 
+        }}>
+          <CheckCircle2 style={{ width: 20, height: 20 }} />
+          <span style={{ fontSize: 13 }}>{success}</span>
+        </div>
+      )}
 
       {/* Add Keyword Form */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>

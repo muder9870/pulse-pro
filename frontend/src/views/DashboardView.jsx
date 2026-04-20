@@ -62,6 +62,8 @@ const KpiCard = ({ label, value, trend, trendUp, sub, onClick }) => (
 /* ─── Intel Card ───────────────────────────────────────────────────── */
 const IntelCard = ({ story, onClick }) => {
   const score = story.total_score || 0;
+  const isArxiv = story.source?.toLowerCase() === 'arxiv';
+  
   return (
     <div
       onClick={onClick}
@@ -282,7 +284,7 @@ const DashboardView = ({ handleRunPipeline }) => {
             value={analyzed} 
             sub={`${qualityPct}% coverage`} 
             trendUp 
-            onClick={() => navigate('/articles')}
+            onClick={() => navigate('/articles?filter=analyzed')}
           />
           <KpiCard 
             label="Quality Index" 
@@ -295,7 +297,7 @@ const DashboardView = ({ handleRunPipeline }) => {
             label="Content Ready" 
             value={contentReady} 
             sub={contentReady > 0 ? `${contentReady} to publish` : 'Run pipeline'} 
-            onClick={() => contentReady > 0 ? navigate('/articles') : handleRunPipeline()}
+            onClick={() => contentReady > 0 ? navigate('/articles?filter=ready') : handleRunPipeline()}
           />
         </div>
 
@@ -310,9 +312,17 @@ const DashboardView = ({ handleRunPipeline }) => {
             </div>
           ) : intelCards.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'stretch' }}>
-              {intelCards.map(story => (
-                <IntelCard key={story.id} story={story} onClick={() => navigate(`/articles?story=${story.id}`)} />
-              ))}
+              {intelCards.map(story => {
+                const isArxiv = story.source?.toLowerCase() === 'arxiv';
+                const targetUrl = isArxiv ? `/research?paper=${story.id}` : `/articles?story=${story.id}`;
+                return (
+                  <IntelCard 
+                    key={story.id} 
+                    story={story} 
+                    onClick={() => navigate(targetUrl)} 
+                  />
+                );
+              })}
             </div>
           ) : (
             <div style={{ ...card, padding: '48px 24px', textAlign: 'center' }}>
@@ -333,6 +343,26 @@ const DashboardView = ({ handleRunPipeline }) => {
             {quickNav.map(item => (
               <QuickTile key={item.id} icon={item.icon} label={item.label} desc={item.desc} onClick={() => navigate(`/${item.id}`)} />
             ))}
+          </div>
+          <div style={{ 
+            fontSize: 10, 
+            color: 'var(--text3)', 
+            marginTop: 8,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4
+          }}>
+            <kbd style={{ 
+              padding: '2px 6px', 
+              borderRadius: 4, 
+              background: 'var(--surface2)', 
+              border: '1px solid var(--border)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 9
+            }}>
+              ?
+            </kbd>
+            <span>Press for keyboard shortcuts</span>
           </div>
         </div>
 

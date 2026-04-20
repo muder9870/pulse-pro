@@ -270,15 +270,12 @@ export default function SystemHealth({ onBack }) {
                                 <div key={name} style={{
                                     background: 'var(--surface)', padding: 20, borderRadius: 12,
                                     border: `1px solid ${isOk ? 'var(--border)' : 'var(--red)'}`,
-                                    transition: 'all 0.15s',
-                                }} onMouseEnter={(e) => e.currentTarget.style.borderColor = isOk ? 'var(--border2)' : 'var(--red)'}
-                                   onMouseLeave={(e) => e.currentTarget.style.borderColor = isOk ? 'var(--border)' : 'var(--red)'}>
+                                }}>
                                     {/* Top row */}
                                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                                         <div style={{
                                             padding: 8, borderRadius: 8,
                                             background: isOk ? 'var(--bg3)' : 'var(--red-dim)',
-                                            transition: 'background 0.15s',
                                         }}>
                                             <IconEl style={{ width: 18, height: 18, color: iconColor }} />
                                         </div>

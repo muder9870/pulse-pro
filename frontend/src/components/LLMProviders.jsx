@@ -68,18 +68,6 @@ export default function LLMProviders() {
                         {configuredCount} of {providers.length} providers configured
                     </p>
                 </div>
-                <button
-                    onClick={fetchProviders}
-                    style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)',
-                        background: 'var(--surface2)', color: 'var(--text)', fontSize: 12, fontWeight: 500,
-                        cursor: 'pointer', opacity: loading ? 0.5 : 1,
-                    }}
-                >
-                    <RefreshCw className={loading ? 'animate-spin' : ''} style={{ width: 14, height: 14 }} />
-                    Refresh
-                </button>
             </div>
 
             {/* Provider List */}
@@ -132,7 +120,7 @@ export default function LLMProviders() {
                 border: '1px solid var(--border)',
             }}>
                 <p style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.5 }}>
-                    <strong style={{ color: 'var(--text)' }}>Note:</strong> Configure API keys in your environment variables ({providers.map(p => p.key).join(', ')}) to enable providers. The system automatically uses the first available configured provider.
+                    <strong style={{ color: 'var(--text)' }}>Note:</strong> Configure API keys in your environment variables ({providers.map(p => p.key).join(', ')}) to enable providers. Restart the backend to apply changes. Provider status is read from environment variables and does not change without a restart.
                 </p>
             </div>
         </div>

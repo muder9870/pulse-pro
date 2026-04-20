@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { apiFetch } from '../api/client';
 import { BookOpen, Search, FlaskConical, ExternalLink, RefreshCw } from 'lucide-react';
 import PaperDetailsModal from './PaperDetailsModal';
@@ -22,6 +23,7 @@ function ResearchView() {
   const [deepDiving, setDeepDiving] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // T11: Use React Query for data fetching instead of manual state management
   const { data: papers = [], isLoading: loading, refetch: fetchPapers } = useQuery({
@@ -39,6 +41,10 @@ function ResearchView() {
     setSelectedPaper(paper);
     setAnalysis(null);
     setModalOpen(true);
+    
+    // Update URL with paper parameter
+    setSearchParams({ paper: paper.id });
+    
     try {
       const res = await apiFetch(`research/analysis/${paper.id}`);
       const data = await res.json();
@@ -74,6 +80,18 @@ function ResearchView() {
     } catch { alert('Failed to regenerate analysis'); }
     finally { setDeepDiving(false); }
   };
+
+  // Handle URL parameter for deep linking to specific paper
+  useEffect(() => {
+    const paperParam = searchParams.get('paper');
+    if (paperParam && papers.length > 0 && !modalOpen) {
+      const paperId = parseInt(paperParam, 10);
+      const paper = papers.find(p => p.id === paperId);
+      if (paper) {
+        openDeepDive(paper);
+      }
+    }
+  }, [searchParams, papers]);
 
   const filtered = papers.filter(p => {
     const matchSearch = !searchQuery || p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || p.summary?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -166,6 +184,7 @@ function ResearchView() {
               <div
                 key={paper.id}
                 style={{ ...card }}
+                onClick={() => openDeepDive(paper)}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--bg3)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
               >
@@ -195,17 +214,19 @@ function ResearchView() {
                 {/* Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <button
-                    onClick={() => openDeepDive(paper)}
+                    onClick={(e) => { e.stopPropagation(); openDeepDive(paper); }}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
                   >
                     <FlaskConical style={{ width: 11, height: 11 }} /> Deep Dive →
                   </button>
                   <button
+                    onClick={(e) => e.stopPropagation()}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
                   >
                     Generate Post
                   </button>
                   <button
+                    onClick={(e) => e.stopPropagation()}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text2)', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
                   >
                     📖 Save
@@ -215,6 +236,7 @@ function ResearchView() {
                       href={paper.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text2)', fontSize: 11, fontWeight: 500, textDecoration: 'none' }}
                     >
                       <ExternalLink style={{ width: 11, height: 11 }} /> arXiv
@@ -229,7 +251,11 @@ function ResearchView() {
 
       <PaperDetailsModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          // Clear paper parameter from URL when modal closes
+          setSearchParams({});
+        }}
         analysis={analysis}
         story={selectedPaper}
         onRegenerate={handleRegenerate}

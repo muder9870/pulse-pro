@@ -121,19 +121,31 @@ export default function StyleProfile() {
                                 : String(value).replace(/_/g, ' ');
                             const displayKey = String(key).replace(/_/g, ' ');
                             return (
-                                <div key={key} className="style-option">
+                                <div key={key} style={{
+                                    background: 'var(--surface)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: 'var(--radius-lg)',
+                                    padding: 16
+                                }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                                         <div style={{ padding: 6, background: 'var(--accent-glow)', borderRadius: 8 }}>
                                             <UserCheck style={{ width: 16, height: 16, color: 'var(--accent)' }} />
                                         </div>
-                                        <h3 className="style-option-name" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 0 }}>
+                                        <h3 style={{ 
+                                            textTransform: 'uppercase', 
+                                            letterSpacing: '0.05em', 
+                                            marginBottom: 0,
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            color: 'var(--text2)'
+                                        }}>
                                             {displayKey}
                                         </h3>
                                     </div>
                                     <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent2)', marginBottom: 6, textTransform: 'capitalize' }}>
                                         {displayValue}
                                     </div>
-                                    <p className="style-option-desc" style={{ lineHeight: 1.5 }}>
+                                    <p style={{ lineHeight: 1.5, fontSize: 12, color: 'var(--text2)' }}>
                                         {getStyleDescription(key, String(value))}
                                     </p>
                                 </div>

@@ -18,6 +18,7 @@ import { useScheduleModal } from './hooks/useScheduleModal';
 import { useAppKeyboardShortcuts } from './hooks/useAppKeyboardShortcuts';
 import { BulkOperationsProvider } from './context/BulkOperationsContext';
 import { StoriesProvider } from './context/StoriesContext';
+import BulkConfirmationDialog from './components/BulkConfirmationDialog';
 // View components — lazy loaded per route to reduce initial bundle size
 const AnalyticsView = lazy(() => import('./views/AnalyticsView'));
 const CalendarView = lazy(() => import('./views/CalendarView'));
@@ -65,6 +66,14 @@ function AppContent() {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  
+  // Bulk confirmation dialog state (Requirements 1.1, 1.5)
+  const [bulkConfirmation, setBulkConfirmation] = useState({
+    isOpen: false,
+    operationName: '',
+    itemCount: 0,
+    onConfirm: null,
+  });
 
   // Zustand store — theme, source filter, dashboard filters
   const activeTheme = useAppStore((s) => s.activeTheme);
@@ -454,6 +463,26 @@ function AppContent() {
       return;
     }
 
+    // Show confirmation dialog for >10 items (Requirements 1.1, 1.5)
+    if (articleIds.length > 10) {
+      setBulkConfirmation({
+        isOpen: true,
+        operationName: 'Generate Content',
+        itemCount: articleIds.length,
+        onConfirm: () => {
+          setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null });
+          executeBulkGenerate(articleIds);
+        },
+      });
+      return;
+    }
+
+    // For ≤10 items, proceed directly
+    await executeBulkGenerate(articleIds);
+  };
+
+  const executeBulkGenerate = async (articleIds) => {
+
     // Track progress
     let successCount = 0;
     let failedArticles = [];
@@ -577,6 +606,26 @@ function AppContent() {
       toast.error('No articles selected');
       return;
     }
+
+    // Show confirmation dialog for >10 items (Requirements 1.1, 1.5)
+    if (articleIds.length > 10) {
+      setBulkConfirmation({
+        isOpen: true,
+        operationName: 'Schedule Content',
+        itemCount: articleIds.length,
+        onConfirm: () => {
+          setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null });
+          executeBulkSchedule(options, articleIds);
+        },
+      });
+      return;
+    }
+
+    // For ≤10 items, proceed directly
+    await executeBulkSchedule(options, articleIds);
+  };
+
+  const executeBulkSchedule = async (options, articleIds) => {
 
     if (!options.time || !options.platform) {
       toast.error('Please provide both time and platform');
@@ -1005,6 +1054,26 @@ function AppContent() {
       toast.error('No articles selected');
       return;
     }
+
+    // Show confirmation dialog for >10 items (Requirements 1.1, 1.5)
+    if (articleIds.length > 10) {
+      setBulkConfirmation({
+        isOpen: true,
+        operationName: 'Delete Articles',
+        itemCount: articleIds.length,
+        onConfirm: () => {
+          setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null });
+          executeBulkDelete(articleIds);
+        },
+      });
+      return;
+    }
+
+    // For ≤10 items, show the existing delete confirmation modal
+    setShowDeleteConfirmModal(true);
+  };
+
+  const executeBulkDelete = async (articleIds) => {
 
     // Close the confirmation modal
     setShowDeleteConfirmModal(false);
@@ -1469,7 +1538,7 @@ function AppContent() {
                 Cancel
               </button>
               <button
-                onClick={handleBulkDelete}
+                onClick={() => executeBulkDelete(Array.from(selectedIds))}
                 style={{ padding: '9px 22px', background: 'var(--red)', color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}
               >
                 <Trash2 style={{ width: 14, height: 14 }} />
@@ -1479,6 +1548,15 @@ function AppContent() {
           </div>
         </div>
       )}
+
+      {/* Bulk Confirmation Dialog (Requirements 1.1, 1.5) */}
+      <BulkConfirmationDialog
+        isOpen={bulkConfirmation.isOpen}
+        operationName={bulkConfirmation.operationName}
+        itemCount={bulkConfirmation.itemCount}
+        onConfirm={bulkConfirmation.onConfirm}
+        onCancel={() => setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null })}
+      />
     </div>
   );
 }
