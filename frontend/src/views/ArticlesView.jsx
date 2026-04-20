@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Activity, Loader2, CheckCircle } from 'lucide-react';
 import { FixedSizeList as List } from 'react-window';
+import { useSearchParams } from 'react-router-dom';
 import StoryCard from '../components/StoryCard';
 import FilterBar from '../components/FilterBar';
 import Skeleton from '../components/Skeleton';
@@ -20,6 +21,7 @@ const ArticlesView = ({
   handleRunPipeline,
 }) => {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // Get data from context (T10 refactoring)
   const {
@@ -64,6 +66,28 @@ const ArticlesView = ({
   const [scoreFilter, setScoreFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('score'); // 'score' | 'date'
   const [showFilters, setShowFilters] = useState(false);
+
+  // Deep linking: Handle URL parameters for story navigation
+  const storyRefs = useRef({});
+  
+  useEffect(() => {
+    const storyId = searchParams.get('story');
+    if (storyId && !loading && stories.length > 0) {
+      // Wait for DOM to be ready
+      setTimeout(() => {
+        const element = document.getElementById(`story-${storyId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Highlight the story briefly
+          element.style.transition = 'all 0.3s';
+          element.style.boxShadow = '0 0 0 3px var(--accent)';
+          setTimeout(() => {
+            element.style.boxShadow = '';
+          }, 2000);
+        }
+      }, 100);
+    }
+  }, [searchParams, loading, stories]);
 
   const scoreFiltered = React.useMemo(() => {
     let list = [...filteredStories];
@@ -263,14 +287,15 @@ const ArticlesView = ({
               ) : (
                 // Regular rendering for small lists
                 scoreFiltered.map((story) => (
-                  <StoryCard
-                    key={story.id}
-                    story={story}
-                    initialPlatforms={selectedPlatforms}
-                    isSelected={selectedIds.has(story.id)}
-                    onToggleSelection={() => toggleSelection(story.id)}
-                    hasAnySelection={selectedIds.size > 0}
-                  />
+                  <div key={story.id} id={`story-${story.id}`}>
+                    <StoryCard
+                      story={story}
+                      initialPlatforms={selectedPlatforms}
+                      isSelected={selectedIds.has(story.id)}
+                      onToggleSelection={() => toggleSelection(story.id)}
+                      hasAnySelection={selectedIds.size > 0}
+                    />
+                  </div>
                 ))
               )}
 
