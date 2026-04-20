@@ -158,7 +158,9 @@ const DailyIntelligence = ({ onRunPipeline, activeTheme }) => {
                                         className="mt-6 w-full text-xs font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_10px_20px_-5px_rgba(79,70,229,0.4)] border-none relative z-20 group/btn py-2.5"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            console.log('Deep dive clicked for:', story.title);
+                                            if (import.meta.env.DEV) {
+                                                console.log('Deep dive clicked for:', story.title);
+                                            }
                                             window.dispatchEvent(new CustomEvent('open-story-details', { 
                                                 detail: { title: story.title } 
                                             }));

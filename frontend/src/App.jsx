@@ -201,7 +201,9 @@ function AppContent() {
           analyzed: false
         });
         // We could also open a detail view if we had one
-        console.log(`Deep dive into: ${title}`);
+        if (import.meta.env.DEV) {
+          console.log(`Deep dive into: ${title}`);
+        }
       }
     };
     window.addEventListener('open-story-details', handleOpenStory);
@@ -254,7 +256,9 @@ function AppContent() {
   // Automatic cache invalidation when pipeline finishes
   useEffect(() => {
     if (pipelineStatus.stage === 'done') {
-      console.log('Pipeline finished. Invalidating stories cache...');
+      if (import.meta.env.DEV) {
+        console.log('Pipeline finished. Invalidating stories cache...');
+      }
       queryClient.invalidateQueries(['stories']);
     }
   }, [pipelineStatus.stage, queryClient]);

@@ -28,7 +28,10 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **T9** | **Done** — Extracted `usePipelineRun`, `useScheduleModal`, `useAppKeyboardShortcuts` hooks from `App.jsx`; App.jsx now uses these hooks. |
 | **T10** | **Done** — Created `BulkOperationsContext` and `StoriesContext` to reduce prop drilling; DashboardView and ArticlesView now use context hooks instead of 35+ props. |
 | **T11** | **Done** — ResearchView uses React Query + api client. |
-| **T12** | **Done** — Removed hidden header controls (Ready to Launch pill, Fetch pill, Calendar btn, Export btn, Notifications btn, Ready status badge). |
+| **T12** | **Done** | **T13** | Open — Bulk generate: batch API or parallelize with backoff. |
+| **T14** | Open — Wire virtualized list for Articles view. |
+| **T15** | **Done** — Replaced console.log with `import.meta.env.DEV` guards in production paths. |
+| **T16** | **Done** — Added preconnect hints for Google Fonts; fonts already use `display=swap`. |
 
 ---
 
@@ -239,6 +242,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P3 |
 | **Complexity** | Low |
 | **Dependencies** | None |
+| **Status** | **Done** — Guarded all production `console.log` statements with `import.meta.env.DEV` checks. |
 
 ---
 
@@ -251,6 +255,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P3 |
 | **Complexity** | Low |
 | **Dependencies** | None |
+| **Status** | **Done** — Added `preconnect` hints for Google Fonts; fonts already use `display=swap`. |
 
 ---
 

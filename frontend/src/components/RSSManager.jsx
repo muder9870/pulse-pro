@@ -134,7 +134,9 @@ function RSSManager() {
           const totalAttempted = data.added + data.failed;
           let message = `Added ${data.added} out of ${totalAttempted} feeds. ${data.failed} feeds failed.`;
           if (data.failures && data.failures.length > 0) {
-            console.log('Failed feeds:', data.failures);
+            if (import.meta.env.DEV) {
+              console.log('Failed feeds:', data.failures);
+            }
             message += '\n\nCheck console for details about failed feeds.';
           }
           alert(message);

@@ -98,7 +98,9 @@ const useSSE = (url, options = {}) => {
           setRetryCount(prev => prev + 1);
           
           retryTimeoutRef.current = setTimeout(() => {
-            console.log(`SSE reconnecting... attempt ${retryCount + 1}/${maxRetries}`);
+            if (import.meta.env.DEV) {
+              console.log(`SSE reconnecting... attempt ${retryCount + 1}/${maxRetries}`);
+            }
             connect();
           }, delay);
         } else {

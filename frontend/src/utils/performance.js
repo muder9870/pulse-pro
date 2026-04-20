@@ -77,7 +77,9 @@ export const usePerformanceMonitor = (componentName) => {
     const result = operation();
     const endTime = performance.now();
     
-    console.log(`${componentName} - ${operationName}:`, `${(endTime - startTime).toFixed(2)}ms`);
+    if (import.meta.env.DEV) {
+      console.log(`${componentName} - ${operationName}:`, `${(endTime - startTime).toFixed(2)}ms`);
+    }
     return result;
   }, [componentName]);
   
@@ -188,9 +190,10 @@ export const useBundleSizeMonitor = () => {
     if ('performance' in window && 'memory' in performance) {
       const memoryInfo = performance.memory;
       
-      console.log('Memory usage:', {
-        usedJSHeapSize: `${(memoryInfo.usedJSHeapSize / 1048576).toFixed(2)} MB`,
-        totalJSHeapSize: `${(memoryInfo.totalJSHeapSize / 1048576).toFixed(2)} MB`,
+      if (import.meta.env.DEV) {
+        console.log('Memory usage:', {
+          usedJSHeapSize: `${(memoryInfo.usedJSHeapSize / 1048576).toFixed(2)} MB`,
+          totalJSHeapSize: `${(memoryInfo.totalJSHeapSize / 1048576).toFixed(2)} MB`,
         jsHeapSizeLimit: `${(memoryInfo.jsHeapSizeLimit / 1048576).toFixed(2)} MB`
       });
     }
@@ -199,9 +202,10 @@ export const useBundleSizeMonitor = () => {
     if ('navigation' in performance) {
       const navigation = performance.getEntriesByType('navigation')[0];
       
-      console.log('Page load performance:', {
-        domContentLoaded: `${navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart}ms`,
-        loadComplete: `${navigation.loadEventEnd - navigation.loadEventStart}ms`,
+      if (import.meta.env.DEV) {
+        console.log('Page load performance:', {
+          domContentLoaded: `${navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart}ms`,
+          loadComplete: `${navigation.loadEventEnd - navigation.loadEventStart}ms`,
         totalTime: `${navigation.loadEventEnd - navigation.fetchStart}ms`
       });
     }
