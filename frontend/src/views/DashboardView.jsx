@@ -98,23 +98,6 @@ const IntelCard = ({ story, onClick }) => {
   );
 };
 
-/* ─── Priority Pick Row ────────────────────────────────────────────── */
-const PriorityRow = ({ story, onClick }) => (
-  <div
-    onClick={onClick}
-    style={{ padding: '8px 10px', borderRadius: 8, background: 'var(--bg3)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.15s' }}
-    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
-    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-  >
-    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2, fontFamily: 'var(--font-mono)' }}>
-      {story.source?.toUpperCase()} · Score: {story.total_score}
-    </div>
-    <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>
-      {story.title?.slice(0, 55)}{story.title?.length > 55 ? '…' : ''}
-    </div>
-  </div>
-);
-
 /* ─── Quick Access Tile ────────────────────────────────────────────── */
 const QuickTile = ({ icon: Icon, label, desc, onClick }) => (
   <button
@@ -146,13 +129,8 @@ const DashboardView = ({ handleRunPipeline }) => {
     setSetupDismissed(true);
   };
 
-  const topPicks = React.useMemo(() =>
-    [...stories].sort((a, b) => (b.total_score || 0) - (a.total_score || 0)).slice(0, 4),
-    [stories]
-  );
-
   const intelCards = React.useMemo(() =>
-    [...stories].sort((a, b) => (b.total_score || 0) - (a.total_score || 0)).slice(0, 3),
+    [...stories].sort((a, b) => (b.total_score || 0) - (a.total_score || 0)).slice(0, 6),
     [stories]
   );
 
@@ -321,144 +299,40 @@ const DashboardView = ({ handleRunPipeline }) => {
           />
         </div>
 
-        {/* ── Main 2-col grid: Intel Feed + Priority Picks ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 18, alignItems: 'start' }}>
-
-          {/* Intel Feed */}
-          <div>
-            <SectionLabel sub={new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}>
-              Live Intelligence Feed
-            </SectionLabel>
-            {loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                {[1,2,3].map(i => <div key={i} style={{ height: 180, background: 'var(--surface)', borderRadius: 'var(--radius-lg)', animation: 'shimmer 1.5s infinite' }} />)}
-              </div>
-            ) : intelCards.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'stretch' }}>
-                {intelCards.map(story => (
-                  <IntelCard key={story.id} story={story} onClick={() => navigate(`/articles?story=${story.id}`)} />
-                ))}
-              </div>
-            ) : (
-              <div style={{ ...card, padding: '48px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>📡</div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>No intelligence yet</div>
-                <div style={{ fontSize: 12, color: 'var(--text2)' }}>Run the pipeline to fetch articles</div>
-                <button onClick={handleRunPipeline} style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
-                  ▶ Run Pipeline
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Priority Picks */}
-          <div>
-            <SectionLabel sub="Top Scored">Priority Picks</SectionLabel>
-            <div style={{ ...card, padding: '12px 14px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {loading ? (
-                  [1,2,3,4].map(i => <div key={i} style={{ height: 52, background: 'var(--bg3)', borderRadius: 8, animation: 'shimmer 1.5s infinite' }} />)
-                ) : topPicks.length > 0 ? (
-                  topPicks.map(story => (
-                    <PriorityRow key={story.id} story={story} onClick={() => navigate(`/articles?story=${story.id}`)} />
-                  ))
-                ) : (
-                  <div style={{ padding: '24px 0', textAlign: 'center', fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>
-                    No articles yet
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => navigate('/research')}
-                style={{ marginTop: 10, width: '100%', display: 'flex', justifyContent: 'center', padding: '5px 10px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text2)', fontSize: 11, fontWeight: 500, cursor: 'pointer', transition: 'color 0.15s' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text2)'}
-              >
-                View All Research →
+        {/* ── Live Intelligence Feed ── */}
+        <div style={{ marginBottom: 18 }}>
+          <SectionLabel sub={new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}>
+            Live Intelligence Feed
+          </SectionLabel>
+          {loading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              {[1,2,3,4,5,6].map(i => <div key={i} style={{ height: 180, background: 'var(--surface)', borderRadius: 'var(--radius-lg)', animation: 'shimmer 1.5s infinite' }} />)}
+            </div>
+          ) : intelCards.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'stretch' }}>
+              {intelCards.map(story => (
+                <IntelCard key={story.id} story={story} onClick={() => navigate(`/articles?story=${story.id}`)} />
+              ))}
+            </div>
+          ) : (
+            <div style={{ ...card, padding: '48px 24px', textAlign: 'center' }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>📡</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>No intelligence yet</div>
+              <div style={{ fontSize: 12, color: 'var(--text2)' }}>Run the pipeline to fetch articles</div>
+              <button onClick={handleRunPipeline} style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                ▶ Run Pipeline
               </button>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* ── Quick Access + System Ecosystem ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
-
-          {/* Quick Access */}
-          <div style={{ ...card, padding: '16px 18px' }}>
-            <SectionLabel>Quick Access</SectionLabel>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {quickNav.map(item => (
-                <QuickTile key={item.id} icon={item.icon} label={item.label} desc={item.desc} onClick={() => navigate(`/${item.id}`)} />
-              ))}
-            </div>
-          </div>
-
-          {/* System Ecosystem */}
-          <div style={{ ...card, padding: '16px 18px' }}>
-            <SectionLabel>System Ecosystem</SectionLabel>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {[
-                { 
-                  label: 'INTELLIGENCE BASE', 
-                  value: totalArticles, 
-                  badge: 'Active', 
-                  badgeColor: 'var(--green)', 
-                  badgeBg: 'var(--green-dim)',
-                  onClick: () => navigate('/articles')
-                },
-                { 
-                  label: 'AI ANALYZED', 
-                  value: analyzed, 
-                  badge: `${qualityPct}%`, 
-                  badgeColor: 'var(--accent)', 
-                  badgeBg: 'var(--accent-glow)',
-                  onClick: () => navigate('/articles')
-                },
-                { 
-                  label: 'POSTS GENERATED', 
-                  value: contentReady, 
-                  badge: 'Ready', 
-                  badgeColor: 'var(--teal)', 
-                  badgeBg: 'var(--teal-dim)',
-                  onClick: () => contentReady > 0 ? navigate('/articles') : handleRunPipeline()
-                },
-                { 
-                  label: 'DEEP DIVES', 
-                  value: stories.filter(s => s.has_deep_analysis).length, 
-                  badge: 'Actionable', 
-                  badgeColor: 'var(--amber)', 
-                  badgeBg: 'var(--amber-dim)',
-                  onClick: () => navigate('/research')
-                },
-              ].map((item, i) => (
-                <div 
-                  key={i} 
-                  onClick={item.onClick}
-                  style={{ 
-                    background: 'var(--bg3)', 
-                    border: '1px solid var(--border)', 
-                    borderRadius: 8, 
-                    padding: '10px 12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'var(--border2)';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>{item.label}</div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{item.value}</div>
-                  <div style={{ marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: item.badgeBg, color: item.badgeColor }}>
-                    {item.badge}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* ── Quick Access ── */}
+        <div style={{ ...card, padding: '16px 18px', marginBottom: 18 }}>
+          <SectionLabel>Quick Access</SectionLabel>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {quickNav.map(item => (
+              <QuickTile key={item.id} icon={item.icon} label={item.label} desc={item.desc} onClick={() => navigate(`/${item.id}`)} />
+            ))}
           </div>
         </div>
 
