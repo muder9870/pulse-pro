@@ -24,11 +24,23 @@ const SectionLabel = ({ children, sub }) => (
 );
 
 /* ─── KPI Card ─────────────────────────────────────────────────────── */
-const KpiCard = ({ label, value, trend, trendUp, sub }) => (
+const KpiCard = ({ label, value, trend, trendUp, sub, onClick }) => (
   <div
-    style={{ ...card, padding: '16px 18px', transition: 'border-color 0.15s', cursor: 'default' }}
-    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
-    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+    onClick={onClick}
+    style={{ 
+      ...card, 
+      padding: '16px 18px', 
+      transition: 'all 0.15s', 
+      cursor: onClick ? 'pointer' : 'default' 
+    }}
+    onMouseEnter={e => {
+      e.currentTarget.style.borderColor = 'var(--border2)';
+      if (onClick) e.currentTarget.style.transform = 'translateY(-1px)';
+    }}
+    onMouseLeave={e => {
+      e.currentTarget.style.borderColor = 'var(--border)';
+      if (onClick) e.currentTarget.style.transform = 'translateY(0)';
+    }}
   >
     <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 8 }}>
       {label}
@@ -280,10 +292,33 @@ const DashboardView = ({ handleRunPipeline }) => {
 
         {/* ── KPI Cards ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 18 }}>
-          <KpiCard label="Intelligence Base" value={totalArticles} trend={`+${Math.min(12, totalArticles)} today`} trendUp />
-          <KpiCard label="AI Processed" value={analyzed} sub={`${qualityPct}% coverage`} trendUp />
-          <KpiCard label="Quality Index" value={`${qualityPct}%`} trend="needs more analysis" trendUp={qualityPct > 50} />
-          <KpiCard label="Content Ready" value={contentReady} sub={contentReady > 0 ? `${contentReady} to publish` : 'Run pipeline'} />
+          <KpiCard 
+            label="Intelligence Base" 
+            value={totalArticles} 
+            trend={`+${Math.min(12, totalArticles)} today`} 
+            trendUp 
+            onClick={() => navigate('/articles')}
+          />
+          <KpiCard 
+            label="AI Processed" 
+            value={analyzed} 
+            sub={`${qualityPct}% coverage`} 
+            trendUp 
+            onClick={() => navigate('/articles')}
+          />
+          <KpiCard 
+            label="Quality Index" 
+            value={`${qualityPct}%`} 
+            trend="needs more analysis" 
+            trendUp={qualityPct > 50} 
+            onClick={() => navigate('/analytics')}
+          />
+          <KpiCard 
+            label="Content Ready" 
+            value={contentReady} 
+            sub={contentReady > 0 ? `${contentReady} to publish` : 'Run pipeline'} 
+            onClick={() => contentReady > 0 ? navigate('/articles') : handleRunPipeline()}
+          />
         </div>
 
         {/* ── Main 2-col grid: Intel Feed + Priority Picks ── */}
@@ -301,7 +336,7 @@ const DashboardView = ({ handleRunPipeline }) => {
             ) : intelCards.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'stretch' }}>
                 {intelCards.map(story => (
-                  <IntelCard key={story.id} story={story} onClick={() => navigate('/articles')} />
+                  <IntelCard key={story.id} story={story} onClick={() => navigate(`/articles?story=${story.id}`)} />
                 ))}
               </div>
             ) : (
@@ -325,7 +360,7 @@ const DashboardView = ({ handleRunPipeline }) => {
                   [1,2,3,4].map(i => <div key={i} style={{ height: 52, background: 'var(--bg3)', borderRadius: 8, animation: 'shimmer 1.5s infinite' }} />)
                 ) : topPicks.length > 0 ? (
                   topPicks.map(story => (
-                    <PriorityRow key={story.id} story={story} onClick={() => navigate('/articles')} />
+                    <PriorityRow key={story.id} story={story} onClick={() => navigate(`/articles?story=${story.id}`)} />
                   ))
                 ) : (
                   <div style={{ padding: '24px 0', textAlign: 'center', fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>
@@ -363,12 +398,59 @@ const DashboardView = ({ handleRunPipeline }) => {
             <SectionLabel>System Ecosystem</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {[
-                { label: 'INTELLIGENCE BASE', value: totalArticles, badge: 'Active', badgeColor: 'var(--green)', badgeBg: 'var(--green-dim)' },
-                { label: 'AI ANALYZED',       value: analyzed,      badge: `${qualityPct}%`, badgeColor: 'var(--accent)', badgeBg: 'var(--accent-glow)' },
-                { label: 'POSTS GENERATED',   value: contentReady,  badge: 'Ready', badgeColor: 'var(--teal)', badgeBg: 'var(--teal-dim)' },
-                { label: 'DEEP DIVES',        value: stories.filter(s => s.has_deep_analysis).length, badge: 'Actionable', badgeColor: 'var(--amber)', badgeBg: 'var(--amber-dim)' },
+                { 
+                  label: 'INTELLIGENCE BASE', 
+                  value: totalArticles, 
+                  badge: 'Active', 
+                  badgeColor: 'var(--green)', 
+                  badgeBg: 'var(--green-dim)',
+                  onClick: () => navigate('/articles')
+                },
+                { 
+                  label: 'AI ANALYZED', 
+                  value: analyzed, 
+                  badge: `${qualityPct}%`, 
+                  badgeColor: 'var(--accent)', 
+                  badgeBg: 'var(--accent-glow)',
+                  onClick: () => navigate('/articles')
+                },
+                { 
+                  label: 'POSTS GENERATED', 
+                  value: contentReady, 
+                  badge: 'Ready', 
+                  badgeColor: 'var(--teal)', 
+                  badgeBg: 'var(--teal-dim)',
+                  onClick: () => contentReady > 0 ? navigate('/articles') : handleRunPipeline()
+                },
+                { 
+                  label: 'DEEP DIVES', 
+                  value: stories.filter(s => s.has_deep_analysis).length, 
+                  badge: 'Actionable', 
+                  badgeColor: 'var(--amber)', 
+                  badgeBg: 'var(--amber-dim)',
+                  onClick: () => navigate('/research')
+                },
               ].map((item, i) => (
-                <div key={i} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
+                <div 
+                  key={i} 
+                  onClick={item.onClick}
+                  style={{ 
+                    background: 'var(--bg3)', 
+                    border: '1px solid var(--border)', 
+                    borderRadius: 8, 
+                    padding: '10px 12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'var(--border2)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
                   <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>{item.label}</div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{item.value}</div>
                   <div style={{ marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: item.badgeBg, color: item.badgeColor }}>
