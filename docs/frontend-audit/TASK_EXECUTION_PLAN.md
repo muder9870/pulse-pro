@@ -20,8 +20,11 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **T2** | **Done** — Removed unwired `useDataMigration.jsx` and `DataMigration.jsx` (no backend routes; not imported elsewhere). |
 | **T3** | **Done** — `buildApiUrl` + `apiFetch` in `api/client.js`; raw `fetch('/api/...')` replaced across `frontend/src` (incl. `App.jsx`, `PipelineContext`, components). |
 | **T4** | **Done** — `gcTime` in `useStories`, `usePlatforms`, `useAnalytics`. |
+| **T5** | **Done** — Schedule and delete modals in `App.jsx` use Pulse tokens (`var(--bg2)`, `var(--surface)`, `var(--text)`, `var(--border)`). |
 | **T6** | **Done** — StoryCard platform chips use design tokens. |
 | **T6b** | **Done** — StoryCard shell + expanded panel use Pulse surfaces (`--surface`, `--bg2`, `--border`). |
+| **T7** | **Done** — ThemeProvider `--color-*` tokens unified with `:root` Pulse vars; all tokens bridge to Pulse shell vars for consistent theming. |
+| **T8** | **Done** — Skeleton components deduplicated; `components/ui/Skeleton.jsx` removed, all imports migrated to `components/Skeleton.jsx`. |
 | **T-pipeline-api** | **Done** — DB columns + `PATCH /api/stories/<id>/pipeline` + story JSON flags + `storyState.js` alignment; **Alembic migration** `b3f4a5c6d7e8_add_story_pipeline_columns.py` (Docker) + `init.sql` includes baseline columns. |
 
 ---

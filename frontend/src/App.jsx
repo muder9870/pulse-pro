@@ -1632,36 +1632,49 @@ function AppContent() {
 
       {/* Schedule Modal */}
       {scheduleOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-slate-200 animate-slide-up">
-            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(14px)', padding: 16 }}>
+          <div className="animate-slide-up" style={{ width: '100%', maxWidth: 520, borderRadius: 20, background: 'var(--bg2)', border: '1px solid var(--border2)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid var(--border)' }}>
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Automation Engine</h2>
-                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-1">
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-display)', margin: 0 }}>Automation Engine</h2>
+                <p style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.1em', marginTop: 4 }}>
                   {scheduleNextRun ? `Next run: ${new Date(scheduleNextRun).toLocaleTimeString()}` : 'System Idle'}
                 </p>
               </div>
-              <button onClick={() => setScheduleOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
+              <button onClick={() => setScheduleOpen(false)} style={{ padding: 8, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X style={{ width: 16, height: 16 }} />
               </button>
             </div>
-            <div className="p-8 space-y-8">
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <div className={`w-12 h-7 rounded-full relative transition-colors ${scheduleEnabled ? 'bg-indigo-600' : 'bg-slate-200'}`}>
-                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${scheduleEnabled ? 'left-6' : 'left-1'}`} />
+            <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {scheduleError && (
+                <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: 'var(--red)', fontSize: 12 }}>
+                  {scheduleError}
                 </div>
-                <input type="checkbox" checked={scheduleEnabled} onChange={(e) => setScheduleEnabled(e.target.checked)} className="hidden" />
-                <span className="text-sm font-bold text-slate-700">Enable Automated Syncing</span>
+              )}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                <div
+                  style={{ width: 44, height: 26, borderRadius: 13, position: 'relative', transition: 'background 0.2s', background: scheduleEnabled ? 'var(--accent)' : 'var(--surface2)', border: '1px solid var(--border2)', flexShrink: 0 }}
+                >
+                  <div style={{ position: 'absolute', top: 3, width: 18, height: 18, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', left: scheduleEnabled ? 22 : 3 }} />
+                </div>
+                <input type="checkbox" checked={scheduleEnabled} onChange={(e) => setScheduleEnabled(e.target.checked)} style={{ display: 'none' }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Enable Automated Syncing</span>
               </label>
 
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Days</label>
-                <div className="grid grid-cols-7 gap-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Active Days</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
                   {dayOptions.map((d) => (
                     <button
                       key={d.key}
                       onClick={() => toggleDay(d.key)}
-                      className={`py-4 rounded-2xl text-[10px] font-black uppercase transition-all border ${scheduleDays.includes(d.key) ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-indigo-300'}`}
+                      style={{
+                        padding: '10px 0', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                        textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.15s',
+                        background: scheduleDays.includes(d.key) ? 'var(--accent)' : 'var(--surface2)',
+                        border: `1px solid ${scheduleDays.includes(d.key) ? 'var(--accent)' : 'var(--border)'}`,
+                        color: scheduleDays.includes(d.key) ? '#fff' : 'var(--text2)',
+                      }}
                     >
                       {d.label}
                     </button>
@@ -1669,24 +1682,24 @@ function AppContent() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daily Execution Time</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Daily Execution Time</label>
                 <input
                   type="time"
                   value={scheduleTime}
                   onChange={(e) => setScheduleTime(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  style={{ width: '100%', padding: '10px 14px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 16, fontWeight: 700, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' }}
                 />
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3 px-8 py-6 border-t border-slate-100">
-              <button onClick={() => setScheduleOpen(false)} className="px-6 py-3 text-sm font-bold text-slate-500">Close</button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, padding: '16px 28px', borderTop: '1px solid var(--border)' }}>
+              <button onClick={() => setScheduleOpen(false)} style={{ padding: '9px 18px', fontSize: 13, fontWeight: 600, color: 'var(--text2)', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: 10 }}>Close</button>
               <button
                 onClick={saveSchedule}
                 disabled={scheduleLoading}
-                className="px-8 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all transform active:scale-95"
+                style={{ padding: '9px 22px', background: 'var(--accent)', color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: scheduleLoading ? 'not-allowed' : 'pointer', opacity: scheduleLoading ? 0.7 : 1, transition: 'all 0.15s' }}
               >
-                {scheduleLoading ? 'Calibrating...' : 'Commit Changes'}
+                {scheduleLoading ? 'Calibrating…' : 'Commit Changes'}
               </button>
             </div>
           </div>
@@ -1695,33 +1708,33 @@ function AppContent() {
 
       {/* Delete Confirmation Modal (triggered by keyboard shortcut or BulkActionsBar) */}
       {showDeleteConfirmModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl border border-slate-200 animate-slide-up">
-            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">Delete {selectedIds.size} {selectedIds.size === 1 ? 'Article' : 'Articles'}?</h2>
-              </div>
-              <button onClick={() => setShowDeleteConfirmModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(14px)', padding: 16 }}>
+          <div className="animate-slide-up" style={{ width: '100%', maxWidth: 440, borderRadius: 20, background: 'var(--bg2)', border: '1px solid var(--border2)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid var(--border)' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-display)', margin: 0 }}>
+                Delete {selectedIds.size} {selectedIds.size === 1 ? 'Article' : 'Articles'}?
+              </h2>
+              <button onClick={() => setShowDeleteConfirmModal(false)} style={{ padding: 8, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X style={{ width: 16, height: 16 }} />
               </button>
             </div>
-            <div className="p-8">
-              <p className="text-sm text-slate-600">
+            <div style={{ padding: '20px 28px' }}>
+              <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, margin: 0 }}>
                 This action is irreversible. All selected articles and their generated content will be permanently deleted.
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 px-8 py-6 border-t border-slate-100">
-              <button 
-                onClick={() => setShowDeleteConfirmModal(false)} 
-                className="px-6 py-3 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, padding: '16px 28px', borderTop: '1px solid var(--border)' }}>
+              <button
+                onClick={() => setShowDeleteConfirmModal(false)}
+                style={{ padding: '9px 18px', fontSize: 13, fontWeight: 600, color: 'var(--text2)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="px-8 py-3 bg-red-600 text-white rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 hover:bg-red-700 transition-all transform active:scale-95 flex items-center gap-2"
+                style={{ padding: '9px 22px', background: 'var(--red)', color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 style={{ width: 14, height: 14 }} />
                 Delete {selectedIds.size} {selectedIds.size === 1 ? 'Article' : 'Articles'}
               </button>
             </div>

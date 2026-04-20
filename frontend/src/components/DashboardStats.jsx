@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
 import { FileText, Sparkles, CheckCircle, TrendingUp, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { SkeletonStats } from './ui/Skeleton';
+import { PageSkeleton } from './Skeleton';
 import FeatureErrorBoundary from './FeatureErrorBoundary';
 
 const DashboardStats = React.memo(({ activeTheme }) => {

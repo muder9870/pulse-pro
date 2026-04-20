@@ -61,7 +61,7 @@ const Button = React.forwardRef(({
   const widthClass = fullWidth ? 'w-full' : '';
   
   // Validate variant and log warning in development
-  if (process.env.NODE_ENV === 'development' && !variants[variant]) {
+  if (import.meta.env.DEV && !variants[variant]) {
     console.warn(
       `Invalid variant "${variant}" provided to Button. ` +
       `Valid variants are: ${Object.keys(variants).join(', ')}. ` +
