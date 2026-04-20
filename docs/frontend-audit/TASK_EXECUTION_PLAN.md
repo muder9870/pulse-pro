@@ -25,7 +25,10 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **T6b** | **Done** — StoryCard shell + expanded panel use Pulse surfaces (`--surface`, `--bg2`, `--border`). |
 | **T7** | **Done** — ThemeProvider `--color-*` tokens unified with `:root` Pulse vars; all tokens bridge to Pulse shell vars for consistent theming. |
 | **T8** | **Done** — Skeleton components deduplicated; `components/ui/Skeleton.jsx` removed, all imports migrated to `components/Skeleton.jsx`. |
-| **T-pipeline-api** | **Done** — DB columns + `PATCH /api/stories/<id>/pipeline` + story JSON flags + `storyState.js` alignment; **Alembic migration** `b3f4a5c6d7e8_add_story_pipeline_columns.py` (Docker) + `init.sql` includes baseline columns. |
+| **T9** | **Done** — Extracted `usePipelineRun`, `useScheduleModal`, `useAppKeyboardShortcuts` hooks from `App.jsx`; App.jsx now uses these hooks. |
+| **T10** | **Done** — Created `BulkOperationsContext` and `StoriesContext` to reduce prop drilling; DashboardView and ArticlesView now use context hooks instead of 35+ props. |
+| **T11** | **Done** — ResearchView uses React Query + api client. |
+| **T12** | **Done** — Removed hidden header controls (Ready to Launch pill, Fetch pill, Calendar btn, Export btn, Notifications btn, Ready status badge). |
 
 ---
 
@@ -158,6 +161,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P2 |
 | **Complexity** | High |
 | **Dependencies** | T3 for pipeline fetch |
+| **Status** | **Done** — Created `usePipelineRun.js`, `useScheduleModal.js`, `useAppKeyboardShortcuts.js`; App.jsx refactored to use these hooks. |
 
 ---
 
@@ -170,6 +174,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P2 |
 | **Complexity** | High |
 | **Dependencies** | T9 optional |
+| **Status** | **Done** — Created `BulkOperationsContext` and `StoriesContext`; reduced prop count from 35+ to 3 in ArticlesView and DashboardView. |
 
 ---
 
@@ -182,6 +187,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P2 |
 | **Complexity** | Medium |
 | **Dependencies** | T4 |
+| **Status** | **Done** — ResearchView uses React Query with proper cache configuration. |
 
 ---
 
@@ -194,6 +200,7 @@ Tasks marked **Done** reflect the current repo; others remain open.
 | **Priority** | P2 |
 | **Complexity** | Low |
 | **Dependencies** | None |
+| **Status** | **Done** — Removed all `className="hidden"` dead code from header. |
 
 ---
 

@@ -7,6 +7,7 @@ import {
 import FeatureErrorBoundary from '../components/FeatureErrorBoundary';
 import PipelineStatus from '../components/PipelineStatus';
 import { useNavigate } from 'react-router-dom';
+import { useStories as useStoriesContext } from '../context/StoriesContext';
 
 /* ─── Pulse Pro token helpers ─────────────────────────────────────── */
 const card = {
@@ -117,8 +118,11 @@ const QuickTile = ({ icon: Icon, label, desc, onClick }) => (
 );
 
 /* ─── Main Component ───────────────────────────────────────────────── */
-const DashboardView = ({ stories = [], loading, handleRunPipeline }) => {
+const DashboardView = ({ handleRunPipeline }) => {
   const navigate = useNavigate();
+  
+  // Get data from context (T10 refactoring)
+  const { stories = [], loading } = useStoriesContext();
 
   const topPicks = React.useMemo(() =>
     [...stories].sort((a, b) => (b.total_score || 0) - (a.total_score || 0)).slice(0, 4),

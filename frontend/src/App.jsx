@@ -13,6 +13,11 @@ import { usePipeline } from './hooks/usePipeline';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from './store/appStore';
 import { apiFetch } from './api/client';
+import { usePipelineRun } from './hooks/usePipelineRun';
+import { useScheduleModal } from './hooks/useScheduleModal';
+import { useAppKeyboardShortcuts } from './hooks/useAppKeyboardShortcuts';
+import { BulkOperationsProvider } from './context/BulkOperationsContext';
+import { StoriesProvider } from './context/StoriesContext';
 // View components — lazy loaded per route to reduce initial bundle size
 const AnalyticsView = lazy(() => import('./views/AnalyticsView'));
 const CalendarView = lazy(() => import('./views/CalendarView'));
@@ -98,17 +103,39 @@ function AppContent() {
     isSomeSelected
   } = useBulkSelection(stories, 'id');
   
-  const [pipelineRunning, setPipelineRunning] = useState(false);
-  const [pipelineElapsed, setPipelineElapsed] = useState(0);
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
-  const [scheduleEnabled, setScheduleEnabled] = useState(true);
-  const [scheduleTime, setScheduleTime] = useState('11:00');
-  const [scheduleDays, setScheduleDays] = useState(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
-  const [scheduleNextRun, setScheduleNextRun] = useState(null);
-  const [scheduleServerTime, setScheduleServerTime] = useState(null);
-  const [scheduleError, setScheduleError] = useState(null);
+  
+  // Pipeline run hook (T9 refactoring)
+  const {
+    pipelineRunning,
+    pipelineElapsed,
+    handleRunPipeline: runPipeline,
+  } = usePipelineRun({
+    onSuccess: (msg) => toast.success(msg),
+    onError: (msg) => toast.error(msg),
+    onPartialSuccess: (msg) => toast.success(msg),
+  });
+  
+  // Schedule modal hook (T9 refactoring)
+  const {
+    scheduleOpen,
+    setScheduleOpen,
+    scheduleLoading,
+    scheduleEnabled,
+    setScheduleEnabled,
+    scheduleTime,
+    setScheduleTime,
+    scheduleDays,
+    scheduleNextRun,
+    scheduleServerTime,
+    scheduleError,
+    openSchedule,
+    saveSchedule,
+    toggleDay,
+  } = useScheduleModal({
+    onSuccess: (msg) => toast.success(msg),
+    onError: (msg) => toast.error(msg),
+  });
   
   // Handle schedule modal trigger from StoryCard
   useEffect(() => {
@@ -149,6 +176,9 @@ function AppContent() {
     { key: 'sat', label: 'Sat' },
     { key: 'sun', label: 'Sun' },
   ];
+  
+  // Wrap runPipeline to match existing function name
+  const handleRunPipeline = runPipeline;
 
   // Handle deep dive request from daily intelligence
   useEffect(() => {
@@ -219,132 +249,6 @@ function AppContent() {
 
   const fetchStories = () => {
     queryClient.invalidateQueries(['stories']);
-  };
-
-  const handleRunPipeline = async () => {
-    const TIMEOUT_SECONDS = 5 * 60;  // 5 minutes
-    const POLL_INTERVAL = 2000;      // 2 seconds
-
-    try {
-        const response = await apiFetch('/pipeline/run', { method: 'POST' });
-        if (!response.ok) {
-            toast.error('Failed to start pipeline');
-            return;
-        }
-
-        setPipelineRunning(true);
-        setPipelineElapsed(0);
-
-        const startTime = Date.now();
-
-        const poll = async () => {
-            const elapsedMs = Date.now() - startTime;
-            const elapsedSeconds = Math.floor(elapsedMs / 1000);
-            setPipelineElapsed(elapsedSeconds);
-
-            if (elapsedSeconds >= TIMEOUT_SECONDS) {
-                setPipelineRunning(false);
-                toast.error(`Pipeline timed out after ${TIMEOUT_SECONDS} seconds. Check logs for details.`);
-                return;
-            }
-
-            try {
-                const statusResp = await apiFetch('/pipeline/status');
-                if (!statusResp.ok) {
-                    toast.error('Failed to fetch pipeline status');
-                    setPipelineRunning(false);
-                    return;
-                }
-
-                const data = await statusResp.json();
-                const status = data.status;
-                const lastError = data.last_error;
-
-                if (status === 'success') {
-                    setPipelineRunning(false);
-                    if (data.partial_success) {
-                        toast.success('Pipeline completed with some errors. Data fetched successfully.');
-                    } else {
-                        toast.success('Pipeline completed successfully');
-                    }
-                    return;
-                }
-
-                if (status === 'error') {
-                    setPipelineRunning(false);
-                    toast.error(`Pipeline failed: ${lastError || 'Unknown error'}`);
-                    return;
-                }
-
-                // Still running — schedule next poll
-                setTimeout(poll, POLL_INTERVAL);
-
-            } catch (pollError) {
-                setPipelineRunning(false);
-                toast.error(`Pipeline status check failed: ${pollError.message}`);
-            }
-        };
-
-        // Start first poll after initial interval
-        setTimeout(poll, POLL_INTERVAL);
-
-    } catch (error) {
-        setPipelineRunning(false);
-        toast.error(`Pipeline error: ${error.message}`);
-    }
-  };
-
-  const openSchedule = async () => {
-    setScheduleOpen(true);
-    setScheduleError(null);
-    try {
-      const res = await apiFetch('/schedule');
-      if (!res.ok) throw new Error('Failed to load schedule');
-      const data = await res.json();
-      const sched = data.schedule || {};
-      setScheduleEnabled(Boolean(sched.enabled));
-      setScheduleTime(sched.time || '11:00');
-      setScheduleDays(Array.isArray(sched.days) ? sched.days : ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
-      setScheduleNextRun(data.next_run_time || null);
-      setScheduleServerTime(data.server_time || null);
-    } catch (e) {
-      console.error(e);
-      setScheduleError(String(e.message || e));
-    }
-  };
-
-  const saveSchedule = async () => {
-    setScheduleLoading(true);
-    setScheduleError(null);
-    try {
-      const res = await apiFetch('/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enabled: scheduleEnabled,
-          time: scheduleTime,
-          days: scheduleDays,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to save schedule');
-      const info = data.info || {};
-      setScheduleNextRun(info.next_run_time || null);
-      setScheduleServerTime(info.server_time || null);
-      setScheduleOpen(false);
-    } catch (e) {
-      console.error(e);
-      setScheduleError(String(e.message || e));
-    } finally {
-      setScheduleLoading(false);
-    }
-  };
-
-  const toggleDay = (dayKey) => {
-    setScheduleDays((prev) => {
-      if (prev.includes(dayKey)) return prev.filter((d) => d !== dayKey);
-      return [...prev, dayKey];
-    });
   };
 
   // Automatic cache invalidation when pipeline finishes
@@ -1134,48 +1038,58 @@ function AppContent() {
     }
   };
 
-  // Keyboard shortcuts for bulk operations (Requirements 12.1, 12.2, 12.3)
-  // IMPORTANT: This useEffect must come AFTER all helper functions it references
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Only respond to shortcuts when dashboard view is active (Requirement 12.4)
-      if (currentView !== 'dashboard') return;
-      
-      // Disable shortcuts when any modal is open (Requirement 12.5)
-      if (scheduleOpen || showDeleteConfirmModal || showTagModal || showScheduleModal) return;
-      
-      // Ctrl+A (Cmd+A on Mac) - Select all visible articles (Requirement 12.1)
-      if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
-        event.preventDefault(); // Prevent default browser behavior
-        if (filteredStories.length > 0) {
-          handleSelectAllFiltered();
-        }
-        return;
-      }
-      
-      // Escape - Clear selection (Requirement 12.2)
-      if (event.key === 'Escape' && selectedIds.size > 0) {
-        event.preventDefault();
-        clearSelection();
-        return;
-      }
-      
-      // Delete - Trigger bulk delete confirmation (Requirement 12.3)
-      if (event.key === 'Delete' && selectedIds.size > 0) {
-        event.preventDefault();
-        setShowDeleteConfirmModal(true);
-        return;
-      }
-    };
-    
-    // Add event listener
-    window.addEventListener('keydown', handleKeyDown);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [currentView, scheduleOpen, showDeleteConfirmModal, showTagModal, showScheduleModal, selectedIds.size, clearSelection, filteredStories.length, handleSelectAllFiltered]);
+  // Keyboard shortcuts for bulk operations (T9 refactoring)
+  useAppKeyboardShortcuts({
+    currentView,
+    scheduleOpen,
+    showDeleteConfirmModal,
+    showTagModal,
+    showScheduleModal,
+    selectedIds,
+    clearSelection,
+    filteredStoriesLength: filteredStories.length,
+    handleSelectAllFiltered,
+    setShowDeleteConfirmModal,
+  });
+
+  // Context values for reducing prop drilling (T10 refactoring)
+  const bulkOperationsValue = {
+    selectedIds,
+    toggleSelection,
+    handleSelectAllFiltered,
+    getSelectAllState,
+    clearSelection,
+    bulkOperationState,
+    setBulkOperationState,
+    bulkOperationError,
+    setBulkOperationError,
+    showTagModal,
+    setShowTagModal,
+    showScheduleModal,
+    setShowScheduleModal,
+    showDeleteConfirmModal,
+    setShowDeleteConfirmModal,
+    handleBulkGenerate,
+    handleBulkSchedule,
+    handleBulkTag,
+    handleBulkExport,
+    handleBulkMarkPosted,
+    handleBulkDelete,
+  };
+
+  const storiesValue = {
+    stories,
+    loading,
+    filteredStories,
+    uniqueSources,
+    activeSource,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    filters,
+    setFilters,
+    handleSourceSelect,
+  };
 
   return (
     <div className="flex min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--font-body)' }}>
@@ -1283,147 +1197,6 @@ function AppContent() {
           </div>
           )}
 
-          {/* Ready to Launch pill */}
-          {(() => {
-            const readyCount = stories.filter(s => s.posts && s.posts.length > 0 && !s.posted).length;
-            return readyCount > 0 ? (
-              <button
-                onClick={() => navigate('/articles')}
-                className="hidden"
-                style={{
-                  background: 'var(--accent-glow)',
-                  border: '1px solid var(--accent)',
-                  borderRadius: 8,
-                  padding: '5px 11px',
-                  fontSize: 12, fontWeight: 500,
-                  color: 'var(--accent)',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <Zap style={{ width: 12, height: 12 }} />
-                <span>{readyCount} Ready to Launch</span>
-              </button>
-            ) : null;
-          })()}
-
-          {/* Fetch pill */}
-          <button
-            onClick={handleRunPipeline}
-            disabled={pipelineRunning}
-            className="hidden"
-            style={{
-              background: pipelineRunning ? 'var(--amber-dim)' : 'var(--teal-dim)',
-              border: `1px solid ${pipelineRunning ? 'var(--amber)' : 'var(--teal)'}`,
-              borderRadius: 8,
-              padding: '5px 11px',
-              fontSize: 12, fontWeight: 500,
-              color: pipelineRunning ? 'var(--amber)' : 'var(--teal)',
-              cursor: pipelineRunning ? 'not-allowed' : 'pointer',
-              whiteSpace: 'nowrap',
-              transition: 'all 0.15s',
-              opacity: pipelineRunning ? 0.8 : 1,
-            }}
-          >
-            <RefreshCw style={{ width: 12, height: 12 }} className={pipelineRunning ? 'animate-spin' : ''} />
-            <span>{pipelineRunning ? `Syncing… ${pipelineElapsed}s` : '↻ Fetch'}</span>
-          </button>
-
-          {/* Spacer */}
-          <div className="hidden" />
-
-          {/* Calendar icon btn */}
-          <button
-            onClick={() => navigate('/calendar')}
-            title="Calendar"
-            className="hidden"
-            style={{
-              width: 32, height: 32,
-              borderRadius: 8,
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text2)',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
-          >
-            <Calendar style={{ width: 15, height: 15, opacity: 0.6 }} />
-          </button>
-
-          {/* Export icon btn */}
-          <button
-            onClick={handleExport}
-            title="Export"
-            className="hidden"
-            style={{
-              width: 32, height: 32,
-              borderRadius: 8,
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text2)',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
-          >
-            <Download style={{ width: 15, height: 15, opacity: 0.6 }} />
-          </button>
-
-          {/* Notifications icon btn */}
-          <button
-            title="Notifications"
-            className="hidden"
-            style={{
-              width: 32, height: 32,
-              borderRadius: 8,
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text2)',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
-          >
-            <Bell style={{ width: 15, height: 15, opacity: 0.6 }} />
-            {/* Red notification dot */}
-            <span style={{
-              position: 'absolute', top: -3, right: -3,
-              width: 8, height: 8, borderRadius: '50%',
-              background: 'var(--red)',
-              border: '1.5px solid var(--bg2)',
-            }} />
-          </button>
-
-          {/* Ready status badge */}
-          <div
-            className="hidden"
-            style={{
-              padding: '5px 10px',
-              borderRadius: 8,
-              background: pipelineRunning ? 'var(--amber-dim)' : 'var(--green-dim)',
-              border: `1px solid ${pipelineRunning ? 'var(--amber)' : 'var(--green)'}`,
-              color: pipelineRunning ? 'var(--amber)' : 'var(--green)',
-              fontSize: 11, fontWeight: 600,
-            }}
-          >
-            <span
-              style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: pipelineRunning ? 'var(--amber)' : 'var(--green)',
-                boxShadow: `0 0 6px ${pipelineRunning ? 'var(--amber)' : 'var(--green)'}`,
-                flexShrink: 0,
-                display: 'inline-block',
-              }}
-              className={pipelineRunning ? '' : 'animate-pulse-dot'}
-            />
-            {pipelineRunning ? 'Syncing' : 'Ready'}
-          </div>
-
           <div className="flex items-center gap-2 flex-wrap ml-auto">
             <div
               className="hidden md:flex items-center gap-1.5 flex-shrink-0"
@@ -1518,8 +1291,10 @@ function AppContent() {
         <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)', padding: '24px' }}>
           <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
             {/* View Rendering — URL-based routing with lazy-loaded views */}
-            <Suspense fallback={<Skeleton type="page" />}>
-              <Routes>
+            <BulkOperationsProvider value={bulkOperationsValue}>
+              <StoriesProvider value={storiesValue}>
+                <Suspense fallback={<Skeleton type="page" />}>
+                  <Routes>
               <Route path="/analytics" element={<AnalyticsView onBack={() => setCurrentView('dashboard')} />} />
               {/* Alias: /metrics redirects to same AnalyticsView as /analytics */}
               <Route path="/metrics" element={<AnalyticsView onBack={() => setCurrentView('dashboard')} />} />
@@ -1529,41 +1304,9 @@ function AppContent() {
               <Route path="/research" element={<ResearchView />} />
               <Route path="/articles" element={
                 <ArticlesView
-                  stories={stories}
-                  loading={loading}
-                  filteredStories={filteredStories}
-                  uniqueSources={uniqueSources}
                   selectedPlatforms={selectedPlatforms}
                   activeTheme={activeTheme}
-                  activeSource={activeSource}
-                  fetchNextPage={fetchNextPage}
-                  hasNextPage={hasNextPage}
-                  isFetchingNextPage={isFetchingNextPage}
-                  filters={filters}
-                  setFilters={setFilters}
-                  selectedIds={selectedIds}
-                  toggleSelection={toggleSelection}
-                  handleSelectAllFiltered={handleSelectAllFiltered}
-                  getSelectAllState={getSelectAllState}
-                  clearSelection={clearSelection}
-                  bulkOperationState={bulkOperationState}
-                  setBulkOperationState={setBulkOperationState}
-                  bulkOperationError={bulkOperationError}
-                  setBulkOperationError={setBulkOperationError}
-                  showTagModal={showTagModal}
-                  setShowTagModal={setShowTagModal}
-                  showScheduleModal={showScheduleModal}
-                  setShowScheduleModal={setShowScheduleModal}
-                  showDeleteConfirmModal={showDeleteConfirmModal}
-                  setShowDeleteConfirmModal={setShowDeleteConfirmModal}
-                  handleBulkGenerate={handleBulkGenerate}
-                  handleBulkSchedule={handleBulkSchedule}
-                  handleBulkTag={handleBulkTag}
-                  handleBulkExport={handleBulkExport}
-                  handleBulkMarkPosted={handleBulkMarkPosted}
-                  handleBulkDelete={handleBulkDelete}
                   handleRunPipeline={handleRunPipeline}
-                  handleSourceSelect={handleSourceSelect}
                 />
               } />
               <Route path="/settings" element={<SettingsView activeTheme={activeTheme} initialTab="monetization" />} />
@@ -1580,46 +1323,16 @@ function AppContent() {
               <Route path="/dev/tokens" element={<TokenReference />} />
               <Route path="/" element={
                 <DashboardView
-                  stories={stories}
-                  loading={loading}
-                  filteredStories={filteredStories}
-                  uniqueSources={uniqueSources}
                   selectedPlatforms={selectedPlatforms}
                   activeTheme={activeTheme}
-                  activeSource={activeSource}
-                  fetchNextPage={fetchNextPage}
-                  hasNextPage={hasNextPage}
-                  isFetchingNextPage={isFetchingNextPage}
-                  filters={filters}
-                  setFilters={setFilters}
-                  selectedIds={selectedIds}
-                  toggleSelection={toggleSelection}
-                  handleSelectAllFiltered={handleSelectAllFiltered}
-                  getSelectAllState={getSelectAllState}
-                  clearSelection={clearSelection}
-                  bulkOperationState={bulkOperationState}
-                  setBulkOperationState={setBulkOperationState}
-                  bulkOperationError={bulkOperationError}
-                  setBulkOperationError={setBulkOperationError}
-                  showTagModal={showTagModal}
-                  setShowTagModal={setShowTagModal}
-                  showScheduleModal={showScheduleModal}
-                  setShowScheduleModal={setShowScheduleModal}
-                  showDeleteConfirmModal={showDeleteConfirmModal}
-                  setShowDeleteConfirmModal={setShowDeleteConfirmModal}
-                  handleBulkGenerate={handleBulkGenerate}
-                  handleBulkSchedule={handleBulkSchedule}
-                  handleBulkTag={handleBulkTag}
-                  handleBulkExport={handleBulkExport}
-                  handleBulkMarkPosted={handleBulkMarkPosted}
-                  handleBulkDelete={handleBulkDelete}
                   handleRunPipeline={handleRunPipeline}
-                  handleSourceSelect={handleSourceSelect}
                 />
               } />
               <Route path="*" element={<NotFoundView />} />
             </Routes>
             </Suspense>
+              </StoriesProvider>
+            </BulkOperationsProvider>
           </div>
         </main>
 

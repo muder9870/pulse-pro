@@ -10,45 +10,54 @@ import BulkOperationError from '../components/BulkOperationError';
 import FeatureErrorBoundary from '../components/FeatureErrorBoundary';
 import EmptyFeed from '../components/EmptyFeed';
 import { useQueryClient } from '@tanstack/react-query';
+import { useBulkOperations } from '../context/BulkOperationsContext';
+import { useStories as useStoriesContext } from '../context/StoriesContext';
 
 const ArticlesView = ({
-  stories,
-  loading,
-  filteredStories,
-  uniqueSources,
   selectedPlatforms,
   activeTheme,
-  activeSource,
-  fetchNextPage,
-  hasNextPage,
-  isFetchingNextPage,
-  filters,
-  setFilters,
-  selectedIds,
-  toggleSelection,
-  handleSelectAllFiltered,
-  getSelectAllState,
-  clearSelection,
-  bulkOperationState,
-  setBulkOperationState,
-  bulkOperationError,
-  setBulkOperationError,
-  showTagModal,
-  setShowTagModal,
-  showScheduleModal,
-  setShowScheduleModal,
-  showDeleteConfirmModal,
-  setShowDeleteConfirmModal,
-  handleBulkGenerate,
-  handleBulkSchedule,
-  handleBulkTag,
-  handleBulkExport,
-  handleBulkMarkPosted,
-  handleBulkDelete,
   handleRunPipeline,
-  handleSourceSelect,
 }) => {
   const queryClient = useQueryClient();
+  
+  // Get data from context (T10 refactoring)
+  const {
+    selectedIds,
+    toggleSelection,
+    handleSelectAllFiltered,
+    getSelectAllState,
+    clearSelection,
+    bulkOperationState,
+    setBulkOperationState,
+    bulkOperationError,
+    setBulkOperationError,
+    showTagModal,
+    setShowTagModal,
+    showScheduleModal,
+    setShowScheduleModal,
+    showDeleteConfirmModal,
+    setShowDeleteConfirmModal,
+    handleBulkGenerate,
+    handleBulkSchedule,
+    handleBulkTag,
+    handleBulkExport,
+    handleBulkMarkPosted,
+    handleBulkDelete,
+  } = useBulkOperations();
+  
+  const {
+    stories,
+    loading,
+    filteredStories,
+    uniqueSources,
+    activeSource,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    filters,
+    setFilters,
+    handleSourceSelect,
+  } = useStoriesContext();
 
   // Score filter tab state
   const [scoreFilter, setScoreFilter] = useState('all');

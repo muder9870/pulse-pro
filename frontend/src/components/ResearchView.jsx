@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../api/client';
 import { BookOpen, Search, FlaskConical, ExternalLink, RefreshCw } from 'lucide-react';
 import PaperDetailsModal from './PaperDetailsModal';
@@ -15,8 +16,6 @@ const card = {
 const CATEGORIES = ['All', 'CS.AI', 'CS.LG', 'CS.CV', 'High Score'];
 
 function ResearchView() {
-  const [papers, setPapers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedPaper, setSelectedPaper] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -24,17 +23,17 @@ function ResearchView() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchPapers = async () => {
-    setLoading(true);
-    try {
+  // T11: Use React Query for data fetching instead of manual state management
+  const { data: papers = [], isLoading: loading, refetch: fetchPapers } = useQuery({
+    queryKey: ['arxiv-papers'],
+    queryFn: async () => {
       const res = await apiFetch('/stories?limit=100&source=arxiv&sort=score');
-      const data = await res.json();
-      setPapers(data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { fetchPapers(); }, []);
+      if (!res.ok) throw new Error('Failed to fetch papers');
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
 
   const openDeepDive = async (paper) => {
     setSelectedPaper(paper);
