@@ -124,6 +124,16 @@ const DashboardView = ({ handleRunPipeline }) => {
   // Get data from context (T10 refactoring)
   const { stories = [], loading } = useStoriesContext();
 
+  // Setup Guide dismiss state (Phase 1: T1.2)
+  const [setupDismissed, setSetupDismissed] = React.useState(() => {
+    return localStorage.getItem('pulse-setup-dismissed') === 'true';
+  });
+
+  const handleDismissSetup = () => {
+    localStorage.setItem('pulse-setup-dismissed', 'true');
+    setSetupDismissed(true);
+  };
+
   const topPicks = React.useMemo(() =>
     [...stories].sort((a, b) => (b.total_score || 0) - (a.total_score || 0)).slice(0, 4),
     [stories]
@@ -151,32 +161,6 @@ const DashboardView = ({ handleRunPipeline }) => {
   return (
     <FeatureErrorBoundary name="Dashboard">
       <div style={{ paddingBottom: 48 }}>
-
-        {/* ── Page Header ── */}
-        <div style={{ display: 'none' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>
-              Command Center
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3 }}>
-              Intelligence oversight and system-wide ecosystem control
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => navigate('/settings')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
-            >
-              ⚙ Settings
-            </button>
-            <button
-              onClick={handleRunPipeline}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
-            >
-              ▶ Run Pipeline
-            </button>
-          </div>
-        </div>
 
         {/* ── Focus Banner ── */}
         <section className="dashboard-hero">
@@ -254,29 +238,36 @@ const DashboardView = ({ handleRunPipeline }) => {
         )}
 
         {/* ── Setup Guide ── */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.12), rgba(139,92,246,0.08))', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', whiteSpace: 'nowrap' }}>Setup Guide</div>
-          <div style={{ display: 'flex', gap: 6, flex: 1, flexWrap: 'wrap' }}>
-            {[
-              { label: 'Add Source', done: totalArticles > 0 },
-              { label: 'Configure LLM', done: true },
-              { label: 'First Fetch', done: totalArticles > 0 },
-              { label: 'Generate Article', done: contentReady > 0, active: contentReady === 0 },
-              { label: 'Publish', done: false },
-            ].map((step, i, arr) => (
-              <React.Fragment key={step.label}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: step.done ? 'var(--green)' : step.active ? 'var(--text)' : 'var(--text2)', fontWeight: step.active ? 500 : 400 }}>
-                  <div style={{ width: 18, height: 18, borderRadius: '50%', border: `1.5px solid currentColor`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, flexShrink: 0, background: step.done ? 'var(--green)' : 'transparent', color: step.done ? '#fff' : 'currentColor' }}>
-                    {step.done ? '✓' : i + 1}
+        {!setupDismissed && (
+          <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.12), rgba(139,92,246,0.08))', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', whiteSpace: 'nowrap' }}>Setup Guide</div>
+            <div style={{ display: 'flex', gap: 6, flex: 1, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Add Source', done: totalArticles > 0 },
+                { label: 'Configure LLM', done: true },
+                { label: 'First Fetch', done: totalArticles > 0 },
+                { label: 'Generate Article', done: contentReady > 0, active: contentReady === 0 },
+                { label: 'Publish', done: false },
+              ].map((step, i, arr) => (
+                <React.Fragment key={step.label}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: step.done ? 'var(--green)' : step.active ? 'var(--text)' : 'var(--text2)', fontWeight: step.active ? 500 : 400 }}>
+                    <div style={{ width: 18, height: 18, borderRadius: '50%', border: `1.5px solid currentColor`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, flexShrink: 0, background: step.done ? 'var(--green)' : 'transparent', color: step.done ? '#fff' : 'currentColor' }}>
+                      {step.done ? '✓' : i + 1}
+                    </div>
+                    {step.label}
                   </div>
-                  {step.label}
-                </div>
-                {i < arr.length - 1 && <span style={{ color: 'var(--text3)', fontSize: 10 }}>›</span>}
-              </React.Fragment>
-            ))}
+                  {i < arr.length - 1 && <span style={{ color: 'var(--text3)', fontSize: 10 }}>›</span>}
+                </React.Fragment>
+              ))}
+            </div>
+            <button 
+              onClick={handleDismissSetup}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}
+            >
+              Dismiss
+            </button>
           </div>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>Dismiss</button>
-        </div>
+        )}
 
         {/* ── Pipeline Live Status ── */}
         <div style={{ ...card, padding: '16px 18px', marginBottom: 20 }}>
@@ -370,7 +361,7 @@ const DashboardView = ({ handleRunPipeline }) => {
           {/* System Ecosystem */}
           <div style={{ ...card, padding: '16px 18px' }}>
             <SectionLabel>System Ecosystem</SectionLabel>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {[
                 { label: 'INTELLIGENCE BASE', value: totalArticles, badge: 'Active', badgeColor: 'var(--green)', badgeBg: 'var(--green-dim)' },
                 { label: 'AI ANALYZED',       value: analyzed,      badge: `${qualityPct}%`, badgeColor: 'var(--accent)', badgeBg: 'var(--accent-glow)' },
@@ -385,21 +376,6 @@ const DashboardView = ({ handleRunPipeline }) => {
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Pipeline idle warning */}
-            <div style={{ background: 'var(--amber-dim)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 14 }}>⚠</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--amber)' }}>Pipeline idle</div>
-                <div style={{ fontSize: 10, color: 'var(--text2)' }}>Run now to fetch today's content</div>
-              </div>
-              <button
-                onClick={handleRunPipeline}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--amber)', background: 'var(--amber-dim)', color: 'var(--amber)', fontSize: 11, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}
-              >
-                Run Now
-              </button>
             </div>
           </div>
         </div>
