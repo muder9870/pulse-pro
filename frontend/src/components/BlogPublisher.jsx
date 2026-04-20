@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { apiFetch } from '../api/client';
 import Input from './ui/Input';
 import Checkbox from './ui/Checkbox';
 
@@ -28,9 +29,9 @@ export default function BlogPublisher({ open, onClose, articleId }) {
   const loadCreds = async () => {
     try {
       const [dRes, mRes, wRes] = await Promise.all([
-        fetch('/api/blog/credentials/devto'),
-        fetch('/api/blog/credentials/medium'),
-        fetch('/api/blog/credentials/wordpress'),
+        apiFetch('/blog/credentials/devto'),
+        apiFetch('/blog/credentials/medium'),
+        apiFetch('/blog/credentials/wordpress'),
       ]);
 
       const dData = await dRes.json();
@@ -58,7 +59,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
   const saveDevtoCred = async () => {
     setCredLoading(true);
     try {
-      const res = await fetch('/api/blog/credentials/devto', {
+      const res = await apiFetch('/blog/credentials/devto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ api_key: devtoKey, enabled: devtoEnabled }),
@@ -76,7 +77,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
   const saveMediumCred = async () => {
     setCredLoading(true);
     try {
-      const res = await fetch('/api/blog/credentials/medium', {
+      const res = await apiFetch('/blog/credentials/medium', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ api_key: mediumKey, enabled: mediumEnabled }),
@@ -94,7 +95,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
   const saveWordpressCred = async () => {
     setCredLoading(true);
     try {
-      const res = await fetch('/api/blog/credentials/wordpress', {
+      const res = await apiFetch('/blog/credentials/wordpress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,7 +119,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setCredLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/blog/credentials/validate/${platform}`, { method: 'POST' });
+      const res = await apiFetch(`blog/credentials/validate/${platform}`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to validate');
       setValidation((prev) => ({ ...prev, [platform]: data }));
@@ -142,7 +143,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setPublishLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/blog/publish/batch', {
+      const res = await apiFetch('/blog/publish/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blog_post_id: post.id, platforms, published }),
@@ -166,8 +167,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setLoading(true);
     setError(null);
     try {
-      const url = `/api/blog/generate/${articleId}${regenerate ? '?regenerate=1' : ''}`;
-      const res = await fetch(url);
+      const res = await apiFetch(`/blog/generate/${articleId}${regenerate ? '?regenerate=1' : ''}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate blog post');
       setPost(data.blog_post);
@@ -187,7 +187,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setSaveLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/blog/update', {
+      const res = await apiFetch('/blog/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -213,7 +213,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setPublishLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/blog/publish/${post.id}`, {
+      const res = await apiFetch(`blog/publish/${post.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'devto', published }),
@@ -234,7 +234,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setPublishLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/blog/publish/${post.id}`, {
+      const res = await apiFetch(`blog/publish/${post.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'medium', published }),
@@ -255,7 +255,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setPublishLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/blog/publish/${post.id}`, {
+      const res = await apiFetch(`blog/publish/${post.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'wordpress', published }),
@@ -276,7 +276,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
     setPublishLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/blog/publish/${post.id}`, {
+      const res = await apiFetch(`blog/publish/${post.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'local', published: false }),
@@ -432,7 +432,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
                   onChange={(e) => {
                     const v = e.target.checked;
                     setDevtoEnabled(v);
-                    fetch('/api/blog/credentials/devto', {
+                    apiFetch('/blog/credentials/devto', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ enabled: v }),
@@ -516,7 +516,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
                     onChange={(e) => {
                       const v = e.target.checked;
                       setMediumEnabled(v);
-                      fetch('/api/blog/credentials/medium', {
+                      apiFetch('/blog/credentials/medium', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ enabled: v }),
@@ -578,7 +578,7 @@ export default function BlogPublisher({ open, onClose, articleId }) {
                     onChange={(e) => {
                       const v = e.target.checked;
                       setWpEnabled(v);
-                      fetch('/api/blog/credentials/wordpress', {
+                      apiFetch('/blog/credentials/wordpress', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ enabled: v }),

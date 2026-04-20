@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from backend.database import get_session
-from backend.models import RawArticle, ProcessedArticle, ArticleTag
+from backend.db.session import SessionLocal as get_session
+from backend.db.models import RawArticle, ProcessedArticle, ArticleTag
 from sqlalchemy import func
 
 
@@ -20,7 +20,8 @@ def seed() -> None:
     """Seed demo data into the database."""
     now = datetime.now(timezone.utc)
     
-    with get_session() as session:
+    session = get_session()
+    try:
         # Check if data already exists
         count = session.query(func.count(RawArticle.id)).scalar()
         if count > 0:
@@ -76,6 +77,7 @@ def seed() -> None:
                 viral_score=70,
                 tech_score=65,
                 relevance_score=55,
+                total_score=63,
             )
             session.add(processed_article)
             session.flush()  # Get the ID
@@ -90,6 +92,12 @@ def seed() -> None:
         
         session.commit()
         print(f"✅ Seeded {len(articles_data)} demo articles successfully!")
+    except Exception as e:
+        session.rollback()
+        print(f"❌ Seed failed: {e}")
+        raise
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":

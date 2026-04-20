@@ -124,10 +124,8 @@ def process_article(self, article_id: int, correlation_id: str):
         if processed_id:
             # Store result for crash recovery
             redis_client.setex(f"result:{article_id}", 3600, str(processed_id))
-            
-            # Enqueue content generation
-            from backend.tasks import generate_content
-            generate_content.delay(article_id, correlation_id)
+            # NOTE: Content generation is now user-triggered via POST /api/generate
+            # The pipeline stops after analysis+scoring (pipeline-content-decoupling spec)
         
         # STEP 8: Mark as completed in Redis
         redis_client.setex(idempotency_key, 3600, "completed")

@@ -3,78 +3,83 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import packageJson from '../../package.json';
 import {
     Home,
-    Rss,
+    BookOpen,
     BarChart2,
     Calendar,
     Image as ImageIcon,
     Mic,
-    BookOpen,
-    Activity,
-    ChevronDown,
-    ChevronRight,
-    Database,
     Search,
     Settings,
-    Shield,
+    ChevronDown,
+    ChevronRight,
     Zap,
-    Award,
-    X
+    X,
+    Bell
 } from 'lucide-react';
+import NotificationPanel from './NotificationPanel';
+import { useAppStore } from '../store/appStore';
 
-const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sources = [], isOpen, onClose, activeTheme }) => {
+const SOURCE_COLORS = {
+    arxiv:  '#EF4444',
+    github: '#8A96B0',
+    reddit: '#F59E0B',
+    gmail:  '#10B981',
+    rss:    '#6C63FF',
+};
+
+function getSourceColor(name = '') {
+    const key = name.toLowerCase();
+    for (const [k, v] of Object.entries(SOURCE_COLORS)) {
+        if (key.includes(k)) return v;
+    }
+    // cycle through accent colors for unknown sources
+    const palette = ['#6C63FF','#00D4A8','#EC4899','#F59E0B','#8B5CF6','#10B981'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return palette[Math.abs(hash) % palette.length];
+}
+
+const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sources = [], isOpen, onClose }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const currentView = location.pathname.replace(/^\//, '') || 'dashboard';
     const [sourcesExpanded, setSourcesExpanded] = useState(true);
+    const [notificationOpen, setNotificationOpen] = useState(false);
+    const notifications = useAppStore((s) => s.notifications);
 
-    // Focus trap for mobile drawer
+    // Focus trap refs
     const sidebarRef = React.useRef(null);
     const previousFocusRef = React.useRef(null);
 
     React.useEffect(() => {
         if (isOpen) {
-            // Store previous focus
             previousFocusRef.current = document.activeElement;
-            // Focus first focusable element
-            const focusable = sidebarRef.current?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            const focusable = sidebarRef.current?.querySelector('button, [href], input, [tabindex]:not([tabindex="-1"])');
             focusable?.focus();
         } else if (previousFocusRef.current) {
-            // Restore focus when closing
             previousFocusRef.current.focus();
         }
     }, [isOpen]);
 
-    // Handle tab key for focus trap
     React.useEffect(() => {
         if (!isOpen) return;
         const handleTab = (e) => {
             if (e.key !== 'Tab') return;
-            const focusableElements = sidebarRef.current?.querySelectorAll(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
-            if (!focusableElements?.length) return;
-            const first = focusableElements[0];
-            const last = focusableElements[focusableElements.length - 1];
-            if (e.shiftKey && document.activeElement === first) {
-                e.preventDefault();
-                last.focus();
-            } else if (!e.shiftKey && document.activeElement === last) {
-                e.preventDefault();
-                first.focus();
-            }
+            const els = sidebarRef.current?.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])');
+            if (!els?.length) return;
+            const first = els[0], last = els[els.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
         };
         document.addEventListener('keydown', handleTab);
         return () => document.removeEventListener('keydown', handleTab);
     }, [isOpen]);
 
-    // Escape key closes mobile drawer
     React.useEffect(() => {
         if (!isOpen) return;
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') onClose();
-        };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
+        const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', handleEsc);
+        return () => document.removeEventListener('keydown', handleEsc);
     }, [isOpen, onClose]);
 
     const handleNavClick = (id) => {
@@ -84,180 +89,319 @@ const Sidebar = React.memo(({ activeSource, setActiveSource, onSourceSelect, sou
     };
 
     const mainNav = [
-        { id: 'dashboard', label: 'Dashboard', icon: Home },
-        { id: 'analytics', label: 'Metrics', icon: BarChart2 },
-        { id: 'calendar', label: 'Calendar', icon: Calendar },
-        { id: 'media', label: 'Media Assets', icon: ImageIcon },
-        { id: 'research', label: 'Research', icon: BookOpen },
-        { id: 'podcast', label: 'Podcast', icon: Mic },
+        { id: 'dashboard', label: 'Dashboard',    icon: Home },
+        { id: 'articles',  label: 'Articles',     icon: BookOpen,  badge: null },
+        { id: 'analytics', label: 'Metrics',      icon: BarChart2 },
+        { id: 'calendar',  label: 'Calendar',     icon: Calendar },
+        { id: 'media',     label: 'Media Assets', icon: ImageIcon },
+        { id: 'research',  label: 'Research',     icon: Search },
+        { id: 'podcast',   label: 'Podcast',      icon: Mic },
     ];
 
-    const systemNav = [
-        { id: 'settings', label: 'Settings Hub', icon: Settings },
-    ];
-
-
+    const isActive = (id) => currentView === id && !activeSource;
 
     return (
         <>
-            {/* Mobile Overlay */}
+            {/* Mobile overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[25] lg:hidden animate-fade-in"
+                    className="fixed inset-0 z-[25] lg:hidden"
+                    style={{ background: 'rgba(0,0,0,0.7)' }}
                     onClick={onClose}
                 />
             )}
 
-            <div ref={sidebarRef} className={`w-64 h-screen flex flex-col fixed left-0 top-0 z-[30] border-r shadow-2xl transition-all duration-500 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${activeTheme === 'dark' ? 'bg-[#0f172a] text-slate-300 border-slate-800/50' : 'bg-white text-slate-600 border-slate-200'}`}>
-
-                {/* Brand Section */}
-                <div className="p-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl shadow-lg ring-1 ring-white/20">
-                            <Zap className="w-5 h-5 text-white" />
+            <aside
+                ref={sidebarRef}
+                className={`fixed left-0 top-0 z-[30] flex flex-col h-screen overflow-y-auto transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                style={{
+                    width: 'var(--sidebar-w)',
+                    minWidth: 'var(--sidebar-w)',
+                    background: 'var(--bg2)',
+                    borderRight: '1px solid var(--border)',
+                }}
+            >
+                {/* Logo */}
+                <div
+                    className="flex items-center gap-2.5 flex-shrink-0"
+                    style={{ padding: '18px 16px 14px', borderBottom: '1px solid var(--border)' }}
+                >
+                    <div
+                        className="flex items-center justify-center flex-shrink-0 text-base"
+                        style={{
+                            width: 32, height: 32,
+                            background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
+                            borderRadius: 8,
+                        }}
+                    >
+                        <Zap className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
+                            Pulse Pro
                         </div>
-                        <div>
-                            <h1 className={`font-bold text-lg tracking-tight ${activeTheme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Pulse Pro</h1>
-                            <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest leading-none mt-1">AI Decision Engine</p>
+                        <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: '0.12em', color: 'var(--accent)', textTransform: 'uppercase' }}>
+                            AI Decision Engine
                         </div>
                     </div>
-                    <button onClick={onClose} className="lg:hidden p-2 text-slate-500 hover:text-white transition-colors">
-                        <X className="w-5 h-5" />
+                    <button
+                        onClick={onClose}
+                        className="lg:hidden flex-shrink-0"
+                        style={{ color: 'var(--text3)' }}
+                    >
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-2 space-y-6">
-                    {/* Main Navigation */}
-                    <nav className="space-y-0.5">
-                        <p className="px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 opacity-60">Main Menu</p>
-                        {mainNav.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => handleNavClick(item.id)}
-                                aria-current={currentView === item.id && !activeSource ? 'page' : undefined}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all group ${currentView === item.id && !activeSource
-                                    ? 'bg-indigo-600/10 text-indigo-400 ring-1 ring-indigo-500/20'
-                                    : activeTheme === 'dark' 
-                                        ? 'hover:bg-slate-800/50 hover:text-white' 
-                                        : 'hover:bg-slate-200/70 hover:text-slate-900'
-                                    }`}
-                            >
-                                <item.icon className={`w-3.5 h-3.5 ${currentView === item.id && !activeSource ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
-                                {item.label}
-                            </button>
-                        ))}
-                    </nav>
+                {/* Scrollable nav area */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: '14px 10px 6px' }}>
+
+                    {/* Main Menu */}
+                    <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', color: 'var(--text3)', textTransform: 'uppercase', padding: '0 8px', marginBottom: 4 }}>
+                            Main Menu
+                        </div>
+                        {mainNav.map((item) => {
+                            const active = isActive(item.id);
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => handleNavClick(item.id)}
+                                    aria-current={active ? 'page' : undefined}
+                                    className="w-full flex items-center gap-2.5 relative"
+                                    style={{
+                                        padding: '7px 10px',
+                                        borderRadius: 8,
+                                        marginBottom: 1,
+                                        fontSize: 13,
+                                        fontWeight: active ? 500 : 400,
+                                        color: active ? 'var(--accent)' : 'var(--text2)',
+                                        background: active ? 'var(--accent-glow)' : 'transparent',
+                                        transition: 'all 0.15s',
+                                        cursor: 'pointer',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                    }}
+                                    onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text)'; } }}
+                                    onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text2)'; } }}
+                                >
+                                    {/* Active left bar */}
+                                    {active && (
+                                        <span
+                                            style={{
+                                                position: 'absolute', left: 0, top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                width: 3, height: 16,
+                                                background: 'var(--accent)',
+                                                borderRadius: '0 2px 2px 0',
+                                            }}
+                                        />
+                                    )}
+                                    <item.icon
+                                        style={{
+                                            width: 16, height: 16,
+                                            opacity: active ? 1 : 0.7,
+                                            flexShrink: 0,
+                                            color: active ? 'var(--accent)' : 'currentColor',
+                                        }}
+                                    />
+                                    <span className="flex-1">{item.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
 
                     {/* Source Folders */}
-                    <div className="space-y-0.5">
+                    <div style={{ marginBottom: 20 }}>
                         <button
                             onClick={() => setSourcesExpanded(!sourcesExpanded)}
-                            className="w-full px-3 flex items-center justify-between text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 hover:text-slate-300 transition-colors opacity-60"
+                            className="w-full flex items-center justify-between"
+                            style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', color: 'var(--text3)', textTransform: 'uppercase', padding: '0 8px', marginBottom: 4, background: 'none', border: 'none', cursor: 'pointer' }}
                         >
                             <span>Source Folders</span>
-                            {sourcesExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            {sourcesExpanded
+                                ? <ChevronDown style={{ width: 12, height: 12 }} />
+                                : <ChevronRight style={{ width: 12, height: 12 }} />
+                            }
                         </button>
 
                         {sourcesExpanded && (
-                            <div className="space-y-0.5 animate-fade-in">
+                            <>
+                                {/* All Sources */}
                                 <button
                                     onClick={() => { onSourceSelect(null); if (onClose) onClose(); }}
-                                    className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${!activeSource && currentView === 'dashboard'
-                                        ? 'text-indigo-400'
-                                        : activeTheme === 'dark' 
-                                            ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/30' 
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                                    }`}
+                                    className="w-full flex items-center gap-2"
+                                    style={{
+                                        padding: '5px 10px',
+                                        borderRadius: 6,
+                                        marginBottom: 1,
+                                        fontSize: 12,
+                                        color: !activeSource ? 'var(--text)' : 'var(--text2)',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'all 0.15s',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = !activeSource ? 'var(--text)' : 'var(--text2)'; }}
                                 >
-                                    <Database className="w-3 h-3" />
-                                    All Sources
+                                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
+                                    <span className="flex-1">All Sources</span>
+                                    <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text3)', marginLeft: 'auto' }}>
+                                        {sources.reduce((acc, s) => acc + (s.count || 0), 0) || ''}
+                                    </span>
                                 </button>
-                                {sources.map((source) => (
-                                    <button
-                                        key={typeof source === 'string' ? source : source.name}
-                                        onClick={() => {
-                                            const sourceName = typeof source === 'string' ? source : source.name;
-                                            onSourceSelect(sourceName);
-                                            if (onClose) onClose();
-                                        }}
-                                        className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${activeSource === (typeof source === 'string' ? source : source.name)
-                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                            : activeTheme === 'dark' 
-                                                ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/30' 
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-1 h-1 rounded-full ${
-                                                (typeof source === 'string' ? source : source.name).toLowerCase() === 'arxiv' ? 'bg-red-400' :
-                                                (typeof source === 'string' ? source : source.name).toLowerCase() === 'github' ? 'bg-slate-400' :
-                                                (typeof source === 'string' ? source : source.name).toLowerCase() === 'reddit' ? 'bg-orange-400' :
-                                                (typeof source === 'string' ? source : source.name).toLowerCase() === 'gmail' ? 'bg-green-400' : 'bg-indigo-400'
-                                            }`} />
-                                            <span 
-                                                className="capitalize truncate max-w-[100px]" 
-                                                title={typeof source === 'string' ? source : source.name}
-                                            >
-                                                {typeof source === 'string' ? source : source.name}
-                                            </span>
-                                        </div>
-                                        {source.count !== undefined && (
-                                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
-                                                activeSource === (typeof source === 'string' ? source : source.name) ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-500'
-                                            }`}>
-                                                {source.count}
-                                            </span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
+
+                                {sources.map((source) => {
+                                    const name = typeof source === 'string' ? source : source.name;
+                                    const count = source.count;
+                                    const color = getSourceColor(name);
+                                    const isActiveSrc = activeSource === name;
+                                    return (
+                                        <button
+                                            key={name}
+                                            onClick={() => { onSourceSelect(name); if (onClose) onClose(); }}
+                                            className="w-full flex items-center gap-2"
+                                            style={{
+                                                padding: '5px 10px',
+                                                borderRadius: 6,
+                                                marginBottom: 1,
+                                                fontSize: 12,
+                                                color: isActiveSrc ? 'var(--text)' : 'var(--text2)',
+                                                background: isActiveSrc ? 'var(--surface)' : 'transparent',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                textAlign: 'left',
+                                                transition: 'all 0.15s',
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = isActiveSrc ? 'var(--surface)' : 'transparent'; e.currentTarget.style.color = isActiveSrc ? 'var(--text)' : 'var(--text2)'; }}
+                                        >
+                                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />
+                                            <span className="flex-1 truncate capitalize" title={name} style={{ maxWidth: 110 }}>{name}</span>
+                                            {count !== undefined && (
+                                                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: isActiveSrc ? color : 'var(--text3)', marginLeft: 'auto' }}>
+                                                    {count}
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </>
                         )}
                     </div>
 
-                    {/* System & Config */}
-                    <nav className="space-y-0.5">
-                        <p className="px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 opacity-60">System</p>
-                        {systemNav.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => handleNavClick(item.id)}
-                                aria-current={currentView === item.id ? 'page' : undefined}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all group ${currentView === item.id
-                                    ? 'bg-indigo-600/10 text-indigo-400 ring-1 ring-indigo-500/20'
-                                    : activeTheme === 'dark' 
-                                        ? 'hover:bg-slate-800/50 hover:text-white' 
-                                        : 'hover:bg-slate-200/70 hover:text-slate-900'
-                                    }`}
-                            >
-                                <item.icon className={`w-3.5 h-3.5 ${currentView === item.id ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
-                                {item.label}
-                            </button>
-                        ))}
-                        
-
-                    </nav>
-                </div>
-
-                {/* Footer / User / Global Actions */}
-                <div className="p-4 bg-slate-900/50 border-t border-slate-800/50">
-                    <div className="flex items-center gap-3 p-2 rounded-xl border border-slate-800/50 bg-slate-800/20">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-                            <Award className="w-4 h-4 text-indigo-400" />
+                    {/* System */}
+                    <div>
+                        <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', color: 'var(--text3)', textTransform: 'uppercase', padding: '0 8px', marginBottom: 4 }}>
+                            System
                         </div>
-                        <div className="flex-1 overflow-hidden">
-                            <p className="text-xs font-bold text-white truncate">Pro Operator</p>
-                            <p className="text-[10px] text-slate-500 truncate">v{packageJson.version}</p>
-                        </div>
-                        <button className="text-slate-500 hover:text-white transition-colors" onClick={() => handleNavClick('settings')}>
-                            <Settings className="w-4 h-4" />
-                        </button>
+                        {[
+                            { id: 'settings', label: 'Settings Hub', icon: Settings },
+                            { id: 'notifications', label: 'Notifications', icon: Bell, badge: notifications.length, isAction: true }
+                        ].map((item) => {
+                            const active = isActive(item.id);
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => item.isAction ? setNotificationOpen(true) : handleNavClick(item.id)}
+                                    aria-current={active ? 'page' : undefined}
+                                    className="w-full flex items-center gap-2.5 relative"
+                                    style={{
+                                        padding: '7px 10px',
+                                        borderRadius: 8,
+                                        marginBottom: 1,
+                                        fontSize: 13,
+                                        fontWeight: active ? 500 : 400,
+                                        color: active ? 'var(--accent)' : 'var(--text2)',
+                                        background: active ? 'var(--accent-glow)' : 'transparent',
+                                        transition: 'all 0.15s',
+                                        cursor: 'pointer',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                    }}
+                                    onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text)'; } }}
+                                    onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text2)'; } }}
+                                >
+                                    {active && (
+                                        <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 16, background: 'var(--accent)', borderRadius: '0 2px 2px 0' }} />
+                                    )}
+                                    <item.icon style={{ width: 16, height: 16, opacity: active ? 1 : 0.7, flexShrink: 0, color: active ? 'var(--accent)' : 'currentColor' }} />
+                                    <span className="flex-1">{item.label}</span>
+                                    {item.badge > 0 && (
+                                        <span style={{
+                                            minWidth: 18, height: 18,
+                                            borderRadius: 9,
+                                            background: 'var(--accent)',
+                                            color: 'white',
+                                            fontSize: 10, fontWeight: 700,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            padding: '0 5px',
+                                        }}>
+                                            {item.badge > 99 ? '99+' : item.badge}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
-            </div>
+
+                {/* Bottom user card */}
+                <div
+                    className="flex-shrink-0"
+                    style={{ padding: 12, borderTop: '1px solid var(--border)' }}
+                >
+                    <button
+                        onClick={() => handleNavClick('settings')}
+                        className="w-full flex items-center gap-2.5"
+                        style={{
+                            padding: '8px 10px',
+                            borderRadius: 8,
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                            textAlign: 'left',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                        {/* Avatar */}
+                        <div
+                            className="flex items-center justify-center flex-shrink-0 text-white"
+                            style={{
+                                width: 28, height: 28,
+                                borderRadius: 8,
+                                background: 'linear-gradient(135deg, var(--accent), var(--pink))',
+                                fontSize: 11, fontWeight: 700,
+                            }}
+                        >
+                            PO
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>Pro Operator</div>
+                            <div style={{ fontSize: 10, color: 'var(--text3)' }}>v{packageJson.version}</div>
+                        </div>
+                        <ChevronRight style={{ width: 12, height: 12, color: 'var(--text3)', flexShrink: 0 }} />
+                    </button>
+                </div>
+            </aside>
+
+            {/* Notification Panel */}
+            <NotificationPanel
+                isOpen={notificationOpen}
+                onClose={() => setNotificationOpen(false)}
+                notifications={notifications}
+                onRemoveNotification={(id) => {
+                    const { removeNotification } = useAppStore.getState();
+                    removeNotification(id);
+                }}
+            />
         </>
     );
 });
 
 Sidebar.displayName = 'Sidebar';
-
 export default Sidebar;

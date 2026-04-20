@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '../api/client';
 
 /**
  * useAnalytics Hook
@@ -14,7 +15,7 @@ export function useAnalytics({ timeRange = '7d', enabled = true } = {}) {
   return useQuery({
     queryKey: ['analytics', timeRange],
     queryFn: async () => {
-      const response = await fetch(`/api/analytics?timeRange=${timeRange}`);
+      const response = await apiFetch(`analytics?timeRange=${timeRange}`);
       if (!response.ok) {
         throw new Error('Failed to fetch analytics');
       }
@@ -22,7 +23,7 @@ export function useAnalytics({ timeRange = '7d', enabled = true } = {}) {
     },
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 

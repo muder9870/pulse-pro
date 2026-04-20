@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pulse Pro — Story card · Alt A (Inoreader-style image)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #080B14;
+      --surface: #141C2E;
+      --surface2: #1C2640;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.12);
+      --text: #F0F4FF;
+      --text2: #8A96B0;
+      --text3: #5A6578;
+      --accent: #6C63FF;
+      --accent-glow: rgba(108,99,255,0.22);
+      --teal: #00D4A8;
+      --teal-dim: rgba(0,212,168,0.12);
+      --amber: #F59E0B;
+      --amber-dim: rgba(245,158,11,0.14);
+      --green: #10B981;
+      --green-dim: rgba(16,185,129,0.12);
+      --radius-lg: 14px;
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 28px 20px 40px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .intro h1 {
+      font-family: var(--font-display);
+      font-size: 21px;
+      margin: 0 0 6px;
+    }
+    .intro p {
+      color: var(--text2);
+      font-size: 13px;
+      max-width: 720px;
+      margin: 0 0 22px;
+    }
+    .intro code { color: var(--accent); font-size: 12px; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+      max-width: 1100px;
+    }
+    @media (min-width: 900px) {
+      .row.two-col { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ═══ Variant 1: Top image strip (feeds / Inoreader-like) ═══ */
+    .card-a {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .card-a__media {
+      position: relative;
+      height: 0;
+      padding-bottom: 52%;
+      background: linear-gradient(145deg, #1a1f35 0%, #0d1220 50%, #1e1840 100%);
+    }
+    .card-a__media img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .card-a__scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(8,11,20,0.92) 0%, rgba(8,11,20,0.35) 45%, transparent 100%);
+      pointer-events: none;
+    }
+    .card-a__media-meta {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .card-a__source {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: rgba(240,244,255,0.95);
+    }
+    .card-a__favicon {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: var(--accent-glow);
+      border: 1px solid rgba(255,255,255,0.15);
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .card-a__time {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: rgba(240,244,255,0.75);
+    }
+    .card-a__body { padding: 16px 18px 18px; }
+    .card-a__title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin: 0 0 8px;
+    }
+    .card-a__snippet {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.55;
+      margin: 0 0 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-a__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .score {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--amber-dim);
+      color: var(--amber);
+      border: 1px solid rgba(245,158,11,0.35);
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--text2);
+    }
+    .chip.on { background: var(--green-dim); color: var(--green); border-color: rgba(16,185,129,0.4); }
+
+    /* ═══ Variant 2: Thumbnail left (desktop reader column) ═══ */
+    .card-b {
+      display: grid;
+      grid-template-columns: 1fr;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    @media (min-width: 520px) {
+      .card-b { grid-template-columns: 140px 1fr; }
+    }
+    .card-b__thumb {
+      min-height: 120px;
+      background: linear-gradient(160deg, #2a2450 0%, #121a30 100%);
+      position: relative;
+    }
+    .card-b__thumb img {
+      width: 100%;
+      height: 100%;
+      min-height: 120px;
+      object-fit: cover;
+      display: block;
+    }
+    .card-b__body { padding: 14px 16px 16px; display: flex; flex-direction: column; }
+    .card-b__meta {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text3);
+      margin-bottom: 6px;
+    }
+    .card-b__title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 8px;
+      line-height: 1.35;
+    }
+    .card-b__snippet {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.5;
+      flex: 1;
+      margin: 0 0 12px;
+    }
+    .card-b__actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn {
+      flex: 1;
+      text-align: center;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      min-height: 42px;
+    }
+    .note {
+      margin-top: 24px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(13,17,32,0.9);
+      color: var(--text2);
+      font-size: 12px;
+      max-width: 1100px;
+    }
+    .note strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="intro">
+    <h1>Alt A — Image-forward cards (Inoreader-inspired)</h1>
+    <p>
+      Two layouts common in RSS readers: <strong>hero image on top</strong> with scrim + meta, or <strong>thumbnail column</strong> beside text.
+      Uses placeholder images from <code>picsum.photos</code> (needs network). If images fail, gradient fallbacks still show.
+    </p>
+  </div>
+
+  <div class="row two-col">
+    <!-- Top image -->
+    <article class="card-a">
+      <div class="card-a__media">
+        <img src="https://picsum.photos/seed/pulsehero/800/420" alt="" width="800" height="420" loading="lazy" />
+        <div class="card-a__scrim" aria-hidden="true"></div>
+        <div class="card-a__media-meta">
+          <div class="card-a__source">
+            <span class="card-a__favicon">Ar</span>
+            <span>arXiv · CS.AI</span>
+          </div>
+          <span class="card-a__time">12 min ago</span>
+        </div>
+      </div>
+      <div class="card-a__body">
+        <h2 class="card-a__title">Attention scaling laws for billion-parameter language models</h2>
+        <p class="card-a__snippet">
+          We study how compute-optimal training schedules interact with sparse mixture-of-experts routing under memory constraints…
+        </p>
+        <div class="card-a__footer">
+          <span class="score">91 / 100</span>
+          <div class="chips">
+            <span class="chip on">✓ LinkedIn</span>
+            <span class="chip">+ X</span>
+            <span class="chip">+ Blog</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Left thumbnail -->
+    <article class="card-b">
+      <div class="card-b__thumb">
+        <img src="https://picsum.photos/seed/pulsethumb/280/240" alt="" width="280" height="240" loading="lazy" />
+      </div>
+      <div class="card-b__body">
+        <div class="card-b__meta">GitHub · Release</div>
+        <h2 class="card-b__title">SDK v2.1 — streaming tools &amp; Azure templates</h2>
+        <p class="card-b__snippet">
+          Tool schemas, structured outputs, and one-click deploy profiles for production agents.
+        </p>
+        <div class="card-b__actions">
+          <button type="button" class="btn">Explore opportunities</button>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <p class="note">
+    <strong>Product mapping:</strong> Bind <code>story.image_url</code> / og:image / first media asset to the hero or thumb.
+    When no image exists, keep the gradient block (no broken img) or show initials on <code>card-a__favicon</code>-style tile.
+  </p>
+</body>
+</html>

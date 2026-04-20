@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func
-from backend.db.models import RawArticle, ProcessedArticle, ArticleTag, PaperAnalysis
+from backend.db.models import RawArticle, ProcessedArticle, ArticleTag, PaperAnalysis, ScheduledPost
 
 class ArticleRepository:
     def __init__(self, session: Session):
@@ -48,6 +48,56 @@ class ArticleRepository:
 
         articles = query.all()
         return [self._format_story(raw) for raw in articles]
+
+    def _next_scheduled_iso(self, processed_article_id: int | None) -> str | None:
+        if not processed_article_id:
+            return None
+        row = (
+            self.session.query(ScheduledPost)
+            .filter(
+                ScheduledPost.article_id == processed_article_id,
+                ScheduledPost.status.in_(("pending", "scheduled", "queued")),
+            )
+            .order_by(ScheduledPost.scheduled_time.asc())
+            .first()
+        )
+        if row and row.scheduled_time:
+            return row.scheduled_time.isoformat()
+        return None
+
+    def update_pipeline_state(
+        self,
+        raw_article_id: int,
+        *,
+        review_status: str | None = None,
+        content_approved: bool | None = None,
+        needs_review: bool | None = None,
+        ready_to_schedule: bool | None = None,
+    ) -> dict | None:
+        """Update workflow flags on ProcessedArticle for a raw article id. Returns formatted story or None."""
+        raw = self.session.query(RawArticle).filter(RawArticle.id == raw_article_id).first()
+        if not raw or not raw.processed_entry:
+            return None
+        pa = raw.processed_entry
+        changed = False
+        if review_status is not None:
+            if review_status not in ("none", "pending", "approved"):
+                raise ValueError("review_status must be none, pending, or approved")
+            pa.story_review_status = review_status
+            changed = True
+        if content_approved is not None:
+            pa.content_approved = bool(content_approved)
+            changed = True
+        if needs_review is not None:
+            pa.pipeline_needs_review = bool(needs_review)
+            changed = True
+        if ready_to_schedule is not None:
+            pa.ready_to_schedule = bool(ready_to_schedule)
+            changed = True
+        if changed:
+            self.session.commit()
+        self.session.refresh(pa)
+        return self._format_story(raw)
 
     def ensure_processed_id(self, article_id: int) -> int | None:
         """Resolve raw ``RawArticle.id`` to ``ProcessedArticle.id``.
@@ -115,6 +165,8 @@ class ArticleRepository:
             ).first()
             has_deep_analysis = bool(paper_analysis)
         
+        scheduled_at = self._next_scheduled_iso(article.id if article else None)
+
         return {
             "id": raw.id,
             "title": raw.title,
@@ -146,7 +198,13 @@ class ArticleRepository:
             "key_innovation": article.key_innovation if article else "",
             "implication": article.implication if article else "",
             "tags": tags,
-            "hashtags": [self.tag_to_hashtag(t) for t in tags]
+            "hashtags": [self.tag_to_hashtag(t) for t in tags],
+            # Pipeline flags (StoryCard / storyState.js)
+            "review_status": (article.story_review_status if article else "none"),
+            "content_approved": bool(article.content_approved) if article else False,
+            "needs_review": bool(article.pipeline_needs_review) if article else False,
+            "ready_to_schedule": bool(article.ready_to_schedule) if article else False,
+            "scheduled_at": scheduled_at,
         }
 
     @staticmethod

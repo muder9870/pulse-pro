@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiFetch, buildApiUrl } from '../api/client';
 
 const PipelineContext = createContext(null);
 
@@ -27,7 +28,7 @@ export const PipelineProvider = ({ children }) => {
       if (eventSource) eventSource.close();
       setConnectionState('connecting');
 
-      eventSource = new EventSource('/api/pipeline/stream');
+      eventSource = new EventSource(buildApiUrl('/pipeline/stream'));
 
       eventSource.onopen = () => {
         setConnectionState('connected');
@@ -60,7 +61,7 @@ export const PipelineProvider = ({ children }) => {
           message: 'Connection lost, retrying...',
         }));
         reconnectTimeout = setTimeout(() => {
-          fetch('/api/pipeline/status')
+          apiFetch('/pipeline/status')
             .then((r) => r.json())
             .then((data) => setStatus((prev) => ({ ...prev, ...data, message: data.message || prev.message })))
             .catch(() => {});

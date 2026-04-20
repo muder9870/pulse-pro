@@ -5,7 +5,6 @@ import SkipLink from './components/SkipLink';
 import ToastContainer from './components/ToastContainer';
 import QuickActions from './components/QuickActions';
 import Skeleton from './components/Skeleton';
-import { Button } from './components/ui';
 import { ToastProvider, useToastContext } from './hooks/useToast';
 import { AudioProvider } from './context/AudioContext';
 import { useBulkSelection } from './hooks/useBulkSelection';
@@ -13,12 +12,20 @@ import { useStories, useSources } from './hooks/useStories';
 import { usePipeline } from './hooks/usePipeline';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from './store/appStore';
+import { apiFetch } from './api/client';
+import { usePipelineRun } from './hooks/usePipelineRun';
+import { useScheduleModal } from './hooks/useScheduleModal';
+import { useAppKeyboardShortcuts } from './hooks/useAppKeyboardShortcuts';
+import { BulkOperationsProvider } from './context/BulkOperationsContext';
+import { StoriesProvider } from './context/StoriesContext';
+import BulkConfirmationDialog from './components/BulkConfirmationDialog';
 // View components — lazy loaded per route to reduce initial bundle size
 const AnalyticsView = lazy(() => import('./views/AnalyticsView'));
 const CalendarView = lazy(() => import('./views/CalendarView'));
 const MediaView = lazy(() => import('./views/MediaView'));
 const PodcastView = lazy(() => import('./views/PodcastView'));
 const ResearchView = lazy(() => import('./views/ResearchView'));
+const ArticlesView = lazy(() => import('./views/ArticlesView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 const NotFoundView = lazy(() => import('./views/NotFoundView'));
 // Dev-only routes — lazy loaded and excluded from production builds
@@ -33,7 +40,10 @@ import {
   Zap,
   Trash2,
   RefreshCw,
-  Search
+  Search,
+  Calendar,
+  Download,
+  Bell,
 } from 'lucide-react';
 
 function AppContent() {
@@ -56,6 +66,14 @@ function AppContent() {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  
+  // Bulk confirmation dialog state (Requirements 1.1, 1.5)
+  const [bulkConfirmation, setBulkConfirmation] = useState({
+    isOpen: false,
+    operationName: '',
+    itemCount: 0,
+    onConfirm: null,
+  });
 
   // Zustand store — theme, source filter, dashboard filters
   const activeTheme = useAppStore((s) => s.activeTheme);
@@ -94,25 +112,61 @@ function AppContent() {
     isSomeSelected
   } = useBulkSelection(stories, 'id');
   
-  const [pipelineRunning, setPipelineRunning] = useState(false);
-  const [pipelineElapsed, setPipelineElapsed] = useState(0);
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
-  const [scheduleEnabled, setScheduleEnabled] = useState(true);
-  const [scheduleTime, setScheduleTime] = useState('11:00');
-  const [scheduleDays, setScheduleDays] = useState(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
-  const [scheduleNextRun, setScheduleNextRun] = useState(null);
-  const [scheduleServerTime, setScheduleServerTime] = useState(null);
-  const [scheduleError, setScheduleError] = useState(null);
   
+  // Pipeline run hook (T9 refactoring)
+  const {
+    pipelineRunning,
+    pipelineElapsed,
+    handleRunPipeline: runPipeline,
+  } = usePipelineRun({
+    onSuccess: (msg) => toast.success(msg),
+    onError: (msg) => toast.error(msg),
+    onPartialSuccess: (msg) => toast.success(msg),
+  });
+  
+  // Schedule modal hook (T9 refactoring)
+  const {
+    scheduleOpen,
+    setScheduleOpen,
+    scheduleLoading,
+    scheduleEnabled,
+    setScheduleEnabled,
+    scheduleTime,
+    setScheduleTime,
+    scheduleDays,
+    scheduleNextRun,
+    scheduleServerTime,
+    scheduleError,
+    openSchedule,
+    saveSchedule,
+    toggleDay,
+  } = useScheduleModal({
+    onSuccess: (msg) => toast.success(msg),
+    onError: (msg) => toast.error(msg),
+  });
+  
+  // Handle schedule modal trigger from StoryCard
+  useEffect(() => {
+    const handleOpenSchedule = (e) => {
+      const { articleId } = e.detail;
+      // Pre-select the article and open schedule modal
+      if (articleId && !selectedIds.has(articleId)) {
+        toggleSelection(articleId);
+      }
+      setShowScheduleModal(true);
+    };
+    window.addEventListener('open-schedule-modal', handleOpenSchedule);
+    return () => window.removeEventListener('open-schedule-modal', handleOpenSchedule);
+  }, [selectedIds, toggleSelection]);
+
   // Handle source changes from sidebar
   const handleSourceSelect = (source) => {
     setActiveSource(source);
-    setCurrentView('dashboard');
-    // We intentionally do NOT wipe setFilters() or setSearchQuery() here
-    // so that "Dashboard Tuning and Perspective" (FilterBar) settings persist
-    // across different sources!
+    setFilters(prev => ({ ...prev, source: source }));
+    if (source) {
+      navigate('/articles');
+    }
   };
   
   // Bulk operation state — from Zustand store
@@ -131,6 +185,9 @@ function AppContent() {
     { key: 'sat', label: 'Sat' },
     { key: 'sun', label: 'Sun' },
   ];
+  
+  // Wrap runPipeline to match existing function name
+  const handleRunPipeline = runPipeline;
 
   // Handle deep dive request from daily intelligence
   useEffect(() => {
@@ -153,7 +210,9 @@ function AppContent() {
           analyzed: false
         });
         // We could also open a detail view if we had one
-        console.log(`Deep dive into: ${title}`);
+        if (import.meta.env.DEV) {
+          console.log(`Deep dive into: ${title}`);
+        }
       }
     };
     window.addEventListener('open-story-details', handleOpenStory);
@@ -203,150 +262,26 @@ function AppContent() {
     queryClient.invalidateQueries(['stories']);
   };
 
-  const handleRunPipeline = async () => {
-    const TIMEOUT_SECONDS = 5 * 60;  // 5 minutes
-    const POLL_INTERVAL = 2000;      // 2 seconds
-
-    try {
-        const response = await fetch('/api/pipeline/run', { method: 'POST' });
-        if (!response.ok) {
-            toast.error('Failed to start pipeline');
-            return;
-        }
-
-        setPipelineRunning(true);
-        setPipelineElapsed(0);
-
-        const startTime = Date.now();
-
-        const poll = async () => {
-            const elapsedMs = Date.now() - startTime;
-            const elapsedSeconds = Math.floor(elapsedMs / 1000);
-            setPipelineElapsed(elapsedSeconds);
-
-            if (elapsedSeconds >= TIMEOUT_SECONDS) {
-                setPipelineRunning(false);
-                toast.error(`Pipeline timed out after ${TIMEOUT_SECONDS} seconds. Check logs for details.`);
-                return;
-            }
-
-            try {
-                const statusResp = await fetch('/api/pipeline/status');
-                if (!statusResp.ok) {
-                    toast.error('Failed to fetch pipeline status');
-                    setPipelineRunning(false);
-                    return;
-                }
-
-                const data = await statusResp.json();
-                const status = data.status;
-                const lastError = data.last_error;
-
-                if (status === 'success') {
-                    setPipelineRunning(false);
-                    if (data.partial_success) {
-                        toast.success('Pipeline completed with some errors. Data fetched successfully.');
-                    } else {
-                        toast.success('Pipeline completed successfully');
-                    }
-                    return;
-                }
-
-                if (status === 'error') {
-                    setPipelineRunning(false);
-                    toast.error(`Pipeline failed: ${lastError || 'Unknown error'}`);
-                    return;
-                }
-
-                // Still running — schedule next poll
-                setTimeout(poll, POLL_INTERVAL);
-
-            } catch (pollError) {
-                setPipelineRunning(false);
-                toast.error(`Pipeline status check failed: ${pollError.message}`);
-            }
-        };
-
-        // Start first poll after initial interval
-        setTimeout(poll, POLL_INTERVAL);
-
-    } catch (error) {
-        setPipelineRunning(false);
-        toast.error(`Pipeline error: ${error.message}`);
-    }
-  };
-
-  const openSchedule = async () => {
-    setScheduleOpen(true);
-    setScheduleError(null);
-    try {
-      const res = await fetch('/api/schedule');
-      if (!res.ok) throw new Error('Failed to load schedule');
-      const data = await res.json();
-      const sched = data.schedule || {};
-      setScheduleEnabled(Boolean(sched.enabled));
-      setScheduleTime(sched.time || '11:00');
-      setScheduleDays(Array.isArray(sched.days) ? sched.days : ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
-      setScheduleNextRun(data.next_run_time || null);
-      setScheduleServerTime(data.server_time || null);
-    } catch (e) {
-      console.error(e);
-      setScheduleError(String(e.message || e));
-    }
-  };
-
-  const saveSchedule = async () => {
-    setScheduleLoading(true);
-    setScheduleError(null);
-    try {
-      const res = await fetch('/api/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enabled: scheduleEnabled,
-          time: scheduleTime,
-          days: scheduleDays,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to save schedule');
-      const info = data.info || {};
-      setScheduleNextRun(info.next_run_time || null);
-      setScheduleServerTime(info.server_time || null);
-      setScheduleOpen(false);
-    } catch (e) {
-      console.error(e);
-      setScheduleError(String(e.message || e));
-    } finally {
-      setScheduleLoading(false);
-    }
-  };
-
-  const toggleDay = (dayKey) => {
-    setScheduleDays((prev) => {
-      if (prev.includes(dayKey)) return prev.filter((d) => d !== dayKey);
-      return [...prev, dayKey];
-    });
-  };
-
   // Automatic cache invalidation when pipeline finishes
   useEffect(() => {
     if (pipelineStatus.stage === 'done') {
-      console.log('Pipeline finished. Invalidating stories cache...');
+      if (import.meta.env.DEV) {
+        console.log('Pipeline finished. Invalidating stories cache...');
+      }
       queryClient.invalidateQueries(['stories']);
     }
   }, [pipelineStatus.stage, queryClient]);
 
-  // Clear selection when navigating away from dashboard (Requirement 1.4)
+  // Clear selection when navigating away from articles/dashboard
   useEffect(() => {
-    if (currentView !== 'dashboard' && selectedIds.size > 0) {
+    if (currentView !== 'dashboard' && currentView !== 'articles' && selectedIds.size > 0) {
       clearSelection();
     }
-  }, [currentView, selectedIds.size, clearSelection]);
+  }, [currentView]);
 
   const handleExport = async () => {
     try {
-      const res = await fetch('/api/export');
+      const res = await apiFetch('/export');
       const data = await res.json();
       if (data.markdown) {
         const blob = new Blob([data.markdown], { type: 'text/markdown' });
@@ -365,8 +300,6 @@ function AppContent() {
 
   // Optimize story filtering with useMemo to prevent lag during re-renders
   const filteredStories = React.useMemo(() => {
-    if (currentView !== 'dashboard') return [];
-    
     let filtered = stories;
 
     if (searchQuery) {
@@ -430,6 +363,63 @@ function AppContent() {
     fetchedSources.length > 0 ? fetchedSources : [...new Set(stories.map(s => s.source))].filter(Boolean),
   [stories, fetchedSources]);
 
+  const readyCount = React.useMemo(
+    () => stories.filter((story) => story.posts && story.posts.length > 0 && !story.posted).length,
+    [stories]
+  );
+
+  const searchableViews = new Set(['articles', 'research']);
+  const shellMeta = {
+    dashboard: {
+      eyebrow: 'Front Page',
+      title: 'Command Center',
+      subtitle: readyCount > 0
+        ? `${readyCount} launch-ready stor${readyCount === 1 ? 'y' : 'ies'} waiting for review`
+        : 'Monitor intake, quality, and publishing readiness from one place.',
+    },
+    articles: {
+      eyebrow: 'Production',
+      title: activeSource ? `${activeSource} Feed` : 'Article Pipeline',
+      subtitle: `${filteredStories.length} stor${filteredStories.length === 1 ? 'y' : 'ies'} in the current view`,
+    },
+    analytics: {
+      eyebrow: 'Performance',
+      title: 'Metrics Engine',
+      subtitle: 'Track publishing quality, output velocity, and pipeline performance.',
+    },
+    calendar: {
+      eyebrow: 'Planning',
+      title: 'Editorial Calendar',
+      subtitle: 'Manage timing, scheduling, and editorial sequencing.',
+    },
+    media: {
+      eyebrow: 'Assets',
+      title: 'Media Library',
+      subtitle: 'Review generated media and reusable creative assets.',
+    },
+    research: {
+      eyebrow: 'Discovery',
+      title: 'Research Hub',
+      subtitle: 'Search and validate the upstream intelligence feeding the pipeline.',
+    },
+    podcast: {
+      eyebrow: 'Audio',
+      title: 'Podcast Studio',
+      subtitle: 'Shape audio output and monitor synthesis-ready material.',
+    },
+    settings: {
+      eyebrow: 'System',
+      title: 'Strategy Lab',
+      subtitle: 'Configure providers, workflows, and publishing defaults.',
+    },
+  };
+  const activeShellMeta = shellMeta[currentView] || {
+    eyebrow: 'Pulse Pro',
+    title: currentView.charAt(0).toUpperCase() + currentView.slice(1),
+    subtitle: 'Contextual workspace controls for the current route.',
+  };
+  const showShellSearch = searchableViews.has(currentView);
+
   // Handle Select All for filtered stories (Requirement 3.2, 3.3, 3.5)
   const handleSelectAllFiltered = React.useCallback(() => {
     const filteredIds = filteredStories.map(s => s.id);
@@ -473,6 +463,26 @@ function AppContent() {
       return;
     }
 
+    // Show confirmation dialog for >10 items (Requirements 1.1, 1.5)
+    if (articleIds.length > 10) {
+      setBulkConfirmation({
+        isOpen: true,
+        operationName: 'Generate Content',
+        itemCount: articleIds.length,
+        onConfirm: () => {
+          setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null });
+          executeBulkGenerate(articleIds);
+        },
+      });
+      return;
+    }
+
+    // For ≤10 items, proceed directly
+    await executeBulkGenerate(articleIds);
+  };
+
+  const executeBulkGenerate = async (articleIds) => {
+
     // Track progress
     let successCount = 0;
     let failedArticles = [];
@@ -487,19 +497,15 @@ function AppContent() {
     });
 
     try {
-      // Process articles sequentially (Requirement 4.5)
-      for (let i = 0; i < articleIds.length; i++) {
-        const articleId = articleIds[i];
-        
-        // Update progress (Requirement 10.2)
-        setBulkOperationState(prev => ({
-          ...prev,
-          current: i + 1
-        }));
-        
+      // T13: Process articles with concurrency limit (2 at a time) to avoid rate limits
+      const CONCURRENCY_LIMIT = 2;
+      const queue = [...articleIds];
+      const inProgress = new Set();
+      
+      const processArticle = async (articleId) => {
         try {
           // Call /api/generate endpoint for each article (Requirement 4.1)
-          const response = await fetch('/api/generate', {
+          const response = await apiFetch('/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ article_id: articleId })
@@ -512,7 +518,9 @@ function AppContent() {
 
           successCount++;
         } catch (error) {
-          console.error(`Failed to generate content for article ${articleId}:`, error);
+          if (import.meta.env.DEV) {
+            console.error(`Failed to generate content for article ${articleId}:`, error);
+          }
           // Get article title for better error display
           const article = stories.find(s => s.id === articleId);
           failedArticles.push({ 
@@ -520,6 +528,29 @@ function AppContent() {
             title: article?.title,
             error: error.message 
           });
+        } finally {
+          // Update progress
+          setBulkOperationState(prev => ({
+            ...prev,
+            current: totalCount - queue.length - inProgress.size + 1
+          }));
+        }
+      };
+
+      // Process queue with concurrency limit
+      while (queue.length > 0 || inProgress.size > 0) {
+        // Start new tasks up to concurrency limit
+        while (inProgress.size < CONCURRENCY_LIMIT && queue.length > 0) {
+          const articleId = queue.shift();
+          const promise = processArticle(articleId).finally(() => {
+            inProgress.delete(promise);
+          });
+          inProgress.add(promise);
+        }
+        
+        // Wait for at least one task to complete
+        if (inProgress.size > 0) {
+          await Promise.race(inProgress);
         }
       }
 
@@ -576,6 +607,26 @@ function AppContent() {
       return;
     }
 
+    // Show confirmation dialog for >10 items (Requirements 1.1, 1.5)
+    if (articleIds.length > 10) {
+      setBulkConfirmation({
+        isOpen: true,
+        operationName: 'Schedule Content',
+        itemCount: articleIds.length,
+        onConfirm: () => {
+          setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null });
+          executeBulkSchedule(options, articleIds);
+        },
+      });
+      return;
+    }
+
+    // For ≤10 items, proceed directly
+    await executeBulkSchedule(options, articleIds);
+  };
+
+  const executeBulkSchedule = async (options, articleIds) => {
+
     if (!options.time || !options.platform) {
       toast.error('Please provide both time and platform');
       return;
@@ -606,7 +657,7 @@ function AppContent() {
         }));
         
         try {
-          const response = await fetch('/api/schedule/queue', {
+          const response = await apiFetch('/schedule/queue', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -717,7 +768,7 @@ function AppContent() {
         
         try {
           // First, fetch existing tags for this article (Requirement 6.4)
-          const getResponse = await fetch(`/api/tags/${articleId}`);
+          const getResponse = await apiFetch(`/tags/${articleId}`);
           let existingTags = [];
           
           if (getResponse.ok) {
@@ -729,7 +780,7 @@ function AppContent() {
           const mergedTags = [...new Set([...existingTags, ...tags])]; // Use Set to avoid duplicates
 
           // POST the merged tags
-          const postResponse = await fetch(`/api/tags/${articleId}`, {
+          const postResponse = await apiFetch(`/tags/${articleId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tags: mergedTags })
@@ -816,7 +867,7 @@ function AppContent() {
 
     try {
       // Call /api/export/batch endpoint with array of selected article IDs (Requirement 7.1)
-      const response = await fetch('/api/export/batch', {
+      const response = await apiFetch('/export/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ article_ids: articleIds })
@@ -907,13 +958,13 @@ function AppContent() {
         
         for (const platform of platforms) {
           try {
-            const checkResponse = await fetch(`/api/content/${articleId}/${platform}`);
+            const checkResponse = await apiFetch(`/content/${articleId}/${platform}`);
             if (!checkResponse.ok) continue;
 
             const contentData = await checkResponse.json();
             
             if (contentData.content && !contentData.posted) {
-              const res = await fetch('/api/content/posted', {
+              const res = await apiFetch('/content/posted', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1004,6 +1055,26 @@ function AppContent() {
       return;
     }
 
+    // Show confirmation dialog for >10 items (Requirements 1.1, 1.5)
+    if (articleIds.length > 10) {
+      setBulkConfirmation({
+        isOpen: true,
+        operationName: 'Delete Articles',
+        itemCount: articleIds.length,
+        onConfirm: () => {
+          setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null });
+          executeBulkDelete(articleIds);
+        },
+      });
+      return;
+    }
+
+    // For ≤10 items, show the existing delete confirmation modal
+    setShowDeleteConfirmModal(true);
+  };
+
+  const executeBulkDelete = async (articleIds) => {
+
     // Close the confirmation modal
     setShowDeleteConfirmModal(false);
 
@@ -1017,7 +1088,7 @@ function AppContent() {
 
     try {
       // Call /api/articles/bulk-delete endpoint with array of article IDs (Requirement 9.3)
-      const response = await fetch('/api/articles/bulk-delete', {
+      const response = await apiFetch('/articles/bulk-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ article_ids: articleIds })
@@ -1061,51 +1132,61 @@ function AppContent() {
     }
   };
 
-  // Keyboard shortcuts for bulk operations (Requirements 12.1, 12.2, 12.3)
-  // IMPORTANT: This useEffect must come AFTER all helper functions it references
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Only respond to shortcuts when dashboard view is active (Requirement 12.4)
-      if (currentView !== 'dashboard') return;
-      
-      // Disable shortcuts when any modal is open (Requirement 12.5)
-      if (scheduleOpen || showDeleteConfirmModal || showTagModal || showScheduleModal) return;
-      
-      // Ctrl+A (Cmd+A on Mac) - Select all visible articles (Requirement 12.1)
-      if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
-        event.preventDefault(); // Prevent default browser behavior
-        if (filteredStories.length > 0) {
-          handleSelectAllFiltered();
-        }
-        return;
-      }
-      
-      // Escape - Clear selection (Requirement 12.2)
-      if (event.key === 'Escape' && selectedIds.size > 0) {
-        event.preventDefault();
-        clearSelection();
-        return;
-      }
-      
-      // Delete - Trigger bulk delete confirmation (Requirement 12.3)
-      if (event.key === 'Delete' && selectedIds.size > 0) {
-        event.preventDefault();
-        setShowDeleteConfirmModal(true);
-        return;
-      }
-    };
-    
-    // Add event listener
-    window.addEventListener('keydown', handleKeyDown);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [currentView, scheduleOpen, showDeleteConfirmModal, showTagModal, showScheduleModal, selectedIds.size, clearSelection, filteredStories.length, handleSelectAllFiltered]);
+  // Keyboard shortcuts for bulk operations (T9 refactoring)
+  useAppKeyboardShortcuts({
+    currentView,
+    scheduleOpen,
+    showDeleteConfirmModal,
+    showTagModal,
+    showScheduleModal,
+    selectedIds,
+    clearSelection,
+    filteredStoriesLength: filteredStories.length,
+    handleSelectAllFiltered,
+    setShowDeleteConfirmModal,
+  });
+
+  // Context values for reducing prop drilling (T10 refactoring)
+  const bulkOperationsValue = {
+    selectedIds,
+    toggleSelection,
+    handleSelectAllFiltered,
+    getSelectAllState,
+    clearSelection,
+    bulkOperationState,
+    setBulkOperationState,
+    bulkOperationError,
+    setBulkOperationError,
+    showTagModal,
+    setShowTagModal,
+    showScheduleModal,
+    setShowScheduleModal,
+    showDeleteConfirmModal,
+    setShowDeleteConfirmModal,
+    handleBulkGenerate,
+    handleBulkSchedule,
+    handleBulkTag,
+    handleBulkExport,
+    handleBulkMarkPosted,
+    handleBulkDelete,
+  };
+
+  const storiesValue = {
+    stories,
+    loading,
+    filteredStories,
+    uniqueSources,
+    activeSource,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    filters,
+    setFilters,
+    handleSourceSelect,
+  };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans overflow-x-hidden">
+    <div className="flex min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--font-body)' }}>
       <SkipLink targetId="main-content" />
       <Sidebar
         activeSource={activeSource}
@@ -1117,68 +1198,197 @@ function AppContent() {
         activeTheme={activeTheme}
       />
 
-      <div className="flex-1 ml-64 flex flex-col min-w-0 min-h-screen">
-        {/* Simplified Global Header */}
-        <header className={`backdrop-blur-md border-b sticky top-0 z-10 px-4 lg:px-8 py-3 flex items-center justify-between shadow-sm transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-900/80 border-white/10' : 'bg-white/80 border-gray-200'}`}>
-          <div className="flex items-center gap-4 lg:gap-6 flex-1">
-            <button className="lg:hidden p-2 -ml-2 text-slate-500 hover:text-indigo-600 transition-colors" onClick={() => setMobileMenuOpen(true)}>
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="relative w-48 lg:w-64 group hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-xs focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all outline-none font-bold"
-              />
-            </div>
-
-            <QuickActions
-              onFetchData={handleRunPipeline}
-              onGenerateContent={() => {
-                if (selectedIds.size > 0) {
-                  handleBulkGenerate();
-                } else {
-                  toast.info('Please select articles to generate content for.');
-                }
+      <div className="app-shell-content flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Header — Pulse Pro style */}
+        <header
+          className="sticky top-0 z-20 flex items-center gap-3 flex-shrink-0 flex-wrap"
+          style={{
+            minHeight: 'var(--header-h)',
+            background: 'rgba(13, 17, 32, 0.92)',
+            borderBottom: '1px solid var(--border)',
+            padding: '10px 20px',
+            backdropFilter: 'blur(14px)',
+          }}
+        >
+          {/* Mobile menu toggle */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              className="lg:hidden flex-shrink-0"
+              onClick={() => setMobileMenuOpen(true)}
+              style={{
+                color: 'var(--text2)',
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
               }}
-              onSchedule={() => setScheduleOpen(true)}
-              onExport={handleExport}
-              pipelineRunning={pipelineRunning}
-              processedCount={stories.filter(s => s.summary).length}
-              variant="compact"
-            />
+              aria-label="Open navigation"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+
+            <div className="min-w-0">
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>
+                {activeShellMeta.eyebrow}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
+                  {activeShellMeta.title}
+                </div>
+                {currentView === 'dashboard' && readyCount > 0 && (
+                  <button
+                    onClick={() => navigate('/articles')}
+                    className="hidden md:inline-flex items-center gap-1.5 flex-shrink-0"
+                    style={{
+                      background: 'var(--accent-glow)',
+                      border: '1px solid var(--accent)',
+                      borderRadius: 999,
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: 'var(--accent)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Zap style={{ width: 12, height: 12 }} />
+                    {readyCount} ready to launch
+                  </button>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
+                {activeShellMeta.subtitle}
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 ml-8">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${pipelineRunning ? 'bg-orange-50 border-orange-100' : 'bg-indigo-50 border-indigo-100'}`}>
-              <Zap className={`w-3.5 h-3.5 ${pipelineRunning ? 'text-orange-600 animate-pulse' : 'text-indigo-600'}`} />
-              <span className={`text-[9px] font-black uppercase tracking-wider flex items-center ${pipelineRunning ? 'text-orange-700' : 'text-indigo-700'}`}>
-                {pipelineRunning ? `Syncing... (${pipelineElapsed}s / 300s)` : 'Ready'}
-              </span>
-              {pipelineRunning && (
-                <progress className="w-16 h-1.5 ml-2 accent-orange-500 rounded-full bg-orange-200" value={pipelineElapsed} max={300}></progress>
-              )}
+          {/* Search */}
+          {showShellSearch && (
+          <div
+            className="shell-header-search flex items-center gap-2 flex-shrink-0"
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              padding: '8px 12px',
+              transition: 'all 0.2s',
+            }}
+            onFocusCapture={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--bg3)'; }}
+            onBlurCapture={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+          >
+            <Search style={{ width: 14, height: 14, color: 'var(--text3)', flexShrink: 0 }} />
+            <input
+              type="text"
+              placeholder="Search articles, research…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                background: 'none', border: 'none', outline: 'none',
+                color: 'var(--text)', fontSize: 12,
+                fontFamily: 'var(--font-body)', width: '100%',
+              }}
+            />
+          </div>
+          )}
+
+          <div className="flex items-center gap-2 flex-wrap ml-auto">
+            <div
+              className="hidden md:flex items-center gap-1.5 flex-shrink-0"
+              style={{
+                padding: '6px 10px',
+                borderRadius: 999,
+                background: pipelineRunning ? 'var(--amber-dim)' : 'var(--green-dim)',
+                border: `1px solid ${pipelineRunning ? 'var(--amber)' : 'var(--green)'}`,
+                color: pipelineRunning ? 'var(--amber)' : 'var(--green)',
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: pipelineRunning ? 'var(--amber)' : 'var(--green)',
+                  boxShadow: `0 0 6px ${pipelineRunning ? 'var(--amber)' : 'var(--green)'}`,
+                  flexShrink: 0,
+                  display: 'inline-block',
+                }}
+                className={pipelineRunning ? '' : 'animate-pulse-dot'}
+              />
+              {pipelineRunning ? `Syncing ${pipelineElapsed}s` : 'Pipeline ready'}
             </div>
 
             <button
-              onClick={fetchStories}
-              disabled={loading}
-              className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all disabled:opacity-50"
-              title="Refresh Global Data"
+              onClick={handleRunPipeline}
+              disabled={pipelineRunning}
+              className="flex items-center gap-1.5 flex-shrink-0"
+              style={{
+                background: pipelineRunning ? 'var(--amber-dim)' : 'var(--teal-dim)',
+                border: `1px solid ${pipelineRunning ? 'var(--amber)' : 'var(--teal)'}`,
+                borderRadius: 10,
+                padding: '8px 12px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: pipelineRunning ? 'var(--amber)' : 'var(--teal)',
+                cursor: pipelineRunning ? 'not-allowed' : 'pointer',
+                whiteSpace: 'nowrap',
+                opacity: pipelineRunning ? 0.8 : 1,
+              }}
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw style={{ width: 13, height: 13 }} className={pipelineRunning ? 'animate-spin' : ''} />
+              <span>{pipelineRunning ? 'Syncing' : 'Run pipeline'}</span>
             </button>
+
+            <button
+              onClick={() => navigate('/calendar')}
+              title="Calendar"
+              className="hidden sm:flex items-center justify-center flex-shrink-0"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text2)',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+            >
+              <Calendar style={{ width: 16, height: 16, opacity: 0.7 }} />
+            </button>
+
+            {currentView !== 'dashboard' && (
+              <button
+                onClick={handleExport}
+                title="Export"
+                className="hidden sm:flex items-center justify-center flex-shrink-0"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text2)',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+              >
+                <Download style={{ width: 16, height: 16, opacity: 0.7 }} />
+              </button>
+            )}
           </div>
         </header>
 
-        <main id="main-content" tabIndex={-1} className={`flex-1 p-8 transition-colors duration-500 ${activeTheme === 'dark' ? 'bg-slate-950' : 'bg-slate-50'}`}>
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)', padding: '24px' }}>
           <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
             {/* View Rendering — URL-based routing with lazy-loaded views */}
-            <Suspense fallback={<Skeleton type="page" />}>
-              <Routes>
+            <BulkOperationsProvider value={bulkOperationsValue}>
+              <StoriesProvider value={storiesValue}>
+                <Suspense fallback={<Skeleton type="page" />}>
+                  <Routes>
               <Route path="/analytics" element={<AnalyticsView onBack={() => setCurrentView('dashboard')} />} />
               {/* Alias: /metrics redirects to same AnalyticsView as /analytics */}
               <Route path="/metrics" element={<AnalyticsView onBack={() => setCurrentView('dashboard')} />} />
@@ -1186,6 +1396,13 @@ function AppContent() {
               <Route path="/media" element={<MediaView />} />
               <Route path="/podcast" element={<PodcastView />} />
               <Route path="/research" element={<ResearchView />} />
+              <Route path="/articles" element={
+                <ArticlesView
+                  selectedPlatforms={selectedPlatforms}
+                  activeTheme={activeTheme}
+                  handleRunPipeline={handleRunPipeline}
+                />
+              } />
               <Route path="/settings" element={<SettingsView activeTheme={activeTheme} initialTab="monetization" />} />
               <Route path="/monetization" element={<SettingsView activeTheme={activeTheme} initialTab="monetization" />} />
               <Route path="/monetize" element={<SettingsView activeTheme={activeTheme} initialTab="monetization" />} />
@@ -1200,90 +1417,71 @@ function AppContent() {
               <Route path="/dev/tokens" element={<TokenReference />} />
               <Route path="/" element={
                 <DashboardView
-                  stories={stories}
-                  loading={loading}
-                  filteredStories={filteredStories}
-                  uniqueSources={uniqueSources}
                   selectedPlatforms={selectedPlatforms}
                   activeTheme={activeTheme}
-                  activeSource={activeSource}
-                  fetchNextPage={fetchNextPage}
-                  hasNextPage={hasNextPage}
-                  isFetchingNextPage={isFetchingNextPage}
-                  filters={filters}
-                  setFilters={setFilters}
-                  selectedIds={selectedIds}
-                  toggleSelection={toggleSelection}
-                  handleSelectAllFiltered={handleSelectAllFiltered}
-                  getSelectAllState={getSelectAllState}
-                  clearSelection={clearSelection}
-                  bulkOperationState={bulkOperationState}
-                  setBulkOperationState={setBulkOperationState}
-                  bulkOperationError={bulkOperationError}
-                  setBulkOperationError={setBulkOperationError}
-                  showTagModal={showTagModal}
-                  setShowTagModal={setShowTagModal}
-                  showScheduleModal={showScheduleModal}
-                  setShowScheduleModal={setShowScheduleModal}
-                  showDeleteConfirmModal={showDeleteConfirmModal}
-                  setShowDeleteConfirmModal={setShowDeleteConfirmModal}
-                  handleBulkGenerate={handleBulkGenerate}
-                  handleBulkSchedule={handleBulkSchedule}
-                  handleBulkTag={handleBulkTag}
-                  handleBulkExport={handleBulkExport}
-                  handleBulkMarkPosted={handleBulkMarkPosted}
-                  handleBulkDelete={handleBulkDelete}
                   handleRunPipeline={handleRunPipeline}
-                  handleSourceSelect={handleSourceSelect}
                 />
               } />
               <Route path="*" element={<NotFoundView />} />
             </Routes>
             </Suspense>
+              </StoriesProvider>
+            </BulkOperationsProvider>
           </div>
         </main>
 
-        <footer className="mt-auto py-8 border-t border-slate-200 bg-white">
-          <div className="max-w-7xl mx-auto px-8 text-center">
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-              <Zap className="w-3 h-3" /> Powered by AI Pulse Pro Engine v2.0
-            </p>
-          </div>
+        <footer className="flex-shrink-0 py-3 text-center" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg2)' }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2" style={{ color: 'var(--text3)' }}>
+            <Zap className="w-3 h-3" /> Powered by AI Pulse Pro Engine v2.0
+          </p>
         </footer>
       </div>
 
       {/* Schedule Modal */}
       {scheduleOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-slate-200 animate-slide-up">
-            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(14px)', padding: 16 }}>
+          <div className="animate-slide-up" style={{ width: '100%', maxWidth: 520, borderRadius: 20, background: 'var(--bg2)', border: '1px solid var(--border2)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid var(--border)' }}>
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Automation Engine</h2>
-                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-1">
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-display)', margin: 0 }}>Automation Engine</h2>
+                <p style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.1em', marginTop: 4 }}>
                   {scheduleNextRun ? `Next run: ${new Date(scheduleNextRun).toLocaleTimeString()}` : 'System Idle'}
                 </p>
               </div>
-              <button onClick={() => setScheduleOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
+              <button onClick={() => setScheduleOpen(false)} style={{ padding: 8, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X style={{ width: 16, height: 16 }} />
               </button>
             </div>
-            <div className="p-8 space-y-8">
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <div className={`w-12 h-7 rounded-full relative transition-colors ${scheduleEnabled ? 'bg-indigo-600' : 'bg-slate-200'}`}>
-                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${scheduleEnabled ? 'left-6' : 'left-1'}`} />
+            <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {scheduleError && (
+                <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: 'var(--red)', fontSize: 12 }}>
+                  {scheduleError}
                 </div>
-                <input type="checkbox" checked={scheduleEnabled} onChange={(e) => setScheduleEnabled(e.target.checked)} className="hidden" />
-                <span className="text-sm font-bold text-slate-700">Enable Automated Syncing</span>
+              )}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                <div
+                  style={{ width: 44, height: 26, borderRadius: 13, position: 'relative', transition: 'background 0.2s', background: scheduleEnabled ? 'var(--accent)' : 'var(--surface2)', border: '1px solid var(--border2)', flexShrink: 0 }}
+                >
+                  <div style={{ position: 'absolute', top: 3, width: 18, height: 18, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', left: scheduleEnabled ? 22 : 3 }} />
+                </div>
+                <input type="checkbox" checked={scheduleEnabled} onChange={(e) => setScheduleEnabled(e.target.checked)} style={{ display: 'none' }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Enable Automated Syncing</span>
               </label>
 
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Days</label>
-                <div className="grid grid-cols-7 gap-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Active Days</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
                   {dayOptions.map((d) => (
                     <button
                       key={d.key}
                       onClick={() => toggleDay(d.key)}
-                      className={`py-4 rounded-2xl text-[10px] font-black uppercase transition-all border ${scheduleDays.includes(d.key) ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-indigo-300'}`}
+                      style={{
+                        padding: '10px 0', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                        textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.15s',
+                        background: scheduleDays.includes(d.key) ? 'var(--accent)' : 'var(--surface2)',
+                        border: `1px solid ${scheduleDays.includes(d.key) ? 'var(--accent)' : 'var(--border)'}`,
+                        color: scheduleDays.includes(d.key) ? '#fff' : 'var(--text2)',
+                      }}
                     >
                       {d.label}
                     </button>
@@ -1291,24 +1489,24 @@ function AppContent() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daily Execution Time</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Daily Execution Time</label>
                 <input
                   type="time"
                   value={scheduleTime}
                   onChange={(e) => setScheduleTime(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  style={{ width: '100%', padding: '10px 14px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 16, fontWeight: 700, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' }}
                 />
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3 px-8 py-6 border-t border-slate-100">
-              <button onClick={() => setScheduleOpen(false)} className="px-6 py-3 text-sm font-bold text-slate-500">Close</button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, padding: '16px 28px', borderTop: '1px solid var(--border)' }}>
+              <button onClick={() => setScheduleOpen(false)} style={{ padding: '9px 18px', fontSize: 13, fontWeight: 600, color: 'var(--text2)', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: 10 }}>Close</button>
               <button
                 onClick={saveSchedule}
                 disabled={scheduleLoading}
-                className="px-8 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all transform active:scale-95"
+                style={{ padding: '9px 22px', background: 'var(--accent)', color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: scheduleLoading ? 'not-allowed' : 'pointer', opacity: scheduleLoading ? 0.7 : 1, transition: 'all 0.15s' }}
               >
-                {scheduleLoading ? 'Calibrating...' : 'Commit Changes'}
+                {scheduleLoading ? 'Calibrating…' : 'Commit Changes'}
               </button>
             </div>
           </div>
@@ -1317,39 +1515,48 @@ function AppContent() {
 
       {/* Delete Confirmation Modal (triggered by keyboard shortcut or BulkActionsBar) */}
       {showDeleteConfirmModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl border border-slate-200 animate-slide-up">
-            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">Delete {selectedIds.size} {selectedIds.size === 1 ? 'Article' : 'Articles'}?</h2>
-              </div>
-              <button onClick={() => setShowDeleteConfirmModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(14px)', padding: 16 }}>
+          <div className="animate-slide-up" style={{ width: '100%', maxWidth: 440, borderRadius: 20, background: 'var(--bg2)', border: '1px solid var(--border2)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid var(--border)' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-display)', margin: 0 }}>
+                Delete {selectedIds.size} {selectedIds.size === 1 ? 'Article' : 'Articles'}?
+              </h2>
+              <button onClick={() => setShowDeleteConfirmModal(false)} style={{ padding: 8, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X style={{ width: 16, height: 16 }} />
               </button>
             </div>
-            <div className="p-8">
-              <p className="text-sm text-slate-600">
+            <div style={{ padding: '20px 28px' }}>
+              <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, margin: 0 }}>
                 This action is irreversible. All selected articles and their generated content will be permanently deleted.
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 px-8 py-6 border-t border-slate-100">
-              <button 
-                onClick={() => setShowDeleteConfirmModal(false)} 
-                className="px-6 py-3 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, padding: '16px 28px', borderTop: '1px solid var(--border)' }}>
+              <button
+                onClick={() => setShowDeleteConfirmModal(false)}
+                style={{ padding: '9px 18px', fontSize: 13, fontWeight: 600, color: 'var(--text2)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}
               >
                 Cancel
               </button>
               <button
-                onClick={handleBulkDelete}
-                className="px-8 py-3 bg-red-600 text-white rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 hover:bg-red-700 transition-all transform active:scale-95 flex items-center gap-2"
+                onClick={() => executeBulkDelete(Array.from(selectedIds))}
+                style={{ padding: '9px 22px', background: 'var(--red)', color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 style={{ width: 14, height: 14 }} />
                 Delete {selectedIds.size} {selectedIds.size === 1 ? 'Article' : 'Articles'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Bulk Confirmation Dialog (Requirements 1.1, 1.5) */}
+      <BulkConfirmationDialog
+        isOpen={bulkConfirmation.isOpen}
+        operationName={bulkConfirmation.operationName}
+        itemCount={bulkConfirmation.itemCount}
+        onConfirm={bulkConfirmation.onConfirm}
+        onCancel={() => setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null })}
+      />
     </div>
   );
 }

@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulse Pro — AI Decision Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080B14;
+  --bg2: #0D1120;
+  --bg3: #111827;
+  --bg4: #1a2235;
+  --surface: #141C2E;
+  --surface2: #1C2640;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #F0F4FF;
+  --text2: #8A96B0;
+  --text3: #4A5568;
+  --accent: #6C63FF;
+  --accent2: #8B5CF6;
+  --accent-glow: rgba(108,99,255,0.25);
+  --teal: #00D4A8;
+  --teal-dim: rgba(0,212,168,0.12);
+  --amber: #F59E0B;
+  --amber-dim: rgba(245,158,11,0.12);
+  --red: #EF4444;
+  --red-dim: rgba(239,68,68,0.12);
+  --green: #10B981;
+  --green-dim: rgba(16,185,129,0.12);
+  --pink: #EC4899;
+  --sidebar-w: 220px;
+  --header-h: 54px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; display: flex; overflow: hidden; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* SIDEBAR */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 18px 16px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.logo-text { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.1; }
+.logo-sub { font-size: 9px; font-weight: 500; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; }
+.sidebar-section { padding: 14px 10px 6px; }
+.sidebar-label { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; color: var(--text3); text-transform: uppercase; padding: 0 8px; margin-bottom: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 400;
+  position: relative;
+  margin-bottom: 1px;
+}
+.nav-item:hover { background: var(--surface); color: var(--text); }
+.nav-item.active { background: var(--accent-glow); color: var(--accent); font-weight: 500; }
+.nav-item.active::before {
+  content: '';
+  position: absolute; left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 16px;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+}
+.nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+.nav-item.active .nav-icon { opacity: 1; }
+.nav-badge {
+  margin-left: auto;
+  font-size: 10px; font-weight: 600;
+  padding: 1px 6px;
+  background: var(--surface2);
+  border-radius: 20px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+}
+.nav-item.active .nav-badge { background: var(--accent-glow); color: var(--accent); }
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; flex-shrink: 0; }
+.sidebar-source {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text2);
+  font-size: 12px;
+  margin-bottom: 1px;
+}
+.sidebar-source:hover { background: var(--surface); color: var(--text); }
+.source-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.source-count { margin-left: auto; font-size: 10px; font-family: var(--font-mono); color: var(--text3); }
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+.user-card {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.user-card:hover { background: var(--surface); }
+.user-avatar { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg,#6C63FF,#EC4899); display:flex;align-items:center;justify-content:center; font-size:11px;font-weight:700;color:#fff; flex-shrink:0; }
+.user-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.user-role { font-size: 10px; color: var(--text3); }
+
+/* MAIN */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* HEADER */
+.header {
+  height: var(--header-h);
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 20px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.header-search {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  width: 220px;
+  transition: all 0.2s;
+}
+.header-search:focus-within { border-color: var(--accent); background: var(--bg3); }
+.header-search input { background: none; border: none; outline: none; color: var(--text); font-size: 12px; font-family: var(--font-body); width: 100%; }
+.header-search input::placeholder { color: var(--text3); }
+.header-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 11px;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.header-pill:hover { border-color: var(--border2); background: var(--surface2); }
+.header-pill.primary { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+.header-pill.fetch { background: var(--teal-dim); border-color: var(--teal); color: var(--teal); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; flex-shrink: 0; }
+@keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:0.4} }
+.count-badge { background: var(--accent); color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 10px; font-family: var(--font-mono); }
+.header-spacer { flex: 1; }
+.header-icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.header-icon-btn:hover { border-color: var(--border2); background: var(--surface2); }
+.header-icon-btn svg { width: 15px; height: 15px; opacity: 0.6; }
+.notif-badge { position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--red);border:1.5px solid var(--bg2); }
+.ready-badge { display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;background:var(--green-dim);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:600; }
+
+/* CONTENT */
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* PAGE */
+.page { display: none; animation: fadeIn 0.2s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+/* PAGE HEADER */
+.page-header { margin-bottom: 22px; }
+.page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
+.page-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+.page-header-row { display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap; }
+
+/* CARDS */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; }
+.card-sm { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+
+/* GRID */
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
+.grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }
+
+/* KPI CARD */
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; transition: border-color 0.15s; }
+.kpi:hover { border-color: var(--border2); }
+.kpi-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; display:flex;align-items:center;gap:6px; }
+.kpi-value { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+.kpi-trend { display:flex;align-items:center;gap:4px;margin-top:6px;font-size:11px; }
+.trend-up { color: var(--green); }
+.trend-down { color: var(--red); }
+.kpi-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* SECTION TITLE */
+.section-title { font-family: var(--font-display); font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; display:flex;align-items:center;gap:8px; }
+.section-title span { font-family: var(--font-body); font-size: 10px; font-weight: 500; letter-spacing:0.08em; text-transform:uppercase; color:var(--text3); }
+
+/* BTN */
+.btn { display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;font-family:var(--font-body); }
+.btn:hover { background:var(--bg4);border-color:var(--border2); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+.btn-teal { background: var(--teal-dim); border-color: var(--teal); color: var(--teal); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text2); }
+.btn-ghost:hover { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn-sm { padding: 5px 10px; font-size: 11px; border-radius: 6px; }
+
+/* BADGE */
+.badge { display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:0.04em; }
+.badge-green { background:var(--green-dim);color:var(--green); }
+.badge-red { background:var(--red-dim);color:var(--red); }
+.badge-amber { background:var(--amber-dim);color:var(--amber); }
+.badge-accent { background:var(--accent-glow);color:var(--accent); }
+.badge-teal { background:var(--teal-dim);color:var(--teal); }
+.badge-gray { background:rgba(255,255,255,0.06);color:var(--text2); }
+
+/* DIVIDER */
+.divider { height:1px;background:var(--border);margin:16px 0; }
+
+/* TAG */
+.tag { display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500;background:var(--surface2);color:var(--text2);border:1px solid var(--border); }
+
+/* ONBOARDING STRIP */
+.onboarding-strip {
+  background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(139,92,246,0.08));
+  border: 1px solid rgba(108,99,255,0.25);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 16px;
+}
+.onboarding-steps { display:flex;gap:6px;flex:1; }
+.onboarding-step { display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2); }
+.onboarding-step.done { color: var(--green); }
+.onboarding-step.active { color: var(--text); font-weight: 500; }
+.step-circle { width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;font-weight:700; }
+.onboarding-step.done .step-circle { background:var(--green);border-color:var(--green);color:#fff; }
+.onboarding-step-sep { color:var(--text3);font-size:10px; }
+
+/* FOCUS BANNER */
+.focus-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+.focus-label { font-size: 10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin-bottom:2px; }
+.focus-text { font-size: 13px; font-weight: 500; color: var(--text); }
+.focus-sub { font-size: 11px; color: var(--text2); margin-top:2px; }
+
+/* INTEL CARD */
+.intel-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.intel-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.intel-score { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: var(--amber); background: var(--amber-dim); padding: 2px 7px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+.intel-title { font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 6px; }
+.intel-body { font-size: 11px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; }
+.intel-angle { font-size: 11px; color: var(--text); font-style: italic; line-height: 1.5; padding: 8px 10px; background: rgba(108,99,255,0.08); border-radius: 6px; border-left: 2px solid var(--accent); margin-bottom: 10px; }
+.intel-footer { display:flex;align-items:center;gap:8px; }
+
+/* ARTICLE ROW */
+.article-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex; gap: 14px; align-items: flex-start;
+  transition: all 0.15s;
+  cursor: pointer;
+  margin-bottom: 8px;
+  border-left-width: 3px;
+}
+.article-card:hover { border-color: var(--border2); border-left-color: inherit; background: var(--bg3); }
+.article-card.score-high { border-left-color: var(--green); }
+.article-card.score-mid { border-left-color: var(--amber); }
+.article-card.score-low { border-left-color: var(--text3); }
+.article-meta { font-size: 10px; color: var(--text3); margin-bottom: 4px; display:flex;gap:8px;align-items:center; }
+.article-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; margin-bottom: 5px; }
+.article-desc { font-size: 11px; color: var(--text2); line-height: 1.5; }
+.article-actions { display:flex;gap:6px;margin-top:8px;flex-wrap:wrap; }
+.score-chip { display:flex;align-items:center;gap:4px;font-size:10px;font-weight:600;font-family:var(--font-mono); margin-left:auto;flex-shrink:0; }
+.score-chip.high { color: var(--green); }
+.score-chip.mid { color: var(--amber); }
+.score-chip.low { color: var(--text3); }
+
+/* CHART BAR */
+.bar-chart { display:flex;flex-direction:column;gap:8px; }
+.bar-row { display:flex;align-items:center;gap:10px; }
+.bar-label { font-size:11px;color:var(--text2);width:80px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.bar-bg { flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden; }
+.bar-fill { height:100%;border-radius:3px;transition:width 0.6s ease; }
+.bar-val { font-size:11px;font-family:var(--font-mono);color:var(--text3);width:28px;text-align:right;flex-shrink:0; }
+
+/* MINI CHART SVG */
+.sparkline { overflow: visible; }
+
+/* DONUT */
+.donut-wrap { position:relative;display:flex;align-items:center;justify-content:center; }
+.donut-center { position:absolute;text-align:center; }
+.donut-num { font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text); }
+.donut-lbl { font-size:10px;color:var(--text3); }
+
+/* PIPELINE CARD */
+.pipeline-status { display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius);background:var(--bg3);border:1px solid var(--border); }
+.pipeline-idle { color:var(--text2); }
+.pipeline-running { color:var(--teal); }
+
+/* PROVIDER ROW */
+.provider-row { display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border); }
+.provider-row:last-child { border-bottom:none; }
+.provider-name { font-size:12px;font-weight:500;color:var(--text);flex:1; }
+.provider-model { font-size:10px;color:var(--text3);font-family:var(--font-mono); }
+.provider-check { width:16px;height:16px;border-radius:50%;background:var(--green-dim);border:1.5px solid var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.provider-x { width:16px;height:16px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border2);flex-shrink:0; }
+
+/* SETTINGS NAV */
+.settings-nav-group { margin-bottom:20px; }
+.settings-group-label { font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);padding:0 4px;margin-bottom:8px; }
+.settings-nav-item { display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s;color:var(--text2);font-size:12px;margin-bottom:2px;border:1px solid transparent; }
+.settings-nav-item:hover { background:var(--surface);color:var(--text); }
+.settings-nav-item.active { background:var(--accent-glow);color:var(--accent);border-color:rgba(108,99,255,0.2); }
+.settings-icon { width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px; }
+
+/* FEATURE FLAG */
+.feature-flag { display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;background:var(--surface);border:1px solid var(--border);margin-bottom:6px; }
+.flag-name { font-size:12px;font-weight:500;color:var(--text);flex:1; }
+.toggle { width:32px;height:18px;border-radius:9px;border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0; }
+.toggle.on { background:var(--accent); }
+.toggle.off { background:var(--surface2);border:1px solid var(--border2); }
+.toggle::after { content:'';position:absolute;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left 0.2s; }
+.toggle.on::after { left:16px; }
+.toggle.off::after { left:2px; }
+
+/* RESEARCH CARD */
+.research-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:8px;transition:all 0.15s;cursor:pointer; }
+.research-card:hover { border-color:var(--border2);background:var(--bg3); }
+.research-score { font-family:var(--font-mono);font-size:11px;font-weight:600; }
+.research-title { font-size:13px;font-weight:500;color:var(--text);line-height:1.4;margin:6px 0 4px; }
+.research-desc { font-size:11px;color:var(--text2);line-height:1.5; }
+.research-footer { display:flex;align-items:center;gap:8px;margin-top:8px; }
+
+/* PODCAST */
+.podcast-hero { background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(0,212,168,0.08));border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius-lg);padding:24px; }
+.audio-player { background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-top:14px; }
+.player-controls { display:flex;align-items:center;gap:12px; }
+.play-btn { width:38px;height:38px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s; }
+.play-btn:hover { background:var(--accent2);transform:scale(1.05); }
+.player-progress { flex:1; }
+.progress-bar-bg { height:4px;background:var(--surface2);border-radius:2px;cursor:pointer; }
+.progress-bar-fill { height:100%;border-radius:2px;background:var(--accent);width:35%; }
+.player-time { font-size:10px;font-family:var(--font-mono);color:var(--text3);display:flex;justify-content:space-between;margin-top:4px; }
+.episode-row { display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all 0.15s; }
+.episode-row:last-child { border-bottom:none; }
+.episode-row:hover { opacity:0.8; }
+.episode-date { font-size:11px;font-family:var(--font-mono);color:var(--text3);width:70px;flex-shrink:0; }
+.episode-title { font-size:12px;font-weight:500;color:var(--text);flex:1; }
+.episode-dur { font-size:10px;font-family:var(--font-mono);color:var(--text3); }
+
+/* MEDIA */
+.media-empty { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;text-align:center; }
+.media-empty-icon { width:56px;height:56px;border-radius:14px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px; }
+
+/* DEEP DIVE MODAL */
+.modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:680px;max-height:80vh;display:flex;flex-direction:column; }
+.modal-header { padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px; }
+.modal-title { font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);line-height:1.3;flex:1; }
+.modal-close { width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;transition:all 0.15s; }
+.modal-close:hover { background:var(--surface2);color:var(--text); }
+.modal-nav { display:flex;gap:4px;padding:10px 20px;border-bottom:1px solid var(--border); }
+.modal-nav-item { font-size:11px;font-weight:500;padding:4px 10px;border-radius:6px;cursor:pointer;color:var(--text2);transition:all 0.15s; }
+.modal-nav-item.active { background:var(--accent-glow);color:var(--accent); }
+.modal-nav-item:hover:not(.active) { background:var(--surface);color:var(--text); }
+.modal-body { flex:1;overflow-y:auto;padding:18px 20px; }
+.modal-section { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px; }
+.modal-section-title { display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--teal);margin-bottom:8px; }
+.modal-section-body { font-size:12px;color:var(--text2);line-height:1.7; }
+.modal-footer { padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end; }
+
+/* CALENDAR */
+.cal-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:4px; }
+.cal-header-cell { font-size:10px;font-weight:600;color:var(--text3);text-align:center;padding:4px 0;text-transform:uppercase;letter-spacing:0.06em; }
+.cal-cell { aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;transition:all 0.15s;position:relative; }
+.cal-cell:hover { background:var(--surface2); }
+.cal-cell.empty { color:var(--text3); }
+.cal-cell.today { background:var(--accent);color:#fff;font-weight:700; }
+.cal-cell.has-event { color:var(--text); }
+.cal-cell.has-event::after { content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--teal); }
+.cal-cell.other-month { color:var(--text3); }
+
+/* NOTIFICATION PANEL */
+.notif-panel { position:fixed;top:var(--header-h);right:0;width:300px;height:calc(100vh - var(--header-h));background:var(--bg2);border-left:1px solid var(--border);z-index:150;transform:translateX(100%);transition:transform 0.25s ease;overflow-y:auto; }
+.notif-panel.open { transform:translateX(0); }
+.notif-panel-header { padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
+.notif-item { padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:all 0.15s; }
+.notif-item:hover { background:var(--surface); }
+.notif-item-icon { width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0; }
+.notif-title { font-size:12px;font-weight:500;color:var(--text); }
+.notif-sub { font-size:11px;color:var(--text2);margin-top:2px; }
+.notif-time { font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:4px; }
+
+/* METRICS PAGE */
+.metric-row { display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border); }
+.metric-row:last-child { border-bottom:none; }
+.metric-name { font-size:12px;color:var(--text2); }
+.metric-val { font-size:13px;font-weight:600;color:var(--text);font-family:var(--font-mono); }
+
+/* SYSTEM HEALTH */
+.health-metric { display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border); }
+.health-metric:last-child { border-bottom:none; }
+
+/* SCROLLABLE AREA */
+.scroll-area { overflow-y:auto;max-height:320px; }
+
+/* WAVEFORM */
+.waveform { display:flex;align-items:center;gap:2px;height:32px; }
+.wave-bar { width:3px;background:var(--accent);border-radius:1.5px;opacity:0.6;animation:wave 1.2s ease-in-out infinite; }
+.wave-bar:nth-child(2n) { animation-delay:0.2s; }
+.wave-bar:nth-child(3n) { animation-delay:0.4s; }
+@keyframes wave { 0%,100%{transform:scaleY(0.4)}50%{transform:scaleY(1)} }
+
+/* EMPTY STATE */
+.empty-state { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:10px;text-align:center; }
+.empty-icon { font-size:32px;margin-bottom:4px; }
+.empty-title { font-size:14px;font-weight:500;color:var(--text); }
+.empty-sub { font-size:12px;color:var(--text2);max-width:260px;line-height:1.5; }
+
+/* LOADING */
+.skeleton { background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px; }
+@keyframes shimmer { 0%{background-position:200% 0}100%{background-position:-200% 0} }
+
+/* TOOLTIP */
+[data-tip] { position:relative; }
+[data-tip]:hover::after { content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg4);color:var(--text);font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;border:1px solid var(--border2);z-index:300;pointer-events:none; }
+
+/* AFFILIATE */
+.affiliate-add { display:flex;gap:8px;margin-bottom:16px; }
+.affiliate-add input { flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;font-family:var(--font-body);outline:none;transition:border-color 0.15s; }
+.affiliate-add input:focus { border-color:var(--accent); }
+.affiliate-row { display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border); }
+.affiliate-row:last-child { border-bottom:none; }
+
+/* WEBHOOK */
+.webhook-row { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border); }
+.webhook-url { font-size:11px;font-family:var(--font-mono);color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+
+/* STYLE PROFILE */
+.style-option { background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:all 0.15s; }
+.style-option.selected { border-color:var(--accent);background:var(--accent-glow); }
+.style-option:hover:not(.selected) { border-color:var(--border2); }
+.style-option-name { font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px; }
+.style-option-desc { font-size:11px;color:var(--text2); }
+
+/* SOURCE MANAGER */
+.source-row { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border); }
+.source-row:last-child { border-bottom:none; }
+.source-name-col { flex:1; }
+.source-name-text { font-size:12px;font-weight:500;color:var(--text); }
+.source-url-text { font-size:10px;font-family:var(--font-mono);color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px; }
+
+/* KEYWORD SCORER */
+.keyword-chip { display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);font-size:12px;color:var(--text2);margin:3px; }
+.keyword-chip .kw-x { cursor:pointer;color:var(--text3);font-size:11px; }
+.keyword-chip .kw-score { font-size:10px;font-family:var(--font-mono);color:var(--accent); }
+
+/* INTERFACE SETTINGS */
+.interface-row { display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border); }
+.interface-row:last-child { border-bottom:none; }
+.interface-label { font-size:12px;font-weight:500;color:var(--text); }
+.interface-sub { font-size:11px;color:var(--text2);margin-top:1px; }
+</style>
+</head>
+<body>
+
+<!-- NOTIFICATION PANEL -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header">
+    <div style="font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);">Activity Feed</div>
+    <button class="btn btn-ghost btn-sm" onclick="toggleNotif()">✕</button>
+  </div>
+  <div class="notif-item">
+    <div style="display:flex;gap:10px;">
+      <div class="notif-item-icon" style="background:var(--green-dim);">✓</div>
+      <div>
+        <div class="notif-title">Pipeline completed</div>
+        <div class="notif-sub">12 new articles fetched from 6 sources</div>
+        <div class="notif-time">2 min ago</div>
+      </div>
+    </div>
+  </div>
+  <div class="notif-item">
+    <div style="display:flex;gap:10px;">
+      <div class="notif-item-icon" style="background:var(--teal-dim);">🎙</div>
+      <div>
+        <div class="notif-title">Podcast generated</div>
+        <div class="notif-sub">Daily AI Pulse — Apr 14, 2026</div>
+        <div class="notif-time">1 hour ago</div>
+      </div>
+    </div>
+  </div>
+  <div class="notif-item">
+    <div style="display:flex;gap:10px;">
+      <div class="notif-item-icon" style="background:var(--amber-dim);">⚠</div>
+      <div>
+        <div class="notif-title">OpenAI rate limit hit</div>
+        <div class="notif-sub">Fell back to Groq successfully</div>
+        <div class="notif-time">3 hours ago</div>
+      </div>
+    </div>
+  </div>
+  <div class="notif-item">
+    <div style="display:flex;gap:10px;">
+      <div class="notif-item-icon" style="background:var(--accent-glow);">✦</div>
+      <div>
+        <div class="notif-title">19 articles ready to launch</div>
+        <div class="notif-sub">Content generation complete</div>
+        <div class="notif-time">4 hours ago</div>
+      </div>
+    </div>
+  </div>
+  <div class="notif-item">
+    <div style="display:flex;gap:10px;">
+      <div class="notif-item-icon" style="background:var(--green-dim);">📄</div>
+      <div>
+        <div class="notif-title">5 articles published</div>
+        <div class="notif-sub">Via webhook to WordPress</div>
+        <div class="notif-time">Yesterday</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DEEP DIVE MODAL -->
+<div class="modal-overlay" id="deepDiveModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div style="margin-bottom:6px;"><span class="badge badge-accent">CS.AI</span> <span style="font-size:10px;color:var(--text3);margin-left:4px;">4/12/2026</span></div>
+        <div class="modal-title">AVGen-Bench: A Task-Driven Benchmark for Multi-Granular Evaluation of Text-to-Audio-Video Generation</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-nav">
+      <div class="modal-nav-item active">Overview</div>
+      <div class="modal-nav-item">Methodology</div>
+      <div class="modal-nav-item">Results</div>
+      <div class="modal-nav-item">Implications</div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px;">AVGen-Bench introduces a task-driven benchmark for Text-to-Audio-Video generation, featuring high-quality prompts and a multi-granular evaluation framework.</div>
+      <div class="modal-section">
+        <div class="modal-section-title">⚡ Technical Methodology</div>
+        <div class="modal-section-body">AVGen-Bench employs a hybrid evaluation strategy that integrates lightweight specialist models with Multimodal Large Language Models (MLLMs). This design leverages the complementary strengths of both paradigms: specialist models provide precise signal-level measurements, while MLLMs enable high-level semantic reasoning and holistic intent verification.</div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title" style="color:var(--amber);">📊 Experimental Results</div>
+        <div class="modal-section-body">AVGen-Bench reveals a sharp gap between strong audio-visual aesthetics and weak fine-grained semantic control, highlighting critical challenges in text, speech, and physical reasoning. The evaluation framework identifies recurring failure modes, including speech content that is unintelligible or incorrect, environmental sounds that do not align with visual events, mismatched lip movements, incorrect musical notes, and violations of basic physical or causal logic.</div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title" style="color:var(--pink);">🎯 Strategic Angle</div>
+        <div class="modal-section-body">This benchmark highlights a key gap for anyone building multimodal content tools. Fine-grained semantic alignment — not just visual quality — is the frontier. Products that solve the "semantic control" problem first will define the next generation of AI-generated media.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm">↗ View on arXiv</button>
+      <button class="btn btn-sm">🔖 Save</button>
+      <button class="btn btn-primary btn-sm">Generate Post →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-text">Pulse Pro</div>
+      <div class="logo-sub">AI Decision Engine</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main Menu</div>
+    <div class="nav-item active" onclick="nav('dashboard',this)" data-tip="Command Center">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="nav('articles',this)" data-tip="Article Feed">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 2h12v2H2V2zm0 4h12v1.5H2V6zm0 3.5h8v1.5H2V9.5zM2 13h6v1.5H2V13z" fill="currentColor"/></svg>
+      Articles
+      <span class="nav-badge">19</span>
+    </div>
+    <div class="nav-item" onclick="nav('metrics',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M1 13L5 8l3 3 3-4 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Metrics
+    </div>
+    <div class="nav-item" onclick="nav('calendar',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 1v3M11 1v3M1.5 7h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Calendar
+    </div>
+    <div class="nav-item" onclick="nav('media',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 6l4 2-4 2V6z" fill="currentColor"/></svg>
+      Media Assets
+    </div>
+    <div class="nav-item" onclick="nav('research',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Research
+      <span class="nav-badge">304</span>
+    </div>
+    <div class="nav-item" onclick="nav('podcast',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M4 9c0 2.2 1.8 4 4 4s4-1.8 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 13v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Podcast
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Source Folders</div>
+    <div class="sidebar-source"><span class="source-dot" style="background:var(--accent)"></span>All Sources<span class="source-count">474</span></div>
+    <div class="sidebar-source"><span class="source-dot" style="background:var(--teal)"></span>Simon Willison<span class="source-count">32</span></div>
+    <div class="sidebar-source"><span class="source-dot" style="background:var(--pink)"></span>The AIEdge<span class="source-count">20</span></div>
+    <div class="sidebar-source"><span class="source-dot" style="background:var(--amber)"></span>Interconnect<span class="source-count">20</span></div>
+    <div class="sidebar-source"><span class="source-dot" style="background:var(--green)"></span>Github<span class="source-count">58</span></div>
+    <div class="sidebar-source"><span class="source-dot" style="background:var(--accent2)"></span>One Useful Thing<span class="source-count">20</span></div>
+    <div class="sidebar-source"><span class="source-dot" style="background:var(--red)"></span>Arxiv<span class="source-count" style="color:var(--red)">304</span></div>
+    <div class="sidebar-source"><span class="source-dot" style="background:var(--text3)"></span>AI As Normal<span class="source-count">20</span></div>
+  </div>
+
+  <div style="padding:8px 10px 4px;">
+    <div class="sidebar-label">System</div>
+    <div class="nav-item" onclick="nav('settings',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Settings Hub
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="user-avatar">PO</div>
+      <div>
+        <div class="user-name">Pro Operator</div>
+        <div class="user-role">v1.0.0</div>
+      </div>
+      <svg style="width:12px;height:12px;color:var(--text3);margin-left:auto" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-search">
+      <svg style="width:13px;height:13px;color:var(--text3);flex-shrink:0" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input placeholder="Search articles, research…" />
+    </div>
+
+    <div class="header-pill primary" onclick="nav('articles',document.querySelector('[data-page=articles]'))">
+      ✦ <span>19 Ready to Launch</span>
+    </div>
+
+    <div class="header-pill fetch">
+      ↻ Fetch
+    </div>
+
+    <div class="header-spacer"></div>
+
+    <div class="header-icon-btn" data-tip="Schedule" onclick="nav('calendar',null)">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 1v3M11 1v3M1.5 7h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+    <div class="header-icon-btn" data-tip="Export">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M8 1v9M5 7l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="header-icon-btn" data-tip="Notifications" onclick="toggleNotif()" style="position:relative">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 015 5v3l1.5 2.5h-13L3 9V6a5 5 0 015-5z" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 13.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="notif-badge"></div>
+    </div>
+    <div class="ready-badge">
+      <div class="status-dot"></div>
+      Ready
+    </div>
+  </header>
+
+  <!-- PAGES -->
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header-row">
+        <div class="page-header">
+          <div class="page-title">Command Center</div>
+          <div class="page-sub">Intelligence oversight and system-wide ecosystem control</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" onclick="nav('settings',null)">⚙ Settings</button>
+          <button class="btn btn-primary">▶ Run Pipeline</button>
+        </div>
+      </div>
+
+      <!-- Onboarding -->
+      <div class="onboarding-strip">
+        <div style="font-size:11px;font-weight:600;color:var(--accent);white-space:nowrap;">Setup Guide</div>
+        <div class="onboarding-steps">
+          <div class="onboarding-step done"><div class="step-circle">✓</div> Add Source</div>
+          <div class="onboarding-step-sep">›</div>
+          <div class="onboarding-step done"><div class="step-circle">✓</div> Configure LLM</div>
+          <div class="onboarding-step-sep">›</div>
+          <div class="onboarding-step done"><div class="step-circle">✓</div> First Fetch</div>
+          <div class="onboarding-step-sep">›</div>
+          <div class="onboarding-step active"><div class="step-circle">4</div> Generate Article</div>
+          <div class="onboarding-step-sep">›</div>
+          <div class="onboarding-step"><div class="step-circle">5</div> Publish</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="flex-shrink:0">Dismiss</button>
+      </div>
+
+      <!-- Focus Banner -->
+      <div class="focus-banner">
+        <div style="font-size:20px;">🚀</div>
+        <div style="flex:1">
+          <div class="focus-label">Today's Focus</div>
+          <div class="focus-text">19 articles are ready to launch. Publish them now to maximize reach.</div>
+          <div class="focus-sub">Last published 2 days ago · Pipeline ran 2 hours ago</div>
+        </div>
+        <button class="btn btn-primary" onclick="nav('articles',null)">Review & Launch →</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="grid-4" style="margin-bottom:18px;">
+        <div class="kpi">
+          <div class="kpi-label">
+            <svg style="width:12px;height:12px;opacity:.5" viewBox="0 0 12 12" fill="currentColor"><rect width="12" height="12" rx="2"/></svg>
+            Intelligence Base
+          </div>
+          <div class="kpi-value">474</div>
+          <div class="kpi-trend trend-up">↑ +12 today</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">AI Processed</div>
+          <div class="kpi-value">467</div>
+          <div class="kpi-sub trend-up" style="color:var(--green)">99% coverage</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Quality Index</div>
+          <div class="kpi-value">53%</div>
+          <div class="kpi-trend trend-down">↓ needs more analysis</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Content Ready</div>
+          <div class="kpi-value">20</div>
+          <div class="kpi-sub" style="color:var(--accent)">19 to publish</div>
+        </div>
+      </div>
+
+      <!-- Main grid -->
+      <div class="grid-2-1" style="margin-bottom:18px;">
+        <!-- Intel Feed -->
+        <div>
+          <div class="section-title">Live Intelligence Feed <span>Apr 14, 2026</span></div>
+          <div class="grid-3">
+            <div class="intel-card" onclick="openModal()">
+              <div class="intel-score">54% HIGH</div>
+              <div class="intel-title">AVGen-Bench: Multi-Granular Text-to-Audio-Video Evaluation</div>
+              <div class="intel-body">Task-driven benchmark with high-quality prompts and multi-granular evaluation framework.</div>
+              <div class="intel-angle">"Imagine AI turning any book into an immersive audiovisual experience with a few clicks."</div>
+              <div class="intel-footer">
+                <span class="badge badge-accent">CS.AI</span>
+                <button class="btn btn-sm" style="margin-left:auto;font-size:10px;padding:3px 8px" onclick="openModal()">Deep Dive →</button>
+              </div>
+            </div>
+            <div class="intel-card">
+              <div class="intel-score">54% HIGH</div>
+              <div class="intel-title">OVS-DINO: Open-Vocabulary Segmentation via SAM-DINO</div>
+              <div class="intel-body">Achieves state-of-the-art in Open-Vocabulary Segmentation by revitalizing DINO's latent edge sensitivity.</div>
+              <div class="intel-angle">"Imagine AI that can segment any object, even if it's never seen it before."</div>
+              <div class="intel-footer">
+                <span class="badge badge-accent">CS.AI</span>
+                <button class="btn btn-sm" style="margin-left:auto;font-size:10px;padding:3px 8px">Deep Dive →</button>
+              </div>
+            </div>
+            <div class="intel-card">
+              <div class="intel-score">54% HIGH</div>
+              <div class="intel-title">KnowU-Bench: Interactive Personalized Mobile Agent Evaluation</div>
+              <div class="intel-body">New benchmark evaluating personalized mobile agents for proactive assistance and user preference inference.</div>
+              <div class="intel-angle">"A personal assistant that can anticipate your needs and learn your preferences."</div>
+              <div class="intel-footer">
+                <span class="badge badge-accent">CS.AI</span>
+                <button class="btn btn-sm" style="margin-left:auto;font-size:10px;padding:3px 8px">Deep Dive →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Priority Picks -->
+        <div>
+          <div class="section-title">Priority Picks <span>Top Scored</span></div>
+          <div class="card" style="padding:12px 14px;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="padding:8px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:2px;font-family:var(--font-mono)">ARXIV · Score: 54.72</div>
+                <div style="font-size:12px;font-weight:500;color:var(--text)">KnowU-Bench: Towards Interactive, Proactive...</div>
+              </div>
+              <div style="padding:8px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:2px;font-family:var(--font-mono)">ARXIV · Score: 54.72</div>
+                <div style="font-size:12px;font-weight:500;color:var(--text)">OVS-DINO: Open-Vocabulary Segmenta...</div>
+              </div>
+              <div style="padding:8px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:2px;font-family:var(--font-mono)">ARXIV · Score: 54.72</div>
+                <div style="font-size:12px;font-weight:500;color:var(--text)">AVGen-Bench: A Task-Driven Benchmar...</div>
+              </div>
+              <div style="padding:8px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:2px;font-family:var(--font-mono)">ARXIV · Score: 54.72</div>
+                <div style="font-size:12px;font-weight:500;color:var(--text)">ASPECT: Analogical Semantic Policy...</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;justify-content:center" onclick="nav('research',null)">View All Research →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Launch + Metrics -->
+      <div class="grid-2" style="margin-bottom:18px;">
+        <div class="card">
+          <div class="section-title">Quick Access</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s" onclick="nav('articles',null)" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+              <div style="font-size:16px;margin-bottom:5px;">📄</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);">Production Feed</div>
+              <div style="font-size:10px;color:var(--text3);">19 ready to publish</div>
+            </div>
+            <div style="padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s" onclick="nav('metrics',null)" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+              <div style="font-size:16px;margin-bottom:5px;">📊</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);">Metrics Engine</div>
+              <div style="font-size:10px;color:var(--text3);">53% quality index</div>
+            </div>
+            <div style="padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s" onclick="nav('research',null)" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+              <div style="font-size:16px;margin-bottom:5px;">🔬</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);">Research Hub</div>
+              <div style="font-size:10px;color:var(--text3);">304 papers indexed</div>
+            </div>
+            <div style="padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s" onclick="nav('podcast',null)" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+              <div style="font-size:16px;margin-bottom:5px;">🎙</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);">Podcast Studio</div>
+              <div style="font-size:10px;color:var(--text3);">Last: Apr 13, 2026</div>
+            </div>
+            <div style="padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s" onclick="nav('calendar',null)" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+              <div style="font-size:16px;margin-bottom:5px;">📅</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);">Editorial Calendar</div>
+              <div style="font-size:10px;color:var(--text3);">3 scheduled this week</div>
+            </div>
+            <div style="padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s" onclick="nav('settings',null)" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+              <div style="font-size:16px;margin-bottom:5px;">⚙</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);">Strategy Lab</div>
+              <div style="font-size:10px;color:var(--text3);">9 settings configured</div>
+            </div>
+          </div>
+        </div>
+        <!-- Ecosystem Metrics -->
+        <div class="card">
+          <div class="section-title">System Ecosystem</div>
+          <div class="grid-2" style="margin-bottom:12px;">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">INTELLIGENCE BASE</div>
+              <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);">474</div>
+              <div class="badge badge-green" style="margin-top:4px;">Active</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">AI ANALYZED</div>
+              <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);">467</div>
+              <div class="badge badge-accent" style="margin-top:4px;">99%</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">POSTS GENERATED</div>
+              <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);">20</div>
+              <div class="badge badge-teal" style="margin-top:4px;">Ready</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">DEEP DIVES</div>
+              <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);">2</div>
+              <div class="badge badge-amber" style="margin-top:4px;">Actionable</div>
+            </div>
+          </div>
+          <div style="background:var(--amber-dim);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:14px;">⚠</span>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--amber);">Pipeline idle for 6h</div>
+              <div style="font-size:10px;color:var(--text2);">Run now to fetch today's content</div>
+            </div>
+            <button class="btn btn-sm" style="margin-left:auto;background:var(--amber-dim);border-color:var(--amber);color:var(--amber);">Run Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ARTICLES ===== -->
+    <div class="page" id="page-articles">
+      <div class="page-header-row" style="margin-bottom:16px;">
+        <div>
+          <div class="page-title">Article Feed</div>
+          <div class="page-sub">AI Research Assistant · Deep technical analysis of latest papers</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-ghost btn-sm">Filter ▾</button>
+          <button class="btn btn-ghost btn-sm">Sort: Score ▾</button>
+          <button class="btn btn-primary btn-sm">Launch All 19 →</button>
+        </div>
+      </div>
+
+      <!-- Score filter -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="btn btn-sm" style="background:var(--surface2);border-color:var(--border2);color:var(--text);">All (19)</button>
+        <button class="btn btn-sm" style="background:var(--green-dim);border-color:var(--green);color:var(--green);">High Score (3)</button>
+        <button class="btn btn-sm" style="background:var(--amber-dim);border-color:var(--amber);color:var(--amber);">Mid Score (8)</button>
+        <button class="btn btn-sm" style="background:var(--surface2);border-color:var(--border);color:var(--text2);">Low Score (8)</button>
+        <div style="margin-left:auto;">
+          <input type="checkbox" id="bulkAll" onchange="toggleBulk(this)"> <label for="bulkAll" style="font-size:11px;color:var(--text2);cursor:pointer;">Select All</label>
+        </div>
+      </div>
+
+      <!-- HIGH SCORE -->
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--green);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span>● High Score</span><span style="font-weight:400;color:var(--text3);">50+</span>
+      </div>
+
+      <div class="article-card score-high" onclick="openModal()">
+        <input type="checkbox" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
+        <div style="flex:1">
+          <div class="article-meta"><span class="badge badge-accent" style="font-size:9px">CS.AI</span> 4/12/2026</div>
+          <div class="article-title">AVGen-Bench: A Task-Driven Benchmark for Multi-Granular Evaluation of Text-to-Audio-Video Generation</div>
+          <div class="article-desc">AVGen-Bench introduces a task-driven benchmark for Text-to-Audio-Video generation, featuring high-quality prompts and a multi-granular evaluation framework.</div>
+          <div class="article-actions">
+            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openModal()">Deep Dive →</button>
+            <button class="btn btn-sm" onclick="event.stopPropagation()">Generate Post</button>
+            <a class="btn btn-ghost btn-sm" href="#" onclick="event.stopPropagation()">↗ arXiv</a>
+          </div>
+        </div>
+        <div class="score-chip high">▲ 50</div>
+      </div>
+
+      <div class="article-card score-high">
+        <input type="checkbox" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
+        <div style="flex:1">
+          <div class="article-meta"><span class="badge badge-accent" style="font-size:9px">CS.AI</span> 4/12/2026</div>
+          <div class="article-title">KnowU-Bench: Towards Interactive, Proactive, and Personalized Mobile Agent Evaluation</div>
+          <div class="article-desc">A new benchmark, KnowU-Bench, is introduced to evaluate personalized mobile agents, addressing limitations of existing benchmarks.</div>
+          <div class="article-actions">
+            <button class="btn btn-primary btn-sm" onclick="openModal()">Deep Dive →</button>
+            <button class="btn btn-sm">Generate Post</button>
+            <a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a>
+          </div>
+        </div>
+        <div class="score-chip high">▲ 50</div>
+      </div>
+
+      <div class="article-card score-high">
+        <input type="checkbox" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
+        <div style="flex:1">
+          <div class="article-meta"><span class="badge badge-accent" style="font-size:9px">CS.AI</span> 4/12/2026</div>
+          <div class="article-title">OVS-DINO: Open-Vocabulary Segmentation via Structure-Aligned SAM-DINO with Language Guidance</div>
+          <div class="article-desc">OVS-DINO achieves state-of-the-art performance in Open-Vocabulary Segmentation by revitalizing latent edge sensitivity of DINO.</div>
+          <div class="article-actions">
+            <button class="btn btn-primary btn-sm" onclick="openModal()">Deep Dive →</button>
+            <button class="btn btn-sm">Generate Post</button>
+            <a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a>
+          </div>
+        </div>
+        <div class="score-chip high">▲ 50</div>
+      </div>
+
+      <!-- MID SCORE -->
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--amber);text-transform:uppercase;margin:14px 0 8px;display:flex;align-items:center;gap:8px;">
+        <span>● Mid Score</span><span style="font-weight:400;color:var(--text3);">40–49</span>
+      </div>
+
+      <div class="article-card score-mid">
+        <input type="checkbox" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
+        <div style="flex:1">
+          <div class="article-meta"><span class="badge badge-gray" style="font-size:9px">CS.LG</span> 4/12/2026</div>
+          <div class="article-title">Leveraging Complementary Embeddings for Replay Selection in Continual Learning with Small Buffers</div>
+          <div class="article-desc">A new method, MERS, improves Continual Learning with small buffers by integrating supervised and self-supervised embeddings.</div>
+          <div class="article-actions">
+            <button class="btn btn-primary btn-sm" onclick="openModal()">Deep Dive →</button>
+            <button class="btn btn-sm">Generate Post</button>
+            <a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a>
+          </div>
+        </div>
+        <div class="score-chip mid">▲ 40</div>
+      </div>
+
+      <div class="article-card score-mid">
+        <input type="checkbox" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
+        <div style="flex:1">
+          <div class="article-meta"><span class="badge badge-accent" style="font-size:9px">CS.AI</span> 4/12/2026</div>
+          <div class="article-title">What Drives Representation Steering? A Mechanistic Case Study on Steering Refusal</div>
+          <div class="article-desc">Researchers investigated how steering vectors affect large language models, proposing a framework to explain their effectiveness.</div>
+          <div class="article-actions">
+            <button class="btn btn-primary btn-sm" onclick="openModal()">Deep Dive →</button>
+            <button class="btn btn-sm">Generate Post</button>
+            <a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a>
+          </div>
+        </div>
+        <div class="score-chip mid">▲ 40</div>
+      </div>
+
+      <div class="article-card score-mid">
+        <input type="checkbox" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
+        <div style="flex:1">
+          <div class="article-meta"><span class="badge badge-accent" style="font-size:9px">CS.AI</span> 4/12/2026</div>
+          <div class="article-title">ClawBench: Can AI Agents Complete Everyday Online Tasks?</div>
+          <div class="article-desc">AI agents are being tested on everyday online tasks through ClawBench, an evaluation framework of 153 simple tasks across 144 live platforms.</div>
+          <div class="article-actions">
+            <button class="btn btn-primary btn-sm" onclick="openModal()">Deep Dive →</button>
+            <button class="btn btn-sm">Generate Post</button>
+            <a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a>
+          </div>
+        </div>
+        <div class="score-chip mid">▲ 40</div>
+      </div>
+
+      <!-- Bulk action bar (hidden by default) -->
+      <div id="bulkBar" style="display:none;position:sticky;bottom:0;background:var(--bg2);border:1px solid var(--accent);border-radius:var(--radius-lg);padding:10px 16px;display:none;align-items:center;gap:10px;margin-top:12px;">
+        <span style="font-size:12px;color:var(--text2);" id="bulkCount">0 selected</span>
+        <button class="btn btn-primary btn-sm">Generate All</button>
+        <button class="btn btn-sm">Archive</button>
+        <button class="btn btn-sm btn-teal">Launch All</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ===== METRICS ===== -->
+    <div class="page" id="page-metrics">
+      <div class="page-header-row">
+        <div class="page-header">
+          <div class="page-title">Intelligence Analytics</div>
+          <div class="page-sub">Real-time performance metrics · Last updated 12:05 AM</div>
+        </div>
+        <button class="btn">Recalibrate Metrics</button>
+      </div>
+
+      <div class="grid-4" style="margin-bottom:18px;">
+        <div class="kpi"><div class="kpi-label">Intelligence Base</div><div class="kpi-value">474</div><div class="kpi-trend trend-up">↑ +12 today</div><div class="kpi-sub">Live feed</div></div>
+        <div class="kpi"><div class="kpi-label">AI Processed</div><div class="kpi-value">467</div><div class="kpi-trend trend-up">↑ 99% coverage</div><div class="kpi-sub">High accuracy</div></div>
+        <div class="kpi"><div class="kpi-label">Quality Index</div><div class="kpi-value">53%</div><div class="kpi-trend trend-down">↓ -2% vs last week</div><div class="kpi-sub">Run pipeline to improve</div></div>
+        <div class="kpi"><div class="kpi-label">Content Ready</div><div class="kpi-value">20</div><div class="kpi-trend trend-up">↑ +5 today</div><div class="kpi-sub">Generation ready</div></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="section-title">Vibrancy Timeline <span>Daily Throughput</span></div>
+          <svg viewBox="0 0 400 140" style="width:100%;overflow:visible;">
+            <defs>
+              <linearGradient id="lineGrad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#6C63FF" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#6C63FF" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <text x="0" y="130" fill="#4A5568" font-size="9" font-family="DM Mono">Apr 7</text>
+            <text x="54" y="130" fill="#4A5568" font-size="9" font-family="DM Mono">Apr 8</text>
+            <text x="108" y="130" fill="#4A5568" font-size="9" font-family="DM Mono">Apr 9</text>
+            <text x="162" y="130" fill="#4A5568" font-size="9" font-family="DM Mono">Apr 10</text>
+            <text x="216" y="130" fill="#4A5568" font-size="9" font-family="DM Mono">Apr 11</text>
+            <text x="270" y="130" fill="#4A5568" font-size="9" font-family="DM Mono">Apr 12</text>
+            <text x="348" y="130" fill="#4A5568" font-size="9" font-family="DM Mono">Apr 13</text>
+            <path d="M0,110 L54,108 L108,105 L162,95 L216,70 L270,35 L346,10" fill="none" stroke="#6C63FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M0,110 L54,108 L108,105 L162,95 L216,70 L270,35 L346,10 L346,120 L0,120Z" fill="url(#lineGrad)"/>
+            <circle cx="346" cy="10" r="3" fill="#6C63FF"/>
+            <circle cx="270" cy="35" r="2" fill="#6C63FF" opacity=".6"/>
+          </svg>
+        </div>
+        <div class="card">
+          <div class="section-title">Stream Diversity <span>Top 6 Sources</span></div>
+          <div style="display:flex;gap:16px;align-items:center;">
+            <svg viewBox="0 0 100 100" style="width:90px;height:90px;flex-shrink:0;">
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#1C2640" stroke-width="16"/>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#6C63FF" stroke-width="16" stroke-dasharray="90 150" stroke-dashoffset="-10" stroke-linecap="round"/>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#00D4A8" stroke-width="16" stroke-dasharray="50 190" stroke-dashoffset="-100" stroke-linecap="round"/>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#EC4899" stroke-width="16" stroke-dasharray="25 215" stroke-dashoffset="-150" stroke-linecap="round"/>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#F59E0B" stroke-width="16" stroke-dasharray="20 220" stroke-dashoffset="-175" stroke-linecap="round"/>
+              <text x="50" y="54" text-anchor="middle" fill="#F0F4FF" font-size="14" font-family="Syne" font-weight="700">474</text>
+            </svg>
+            <div style="flex:1;font-size:11px;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#6C63FF;flex-shrink:0"></span><span style="color:var(--text2)">Arxiv</span><span style="margin-left:auto;font-family:var(--font-mono);color:var(--text)">304</span></div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#00D4A8;flex-shrink:0"></span><span style="color:var(--text2)">Github</span><span style="margin-left:auto;font-family:var(--font-mono);color:var(--text)">58</span></div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#EC4899;flex-shrink:0"></span><span style="color:var(--text2)">Simon W.</span><span style="margin-left:auto;font-family:var(--font-mono);color:var(--text)">32</span></div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#F59E0B;flex-shrink:0"></span><span style="color:var(--text2)">AIEdge</span><span style="margin-left:auto;font-family:var(--font-mono);color:var(--text)">20</span></div>
+              <div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#8B5CF6;flex-shrink:0"></span><span style="color:var(--text2)">Others</span><span style="margin-left:auto;font-family:var(--font-mono);color:var(--text)">60</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-title">Quality Spectrum <span>Impact Score Distribution</span></div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">Most articles score 40–60 because they are pending deep analysis. Run pipeline to improve quality index.</div>
+        <div class="bar-chart">
+          <div class="bar-row"><div class="bar-label">Excellent (80+)</div><div class="bar-bg"><div class="bar-fill" style="width:5%;background:var(--green)"></div></div><div class="bar-val">24</div></div>
+          <div class="bar-row"><div class="bar-label">Good (60–80)</div><div class="bar-bg"><div class="bar-fill" style="width:12%;background:var(--teal)"></div></div><div class="bar-val">56</div></div>
+          <div class="bar-row"><div class="bar-label">Average (40–60)</div><div class="bar-bg"><div class="bar-fill" style="width:48%;background:var(--amber)"></div></div><div class="bar-val">226</div></div>
+          <div class="bar-row"><div class="bar-label">Low (0–40)</div><div class="bar-bg"><div class="bar-fill" style="width:35%;background:var(--red)"></div></div><div class="bar-val">168</div></div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card-sm">
+          <div class="section-title">LLM Statistics</div>
+          <div class="metric-row"><div class="metric-name">Total Calls</div><div class="metric-val">487</div></div>
+          <div class="metric-row"><div class="metric-name">Successful</div><div class="metric-val" style="color:var(--green)">487</div></div>
+          <div class="metric-row"><div class="metric-name">Failed</div><div class="metric-val" style="color:var(--text3)">0</div></div>
+          <div class="metric-row"><div class="metric-name">Success Rate</div><div class="metric-val" style="color:var(--green)">100%</div></div>
+        </div>
+        <div class="card-sm">
+          <div class="section-title">Article Throughput</div>
+          <div class="metric-row"><div class="metric-name">Total Articles</div><div class="metric-val">474</div></div>
+          <div class="metric-row"><div class="metric-name">Analyzed (24h)</div><div class="metric-val">417</div></div>
+          <div class="metric-row"><div class="metric-name">Content Ready</div><div class="metric-val" style="color:var(--accent)">20</div></div>
+          <div class="metric-row"><div class="metric-name">Fallback Rate</div><div class="metric-val" style="color:var(--amber)">3.0%</div></div>
+        </div>
+        <div class="card-sm">
+          <div class="section-title">DB Connection Pool</div>
+          <div class="metric-row"><div class="metric-name">Checked In</div><div class="metric-val">9</div></div>
+          <div class="metric-row"><div class="metric-name">Checked Out</div><div class="metric-val">0</div></div>
+          <div class="metric-row"><div class="metric-name">Overflow</div><div class="metric-val" style="color:var(--red)">-11</div></div>
+          <div class="metric-row"><div class="metric-name">Pool Size</div><div class="metric-val">20</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CALENDAR ===== -->
+    <div class="page" id="page-calendar">
+      <div class="page-header-row">
+        <div class="page-header"><div class="page-title">Editorial Calendar</div><div class="page-sub">Schedule & planning · April 2026</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm">← Prev</button>
+          <button class="btn btn-ghost btn-sm">Next →</button>
+          <button class="btn btn-primary btn-sm">+ Schedule Post</button>
+        </div>
+      </div>
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="cal-grid">
+            <div class="cal-header-cell">Sun</div><div class="cal-header-cell">Mon</div><div class="cal-header-cell">Tue</div><div class="cal-header-cell">Wed</div><div class="cal-header-cell">Thu</div><div class="cal-header-cell">Fri</div><div class="cal-header-cell">Sat</div>
+            <div class="cal-cell other-month">30</div><div class="cal-cell other-month">31</div><div class="cal-cell">1</div><div class="cal-cell has-event">2</div><div class="cal-cell">3</div><div class="cal-cell has-event">4</div><div class="cal-cell">5</div>
+            <div class="cal-cell">6</div><div class="cal-cell has-event">7</div><div class="cal-cell">8</div><div class="cal-cell has-event">9</div><div class="cal-cell">10</div><div class="cal-cell has-event">11</div><div class="cal-cell">12</div>
+            <div class="cal-cell">13</div><div class="cal-cell today">14</div><div class="cal-cell has-event">15</div><div class="cal-cell">16</div><div class="cal-cell has-event">17</div><div class="cal-cell">18</div><div class="cal-cell">19</div>
+            <div class="cal-cell has-event">20</div><div class="cal-cell">21</div><div class="cal-cell">22</div><div class="cal-cell has-event">23</div><div class="cal-cell">24</div><div class="cal-cell">25</div><div class="cal-cell">26</div>
+            <div class="cal-cell">27</div><div class="cal-cell">28</div><div class="cal-cell">29</div><div class="cal-cell">30</div><div class="cal-cell other-month">1</div><div class="cal-cell other-month">2</div><div class="cal-cell other-month">3</div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title" style="margin-bottom:10px;">Upcoming</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="card-sm">
+              <div style="font-size:10px;font-family:var(--font-mono);color:var(--accent);margin-bottom:4px;">TODAY · APR 14</div>
+              <div style="font-size:12px;font-weight:500;color:var(--text);">Publish: Top 5 AI Research Papers</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px;">via webhook to WordPress</div>
+            </div>
+            <div class="card-sm">
+              <div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:4px;">APR 15</div>
+              <div style="font-size:12px;font-weight:500;color:var(--text);">Generate Daily AI Pulse Podcast</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px;">Auto-scheduled at 8:00 AM</div>
+            </div>
+            <div class="card-sm">
+              <div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:4px;">APR 17</div>
+              <div style="font-size:12px;font-weight:500;color:var(--text);">Weekly Research Digest</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px;">15 articles queued</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MEDIA ===== -->
+    <div class="page" id="page-media">
+      <div class="page-header-row">
+        <div class="page-header"><div class="page-title">Media Manager</div><div class="page-sub">Create and manage visual assets & video scripts</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn">Gallery</button>
+          <button class="btn btn-primary">+ Generate Asset</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        <button class="btn btn-primary btn-sm">All Assets</button>
+        <button class="btn btn-ghost btn-sm">Images</button>
+        <button class="btn btn-ghost btn-sm">Video Scripts</button>
+      </div>
+      <div class="card">
+        <div class="media-empty">
+          <div class="media-empty-icon">🖼</div>
+          <div class="empty-title">No assets yet</div>
+          <div class="empty-sub">Generate visual assets or video scripts for your articles. Enable image generation in Settings first.</div>
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <button class="btn btn-primary" onclick="nav('settings',null)">Enable Image Generation →</button>
+            <button class="btn btn-ghost">Learn How</button>
+          </div>
+          <div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:400px;text-align:left;">
+            <div style="padding:10px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+              <div style="font-size:16px;margin-bottom:4px;">1️⃣</div>
+              <div style="font-size:11px;font-weight:600;color:var(--text);">Enable in Settings</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px;">Turn on image generation feature flag</div>
+            </div>
+            <div style="padding:10px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+              <div style="font-size:16px;margin-bottom:4px;">2️⃣</div>
+              <div style="font-size:11px;font-weight:600;color:var(--text);">Pick an Article</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px;">Select from your article feed</div>
+            </div>
+            <div style="padding:10px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+              <div style="font-size:16px;margin-bottom:4px;">3️⃣</div>
+              <div style="font-size:11px;font-weight:600;color:var(--text);">Generate & Download</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px;">AI creates matching visuals</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RESEARCH ===== -->
+    <div class="page" id="page-research">
+      <div class="page-header-row">
+        <div class="page-header"><div class="page-title">Research Hub</div><div class="page-sub">Deep technical analysis of the latest academic papers</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm">Filter ▾</button>
+          <button class="btn btn-ghost btn-sm">🔖 Saved (2)</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm">All (304)</button>
+        <button class="btn btn-ghost btn-sm">CS.AI</button>
+        <button class="btn btn-ghost btn-sm">CS.LG</button>
+        <button class="btn btn-ghost btn-sm">CS.CV</button>
+        <button class="btn btn-ghost btn-sm">High Score</button>
+      </div>
+
+      <div class="research-card" onclick="openModal()">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span class="badge badge-accent">CS.AI</span><span style="font-size:10px;color:var(--text3)">4/12/2026</span><span class="research-score high" style="color:var(--green);margin-left:auto;font-size:11px;">▲ Score: 50</span></div>
+        <div class="research-title">AVGen-Bench: A Task-Driven Benchmark for Multi-Granular Evaluation of Text-to-Audio-Video Generation</div>
+        <div class="research-desc">AVGen-Bench introduces a task-driven benchmark for Text-to-Audio-Video generation, featuring high-quality prompts and a multi-granular evaluation framework.</div>
+        <div class="research-footer"><button class="btn btn-primary btn-sm">Deep Dive →</button><button class="btn btn-sm">Generate Post</button><button class="btn btn-ghost btn-sm">🔖 Save</button><a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a></div>
+      </div>
+      <div class="research-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span class="badge badge-accent">CS.AI</span><span style="font-size:10px;color:var(--text3)">4/12/2026</span><span class="research-score" style="color:var(--green);margin-left:auto;font-size:11px;">▲ Score: 50</span></div>
+        <div class="research-title">KnowU-Bench: Towards Interactive, Proactive, and Personalized Mobile Agent Evaluation</div>
+        <div class="research-desc">A new benchmark, KnowU-Bench, is introduced to evaluate personalized mobile agents, addressing limitations of existing benchmarks in capturing proactive assistance.</div>
+        <div class="research-footer"><button class="btn btn-primary btn-sm" onclick="openModal()">Deep Dive →</button><button class="btn btn-sm">Generate Post</button><button class="btn btn-ghost btn-sm">🔖 Save</button><a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a></div>
+      </div>
+      <div class="research-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span class="badge badge-gray">CS.LG</span><span style="font-size:10px;color:var(--text3)">4/12/2026</span><span class="research-score" style="color:var(--amber);margin-left:auto;font-size:11px;">▲ Score: 40</span></div>
+        <div class="research-title">Leveraging Complementary Embeddings for Replay Selection in Continual Learning with Small Buffers</div>
+        <div class="research-desc">A new method, MERS, is proposed to improve Continual Learning with small buffers by integrating supervised and self-supervised embeddings.</div>
+        <div class="research-footer"><button class="btn btn-primary btn-sm" onclick="openModal()">Deep Dive →</button><button class="btn btn-sm">Generate Post</button><button class="btn btn-ghost btn-sm">🔖 Save</button><a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a></div>
+      </div>
+      <div class="research-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span class="badge badge-accent">CS.AI</span><span style="font-size:10px;color:var(--text3)">4/12/2026</span><span class="research-score" style="color:var(--amber);margin-left:auto;font-size:11px;">▲ Score: 40</span></div>
+        <div class="research-title">Verify Before You Commit: Towards Faithful Reasoning in LLM Agents via Self-Auditing</div>
+        <div class="research-desc">The paper proposes a novel framework called SAVeR to enforce verification over internal belief states in LLM agents, achieving faithful reasoning.</div>
+        <div class="research-footer"><button class="btn btn-primary btn-sm" onclick="openModal()">Deep Dive →</button><button class="btn btn-sm">Generate Post</button><button class="btn btn-ghost btn-sm">🔖 Save</button><a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a></div>
+      </div>
+      <div class="research-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span class="badge badge-gray">CS.CV</span><span style="font-size:10px;color:var(--text3)">4/12/2026</span><span class="research-score" style="color:var(--amber);margin-left:auto;font-size:11px;">▲ Score: 40</span></div>
+        <div class="research-title">MolmoWeb: Open Visual Web Agent and Open Data for the Open Web</div>
+        <div class="research-desc">The MolmoWeb project introduces a family of fully open multimodal web agents and a large dataset of browser task demonstrations.</div>
+        <div class="research-footer"><button class="btn btn-primary btn-sm" onclick="openModal()">Deep Dive →</button><button class="btn btn-sm">Generate Post</button><button class="btn btn-ghost btn-sm">🔖 Save</button><a class="btn btn-ghost btn-sm" href="#">↗ arXiv</a></div>
+      </div>
+    </div>
+
+    <!-- ===== PODCAST ===== -->
+    <div class="page" id="page-podcast">
+      <div class="page-header"><div class="page-title">Podcast Studio</div><div class="page-sub">AI Synthesis Pipeline V2.0</div></div>
+
+      <div class="podcast-hero">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🎙</div>
+          <div>
+            <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);">Daily AI <span style="color:var(--accent)">Pulse</span></div>
+            <div style="font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;">AI Synthesis Pipeline V2.0</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;">Select articles to include, or use the top 5 by score. Generates a conversational Alex vs Morgan debate script and converts it to audio.</div>
+
+        <div style="background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--text2);text-transform:uppercase;">Select Articles (optional — defaults to top 5)</span>
+          <span style="color:var(--text3)">▾</span>
+        </div>
+
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" style="flex:1;justify-content:center;">🎙 Generate Podcast</button>
+        </div>
+
+        <!-- Player -->
+        <div class="audio-player">
+          <div style="font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+            <span style="color:var(--teal)">●</span> Latest — April 13, 2026
+          </div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;">Pulse Digest — 4/13/2026</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:12px;">AI Synthesis Engine · 8 min 42 sec</div>
+          <div class="player-controls">
+            <button class="play-btn">▶</button>
+            <div class="player-progress">
+              <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+              <div class="player-time"><span>3:04</span><span>8:42</span></div>
+            </div>
+            <div class="waveform">
+              <div class="wave-bar" style="height:12px"></div><div class="wave-bar" style="height:20px"></div><div class="wave-bar" style="height:16px"></div><div class="wave-bar" style="height:24px"></div><div class="wave-bar" style="height:10px"></div><div class="wave-bar" style="height:18px"></div><div class="wave-bar" style="height:22px"></div><div class="wave-bar" style="height:14px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="section-title">Episode Archive</div>
+        <div class="episode-row"><div class="episode-date">Apr 13</div><div class="episode-title">Pulse Digest — AI Benchmarks & Multimodal Agents</div><div class="episode-dur">8:42</div><button class="btn btn-ghost btn-sm">▶</button></div>
+        <div class="episode-row"><div class="episode-date">Apr 12</div><div class="episode-title">Pulse Digest — Continual Learning Breakthroughs</div><div class="episode-dur">7:55</div><button class="btn btn-ghost btn-sm">▶</button></div>
+        <div class="episode-row"><div class="episode-date">Apr 11</div><div class="episode-title">Pulse Digest — Representation Steering & LLM Safety</div><div class="episode-dur">9:10</div><button class="btn btn-ghost btn-sm">▶</button></div>
+        <div class="episode-row"><div class="episode-date">Apr 10</div><div class="episode-title">Pulse Digest — Open Web Agents Week in Review</div><div class="episode-dur">6:48</div><button class="btn btn-ghost btn-sm">▶</button></div>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div class="page" id="page-settings">
+      <div class="page-header"><div class="page-title">Settings Hub</div><div class="page-sub">Pulse Pro Configuration</div></div>
+
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;">
+        <!-- Settings Nav -->
+        <div>
+          <div class="settings-nav-group">
+            <div class="settings-group-label">Content & Sources</div>
+            <div class="settings-nav-item active" onclick="switchSetting('source',this)"><div class="settings-icon" style="background:var(--teal-dim)">📡</div>Source Manager</div>
+            <div class="settings-nav-item" onclick="switchSetting('style',this)"><div class="settings-icon" style="background:var(--accent-glow)">🎨</div>Style Profile</div>
+            <div class="settings-nav-item" onclick="switchSetting('keywords',this)"><div class="settings-icon" style="background:var(--amber-dim)">🏷</div>Keywords</div>
+          </div>
+          <div class="settings-nav-group">
+            <div class="settings-group-label">Integrations</div>
+            <div class="settings-nav-item" onclick="switchSetting('webhooks',this)"><div class="settings-icon" style="background:var(--pink-dim,rgba(236,72,153,.1))">🔗</div>Webhooks</div>
+            <div class="settings-nav-item" onclick="switchSetting('monetization',this)"><div class="settings-icon" style="background:var(--green-dim)">💰</div>Monetization</div>
+            <div class="settings-nav-item" onclick="switchSetting('browser',this)"><div class="settings-icon" style="background:rgba(245,158,11,.1)">🌐</div>Browser Widget</div>
+          </div>
+          <div class="settings-nav-group">
+            <div class="settings-group-label">System</div>
+            <div class="settings-nav-item" onclick="switchSetting('health',this)"><div class="settings-icon" style="background:var(--green-dim)">❤</div>System Health</div>
+            <div class="settings-nav-item" onclick="switchSetting('llm',this)"><div class="settings-icon" style="background:var(--accent-glow)">🤖</div>LLM Providers</div>
+            <div class="settings-nav-item" onclick="switchSetting('interface',this)"><div class="settings-icon" style="background:var(--surface2)">🖥</div>Interface</div>
+            <div class="settings-nav-item" onclick="switchSetting('advanced',this)"><div class="settings-icon" style="background:var(--surface2)">⚙</div>Advanced</div>
+          </div>
+          <div style="margin-top:14px;padding:10px 12px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(0,212,168,.2);">
+            <div style="font-size:10px;font-weight:600;color:var(--teal);margin-bottom:3px;">🔒 Enhanced Encryption</div>
+            <div style="font-size:10px;color:var(--text2);line-height:1.5;">All config data is encrypted and stored locally.</div>
+          </div>
+        </div>
+
+        <!-- Settings Content -->
+        <div id="setting-source" class="setting-panel">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="section-title" style="margin-bottom:0">RSS Source Manager</div>
+              <button class="btn btn-primary btn-sm">+ Add Source</button>
+            </div>
+            <div class="source-row"><div class="source-name-col"><div class="source-name-text">Simon Willison's Blog</div><div class="source-url-text">https://simonwillison.net/atom/everything/</div></div><span class="badge badge-green">Active</span><span class="badge badge-gray" style="margin-left:4px">32 items</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+            <div class="source-row"><div class="source-name-col"><div class="source-name-text">The AIEdge Newsletter</div><div class="source-url-text">https://theaiedge.io/feed</div></div><span class="badge badge-green">Active</span><span class="badge badge-gray" style="margin-left:4px">20 items</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+            <div class="source-row"><div class="source-name-col"><div class="source-name-text">Interconnected</div><div class="source-url-text">https://interconnected.org/home/feed</div></div><span class="badge badge-green">Active</span><span class="badge badge-gray" style="margin-left:4px">20 items</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+            <div class="source-row"><div class="source-name-col"><div class="source-name-text">GitHub Trending</div><div class="source-url-text">https://github.com/trending</div></div><span class="badge badge-green">Active</span><span class="badge badge-gray" style="margin-left:4px">58 items</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+            <div class="source-row"><div class="source-name-col"><div class="source-name-text">Arxiv CS.AI</div><div class="source-url-text">https://arxiv.org/rss/cs.AI</div></div><span class="badge badge-green">Active</span><span class="badge badge-gray" style="margin-left:4px">304 items</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+          </div>
+        </div>
+
+        <div id="setting-style" class="setting-panel" style="display:none;">
+          <div class="card">
+            <div class="section-title">Style Profile — AI Persona Calibration</div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:14px;">Choose a writing style for generated content.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="style-option selected"><div class="style-option-name">Technical Expert</div><div class="style-option-desc">Deep analysis, precise language, expert audience</div></div>
+              <div class="style-option"><div class="style-option-name">Newsletter Writer</div><div class="style-option-desc">Conversational, accessible, weekly digest feel</div></div>
+              <div class="style-option"><div class="style-option-name">Thought Leader</div><div class="style-option-desc">Bold opinions, future-forward, LinkedIn-friendly</div></div>
+              <div class="style-option"><div class="style-option-name">Journalist</div><div class="style-option-desc">Balanced, factual, AP style, news-focused</div></div>
+            </div>
+            <div class="divider"></div>
+            <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:8px;">Custom Instructions</div>
+            <textarea style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:var(--font-body);resize:vertical;min-height:80px;outline:none;" placeholder="Add any additional instructions for content generation…"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:10px;"><button class="btn btn-primary btn-sm">Save Profile</button></div>
+          </div>
+        </div>
+
+        <div id="setting-keywords" class="setting-panel" style="display:none;">
+          <div class="card">
+            <div class="section-title">Keyword Relevance Scoring</div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:12px;">Keywords boost article relevance scores. Higher weight = more influence.</div>
+            <div style="display:flex;gap:8px;margin-bottom:14px;">
+              <input placeholder="Add keyword…" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;font-family:var(--font-body);outline:none;">
+              <input placeholder="Weight (1-10)" style="width:100px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;font-family:var(--font-body);outline:none;">
+              <button class="btn btn-primary btn-sm">Add</button>
+            </div>
+            <div>
+              <span class="keyword-chip">LLM <span class="kw-score">×10</span> <span class="kw-x">✕</span></span>
+              <span class="keyword-chip">AI Agents <span class="kw-score">×9</span> <span class="kw-x">✕</span></span>
+              <span class="keyword-chip">Benchmark <span class="kw-score">×8</span> <span class="kw-x">✕</span></span>
+              <span class="keyword-chip">Multimodal <span class="kw-score">×8</span> <span class="kw-x">✕</span></span>
+              <span class="keyword-chip">RAG <span class="kw-score">×7</span> <span class="kw-x">✕</span></span>
+              <span class="keyword-chip">Fine-tuning <span class="kw-score">×6</span> <span class="kw-x">✕</span></span>
+              <span class="keyword-chip">Reasoning <span class="kw-score">×9</span> <span class="kw-x">✕</span></span>
+              <span class="keyword-chip">Safety <span class="kw-score">×7</span> <span class="kw-x">✕</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="setting-webhooks" class="setting-panel" style="display:none;">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="section-title" style="margin-bottom:0">Webhooks — External Integrations</div>
+              <button class="btn btn-primary btn-sm">+ Add Webhook</button>
+            </div>
+            <div class="webhook-row"><div style="width:28px;height:28px;border-radius:6px;background:var(--green-dim);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">W</div><div class="webhook-url">https://mysite.com/wp-json/wp/v2/posts</div><span class="badge badge-green">Active</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+            <div class="webhook-row"><div style="width:28px;height:28px;border-radius:6px;background:var(--amber-dim);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">S</div><div class="webhook-url">https://hooks.slack.com/services/T00/B00/...</div><span class="badge badge-amber">Paused</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+          </div>
+        </div>
+
+        <div id="setting-monetization" class="setting-panel" style="display:none;">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="section-title" style="margin-bottom:0">Affiliate Link Manager</div>
+              <button class="btn btn-primary btn-sm">+ Add Keyword</button>
+            </div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">Keywords will be automatically converted to affiliate links in generated content.</div>
+            <div class="empty-state" style="padding:30px 20px;">
+              <div class="empty-icon">💰</div>
+              <div class="empty-title">No affiliate links configured</div>
+              <div class="empty-sub">Add keywords to start monetizing your content</div>
+              <button class="btn btn-primary btn-sm" style="margin-top:8px;">Add First Keyword →</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="setting-browser" class="setting-panel" style="display:none;">
+          <div class="card">
+            <div class="section-title">Browser Widget — Chrome Extension</div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:14px;">Install the Chrome extension to use Pulse Pro as an AI assistant while browsing.</div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:14px;">
+              <div style="font-size:28px;margin-bottom:8px;">🌐</div>
+              <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px;">Pulse Pro Chrome Extension</div>
+              <div style="font-size:11px;color:var(--text2);">Highlight any text to instantly analyze and add to your pipeline</div>
+              <button class="btn btn-primary btn-sm" style="margin-top:12px;">Install Extension</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="setting-health" class="setting-panel" style="display:none;">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div><div class="section-title" style="margin-bottom:0">System Health</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">Last updated: 12:05:07 AM</div></div>
+              <div style="display:flex;gap:8px;"><span class="badge badge-teal">Stability Mode</span><button class="btn btn-sm">↻ Refresh</button></div>
+            </div>
+            <div class="grid-4" style="margin-bottom:14px;">
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">LLM Failure</div><div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--green);">0.0%</div><div style="font-size:10px;color:var(--text3);">Threshold: 75%</div></div>
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">LLM Providers</div><div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);">8</div><div style="font-size:10px;color:var(--text3);">groq, cerebras, gemini…</div></div>
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Fallback Rate</div><div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--amber);">3.0%</div><div style="font-size:10px;color:var(--text3);">14/467 articles</div></div>
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Pipeline</div><div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text2);">Idle</div><div style="font-size:10px;color:var(--text3);">Never run today</div></div>
+            </div>
+            <div class="section-title" style="font-size:12px;">Feature Flags <span class="badge badge-red" style="margin-left:4px">3 Disabled</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+              <div class="feature-flag"><span class="flag-name">Audio Generation</span><button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+              <div class="feature-flag"><span class="flag-name">Blog Generation</span><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+              <div class="feature-flag"><span class="flag-name">Image Generation</span><button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+              <div class="feature-flag"><span class="flag-name">Content Generation</span><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+              <div class="feature-flag"><span class="flag-name">Quote Cards</span><button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+              <div class="feature-flag"><span class="flag-name">Research Analysis</span><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+              <div class="feature-flag"><span class="flag-name">Hashtag Recommendations</span><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="setting-llm" class="setting-panel" style="display:none;">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="section-title" style="margin-bottom:0">LLM Providers <span style="font-size:11px;color:var(--text3);font-family:var(--font-body);font-weight:400;">9 of 10 configured</span></div>
+              <button class="btn btn-sm">↻ Refresh</button>
+            </div>
+            <div class="provider-row"><div class="provider-check"><span style="color:var(--green);font-size:9px;font-weight:700">✓</span></div><div><div class="provider-name">Groq <span class="badge badge-teal" style="font-size:9px;margin-left:4px">FREE</span></div><div class="provider-model">llama-3.3-70b-versatile</div></div><span class="badge badge-green" style="margin-left:auto">Configured</span></div>
+            <div class="provider-row"><div class="provider-check"><span style="color:var(--green);font-size:9px;font-weight:700">✓</span></div><div><div class="provider-name">Cerebras <span class="badge badge-teal" style="font-size:9px;margin-left:4px">FREE</span></div><div class="provider-model">llama3.1-8b</div></div><span class="badge badge-green" style="margin-left:auto">Configured</span></div>
+            <div class="provider-row"><div class="provider-check"><span style="color:var(--green);font-size:9px;font-weight:700">✓</span></div><div><div class="provider-name">Google Gemini <span class="badge badge-teal" style="font-size:9px;margin-left:4px">FREE</span></div><div class="provider-model">gemini-2.0-flash-lite</div></div><span class="badge badge-green" style="margin-left:auto">Configured</span></div>
+            <div class="provider-row"><div class="provider-check"><span style="color:var(--green);font-size:9px;font-weight:700">✓</span></div><div><div class="provider-name">Mistral <span class="badge badge-teal" style="font-size:9px;margin-left:4px">FREE</span></div><div class="provider-model">mistral-small-latest</div></div><span class="badge badge-green" style="margin-left:auto">Configured</span></div>
+            <div class="provider-row"><div class="provider-check"><span style="color:var(--green);font-size:9px;font-weight:700">✓</span></div><div><div class="provider-name">OpenRouter</div><div class="provider-model">mistralai/mistral-7b-instruct:free</div></div><span class="badge badge-green" style="margin-left:auto">Configured</span></div>
+            <div class="provider-row"><div class="provider-check"><span style="color:var(--green);font-size:9px;font-weight:700">✓</span></div><div><div class="provider-name">OpenAI</div><div class="provider-model">gpt-4o-mini</div></div><span class="badge badge-green" style="margin-left:auto">Configured</span></div>
+            <div class="provider-row"><div class="provider-x"></div><div><div class="provider-name">Anthropic</div><div class="provider-model">claude-3-5-sonnet</div></div><a class="btn btn-sm" style="margin-left:auto;color:var(--accent);border-color:var(--accent);" href="#">Get Key ↗</a></div>
+            <div class="provider-row"><div class="provider-check"><span style="color:var(--green);font-size:9px;font-weight:700">✓</span></div><div><div class="provider-name">Ollama (Local) <span class="badge badge-teal" style="font-size:9px;margin-left:4px">FREE</span></div><div class="provider-model">llama3.2</div></div><span class="badge badge-green" style="margin-left:auto">Configured</span></div>
+          </div>
+        </div>
+
+        <div id="setting-interface" class="setting-panel" style="display:none;">
+          <div class="card">
+            <div class="section-title">Interface — Theme & Visual Settings</div>
+            <div class="interface-row"><div><div class="interface-label">Theme</div><div class="interface-sub">App color scheme</div></div><select style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-size:12px;font-family:var(--font-body);outline:none;"><option>Dark (Default)</option><option>Light</option><option>System</option></select></div>
+            <div class="interface-row"><div><div class="interface-label">Compact Mode</div><div class="interface-sub">Reduce spacing in article list</div></div><button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+            <div class="interface-row"><div><div class="interface-label">Show Score Labels</div><div class="interface-sub">Display quality scores on cards</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+            <div class="interface-row"><div><div class="interface-label">Sidebar Counts</div><div class="interface-sub">Show live item counts in nav</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+            <div class="interface-row"><div><div class="interface-label">Animations</div><div class="interface-sub">Enable UI micro-animations</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+          </div>
+        </div>
+
+        <div id="setting-advanced" class="setting-panel" style="display:none;">
+          <div class="card">
+            <div class="section-title">Advanced — Dev & Ops Tools</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);">
+                <div><div style="font-size:12px;font-weight:500;color:var(--text);">Database Cleanup</div><div style="font-size:11px;color:var(--text2);margin-top:1px;">Remove orphaned article records and placeholder content</div></div>
+                <button class="btn btn-sm" style="background:var(--red-dim);border-color:var(--red);color:var(--red);">🗑 Clean Up DB</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);">
+                <div><div style="font-size:12px;font-weight:500;color:var(--text);">RSS Feed Health Check</div><div style="font-size:11px;color:var(--text2);margin-top:1px;">Ping all active RSS feeds and deactivate unreachable ones</div></div>
+                <button class="btn btn-sm">⚡ Run Health Check</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);">
+                <div><div style="font-size:12px;font-weight:500;color:var(--text);">Export Content</div><div style="font-size:11px;color:var(--text2);margin-top:1px;">Download all generated content as a Markdown file</div></div>
+                <button class="btn btn-sm">↓ Export to Markdown</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);">
+                <div><div style="font-size:12px;font-weight:500;color:var(--text);">LLM Cache</div><div style="font-size:11px;color:var(--text2);margin-top:1px;">Redis not available · Cache disabled</div></div>
+                <button class="btn btn-sm">↻ Refresh</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);">
+                <div><div style="font-size:12px;font-weight:500;color:var(--text);">Automation Scheduler</div><div style="font-size:11px;color:var(--text2);margin-top:1px;">Stopped · Next run: 4/14/2026 4:30 PM</div></div>
+                <div style="display:flex;gap:6px;"><button class="btn btn-teal btn-sm">Enable</button><button class="btn btn-sm">Disable</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div style="text-align:center;padding:12px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);letter-spacing:.08em;flex-shrink:0;">⚡ POWERED BY AI PULSE PRO ENGINE V2.0</div>
+</div>
+
+<script>
+function nav(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const p = document.getElementById('page-' + page);
+  if (p) p.classList.add('active');
+  if (el && el.classList) el.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-item').forEach(n => {
+      if (n.onclick && n.onclick.toString().includes("'" + page + "'")) n.classList.add('active');
+    });
+  }
+}
+
+function toggleNotif() {
+  document.getElementById('notifPanel').classList.toggle('open');
+}
+
+function openModal() {
+  document.getElementById('deepDiveModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('deepDiveModal').classList.remove('open');
+}
+
+document.getElementById('deepDiveModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function switchSetting(name, el) {
+  document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.setting-panel').forEach(p => p.style.display = 'none');
+  if (el) el.classList.add('active');
+  const panel = document.getElementById('setting-' + name);
+  if (panel) panel.style.display = 'block';
+}
+
+function toggleBulk(cb) {
+  const bar = document.getElementById('bulkBar');
+  if (cb.checked) { bar.style.display = 'flex'; document.getElementById('bulkCount').textContent = '3 selected'; }
+  else { bar.style.display = 'none'; }
+  document.querySelectorAll('.article-card input[type=checkbox]').forEach(c => c.checked = cb.checked);
+}
+
+document.querySelectorAll('.modal-nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.modal-nav-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

@@ -78,6 +78,20 @@ export const useAppStore = create(
           ? errorOrUpdater(state.bulkOperationError)
           : errorOrUpdater,
       })),
+
+      // Sidebar notifications (not persisted)
+      notifications: [],
+      addNotification: (notification) =>
+        set((state) => ({
+          notifications: [
+            ...state.notifications,
+            { ...notification, id: notification.id ?? Date.now() },
+          ],
+        })),
+      removeNotification: (id) =>
+        set((state) => ({
+          notifications: state.notifications.filter((n) => n.id !== id),
+        })),
     }),
     {
       name: 'pulse-pro-store',

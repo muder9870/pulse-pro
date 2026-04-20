@@ -26,8 +26,25 @@ class ArticleIdMixin(BaseModel):
         return v
 
 
+ALL_PLATFORMS = ["twitter", "linkedin", "blog", "instagram",
+                 "facebook", "reddit", "youtube", "threads"]
+
+
 class GenerateRequest(ArticleIdMixin):
     platform: Optional[str] = None
+    platforms: Optional[list[str]] = None
+
+    @field_validator("platforms")
+    @classmethod
+    def platforms_valid(cls, v: Optional[list[str]]) -> Optional[list[str]]:
+        if v is None:
+            return v  # None → use all 8 defaults
+        if len(v) == 0:
+            raise ValueError("platforms list cannot be empty")
+        invalid = set(v) - _valid_platforms()
+        if invalid:
+            raise ValueError(f"unknown platforms: {invalid}")
+        return v
 
 
 class TagRequest(BaseModel):

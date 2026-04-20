@@ -1,28 +1,57 @@
-import React from 'react';
-import { Sun, Moon, Zap, Laptop, Check } from 'lucide-react';
-import { Card } from './ui';
+import React, { useState } from 'react';
+import { Sun, Moon, Zap, Laptop, Check, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeProvider';
 
 const ThemeSelector = ({ activeTheme }) => {
   const { theme, setTheme } = useTheme();
-  const isDark = theme === 'dark' || theme === 'electric-azure-dark';
+  const [success, setSuccess] = useState(null);
 
   const themes = [
-    { id: 'light', label: 'Light', icon: Sun, description: 'Light mode with indigo accents' },
-    { id: 'dark', label: 'Dark', icon: Moon, description: 'Dark mode with indigo accents' },
-    { id: 'electric-azure-light', label: 'Azure Light', icon: Zap, description: 'Cyan/teal theme (light)' },
-    { id: 'electric-azure-dark', label: 'Azure Dark', icon: Zap, description: 'Cyan/teal theme (dark)' },
-    { id: 'system', label: 'System', icon: Laptop, description: 'Follow OS preference' }
+    { id: 'light', label: 'Light Mode', icon: Sun, description: 'Clean light theme with indigo accents' },
+    { id: 'dark', label: 'Dark Mode', icon: Moon, description: 'Dark theme with indigo accents' },
+    { id: 'electric-azure-light', label: 'Azure Light', icon: Zap, description: 'Vibrant cyan/teal theme (light)' },
+    { id: 'electric-azure-dark', label: 'Azure Dark', icon: Zap, description: 'Vibrant cyan/teal theme (dark)' },
+    { id: 'system', label: 'System', icon: Laptop, description: 'Automatically follow OS preference' }
   ];
 
-  return (
-    <Card variant="glass" padding="lg" className={`${isDark ? 'border-indigo-500/20' : 'border-slate-200'}`}>
-      <Card.Header>
-        <Card.Title className={isDark ? 'text-white' : 'text-slate-900'}>Theme Management</Card.Title>
-        <Card.Description>Personalize your AI Pulse Pro experience</Card.Description>
-      </Card.Header>
+  const handleThemeChange = (themeId) => {
+    setTheme(themeId);
+    const themeName = themes.find(t => t.id === themeId)?.label || themeId;
+    setSuccess(`Theme changed to ${themeName}`);
+    setTimeout(() => setSuccess(null), 2000);
+  };
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Header */}
+      <div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>
+          Interface Settings
+        </h1>
+        <p style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
+          Customize your Pulse Pro experience
+        </p>
+      </div>
+
+      {/* Success Toast */}
+      {success && (
+        <div style={{ 
+          padding: 16, 
+          background: 'var(--green-dim)', 
+          border: '1px solid var(--green)', 
+          color: 'var(--green)', 
+          borderRadius: 10, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 12 
+        }}>
+          <CheckCircle2 style={{ width: 20, height: 20 }} />
+          <span style={{ fontSize: 13 }}>{success}</span>
+        </div>
+      )}
+
+      {/* Theme Toggle Rows */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         {themes.map((opt) => {
           const Icon = opt.icon;
           const isActive = theme === opt.id;
@@ -30,36 +59,33 @@ const ThemeSelector = ({ activeTheme }) => {
           return (
             <button
               key={opt.id}
-              onClick={() => setTheme(opt.id)}
-              className={`flex flex-col items-center gap-3 p-6 rounded-2xl border transition-all relative ${
-                isActive
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/10 border-indigo-500'
-                  : `${isDark ? 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-white/10 hover:bg-slate-900/60' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-200 hover:bg-slate-100'}`
-              }`}
+              onClick={() => handleThemeChange(opt.id)}
+              className={`interface-row ${isActive ? 'active' : ''}`}
+              style={{ width: '100%', textAlign: 'left', outline: 'none' }}
             >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${
-                isActive ? 'bg-white/20 border-white/20' : `${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`
-              }`}>
-                <Icon className={`w-6 h-6 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+              <div className="interface-icon">
+                <Icon style={{ width: 16, height: 16 }} />
               </div>
-              <span className={`text-xs font-black uppercase tracking-widest ${isActive ? 'text-white' : ''}`}>{opt.label}</span>
-
-              {isActive && (
-                <div className="absolute top-3 right-3 w-5 h-5 bg-white text-indigo-600 rounded-full flex items-center justify-center">
-                  <Check className="w-3 h-3" />
-                </div>
-              )}
+              <div className="interface-info">
+                <div className="interface-name">{opt.label}</div>
+                <div className="interface-desc">{opt.description}</div>
+              </div>
+              <div className={`toggle ${isActive ? 'on' : 'off'}`} />
             </button>
           );
         })}
       </div>
 
-      <div className={`mt-8 p-4 rounded-xl border transition-colors duration-500 ${isDark ? 'bg-indigo-500/5 border-indigo-500/10' : 'bg-indigo-50 border-indigo-100'}`}>
-        <p className={`text-[10px] font-medium leading-relaxed ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
-          Electric Azure uses cyan/teal colors for a vibrant, modern look. System theme automatically syncs with your OS settings.
+      {/* Info Box */}
+      <div style={{
+        padding: 16, background: 'var(--bg3)', borderRadius: 12,
+        border: '1px solid var(--border)',
+      }}>
+        <p style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.5 }}>
+          <strong style={{ color: 'var(--text)' }}>Electric Azure</strong> uses cyan/teal colors for a vibrant, modern aesthetic. System theme automatically syncs with your OS preferences.
         </p>
       </div>
-    </Card>
+    </div>
   );
 };
 

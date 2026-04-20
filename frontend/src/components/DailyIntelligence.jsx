@@ -1,35 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Sparkles, TrendingUp, Target, BrainCircuit, ChevronRight } from 'lucide-react';
 import { Button, Badge, Spinner } from './ui';
 
 /**
  * DailyIntelligence Component
  * Displays the top 3 high-impact AI stories from the Decision Engine.
-/**
- * DailyIntelligence Component
- * Displays the top 3 high-impact AI stories from the Decision Engine.
  * Features ultra-modern premium aesthetics and impact scoring.
  */
-const DailyIntelligence = ({ onRunPipeline }) => {
+const DailyIntelligence = ({ onRunPipeline, activeTheme }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeTheme, setActiveTheme] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-        }
-        return 'light';
-    });
 
     useEffect(() => {
-        const handleThemeChange = () => {
-            setActiveTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-        };
-        window.addEventListener('theme-change', handleThemeChange);
-        return () => window.removeEventListener('theme-change', handleThemeChange);
-    }, []);
-
-    useEffect(() => {
-        fetch('/api/intelligence/daily')
+        apiFetch('/intelligence/daily')
             .then(res => res.json())
             .then(res => {
                 if (res.status === 'success') {
@@ -72,7 +56,7 @@ const DailyIntelligence = ({ onRunPipeline }) => {
                             if (onRunPipeline) {
                                 onRunPipeline();
                             } else {
-                                fetch('/api/pipeline/run', {method: 'POST'})
+                                apiFetch('/pipeline/run', {method: 'POST'})
                                     .then(res => res.json())
                                     .then(data => {
                                         if (data.status === 'started' || data.status === 'running') {
@@ -174,7 +158,9 @@ const DailyIntelligence = ({ onRunPipeline }) => {
                                         className="mt-6 w-full text-xs font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_10px_20px_-5px_rgba(79,70,229,0.4)] border-none relative z-20 group/btn py-2.5"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            console.log('Deep dive clicked for:', story.title);
+                                            if (import.meta.env.DEV) {
+                                                console.log('Deep dive clicked for:', story.title);
+                                            }
                                             window.dispatchEvent(new CustomEvent('open-story-details', { 
                                                 detail: { title: story.title } 
                                             }));

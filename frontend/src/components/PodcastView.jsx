@@ -1,204 +1,223 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Mic, RefreshCw, Sparkles, Activity, Calendar, Headphones, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react';
 import AudioPlayer from './AudioPlayer';
+import { useToastContext } from '../hooks/useToast';
+
+const card = {
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-lg)',
+};
 
 const PodcastView = () => {
-    const [latestPodcast, setLatestPodcast] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [generating, setGenerating] = useState(false);
-    const [stories, setStories] = useState([]);
-    const [selectedIds, setSelectedIds] = useState([]);
-    const [showSelector, setShowSelector] = useState(false);
+  const toast = useToastContext();
+  const [latestPodcast, setLatestPodcast] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [stories, setStories] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [showSelector, setShowSelector] = useState(false);
 
-    const fetchLatest = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch('/api/podcast/latest');
-            const data = await res.json();
-            if (res.ok) setLatestPodcast(data.podcast);
-        } catch (err) {
-            console.error('Failed to fetch latest podcast', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchLatest = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch('/podcast/latest');
+      const data = await res.json();
+      if (res.ok) setLatestPodcast(data.podcast);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
 
-    const fetchStories = async () => {
-        try {
-            const res = await fetch('/api/stories?limit=20&sort=score');
-            const data = await res.json();
-            if (res.ok) setStories(Array.isArray(data) ? data : (data.stories || []));
-        } catch (err) {
-            console.error('Failed to fetch stories', err);
-        }
-    };
+  const fetchStories = async () => {
+    try {
+      const res = await apiFetch('/stories?limit=20&sort=score');
+      const data = await res.json();
+      if (res.ok) setStories(Array.isArray(data) ? data : (data.stories || []));
+    } catch (err) { console.error(err); }
+  };
 
-    useEffect(() => {
-        fetchLatest();
-        fetchStories();
-    }, []);
+  useEffect(() => { fetchLatest(); fetchStories(); }, []);
 
-    const toggleStory = (id) => {
-        setSelectedIds(prev =>
-            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-        );
-    };
+  const toggleStory = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
-    const generatePodcast = async () => {
-        setGenerating(true);
-        try {
-            const body = selectedIds.length > 0
-                ? { article_ids: selectedIds }
-                : { limit: 5 };
-            const res = await fetch('/api/generate/podcast', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                await fetchLatest();
-                setShowSelector(false);
-            } else {
-                alert(data.error || 'Podcast generation failed');
-            }
-        } catch (err) {
-            alert('Failed to trigger podcast generation');
-        } finally {
-            setGenerating(false);
-        }
-    };
+  const generatePodcast = async () => {
+    setGenerating(true);
+    try {
+      const body = selectedIds.length > 0 ? { article_ids: selectedIds } : { limit: 5 };
+      const res = await apiFetch('/generate/podcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchLatest();
+        setShowSelector(false);
+        toast.success('Podcast generated successfully!');
+      } else {
+        const errorMsg = data.error || 'Podcast generation failed';
+        toast.error(errorMsg);
+      }
+    } catch (err) {
+      toast.error('Failed to trigger podcast generation');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
-    return (
-        <div className="max-w-5xl mx-auto py-12 px-6">
-            <div className="glass-morphism rounded-[3rem] shadow-2xl border border-white/10 overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
+  return (
+    <div style={{ paddingBottom: 48 }}>
 
-                {/* Header */}
-                <div className="p-10 bg-gradient-to-br from-indigo-900/60 to-slate-900/40 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-12 opacity-5">
-                        <Mic size={240} />
-                    </div>
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 backdrop-blur-md">
-                                <Headphones className="w-8 h-8 text-indigo-400" />
-                            </div>
-                            <div>
-                                <h2 className="text-3xl font-black text-white tracking-tight">
-                                    Daily AI <span className="text-indigo-400">Pulse</span>
-                                </h2>
-                                <p className="text-xs text-indigo-400 font-bold uppercase tracking-[0.2em] mt-1">
-                                    AI Synthesis Pipeline v2.0
-                                </p>
-                            </div>
-                        </div>
-                        <p className="text-slate-300 text-lg max-w-2xl font-medium leading-relaxed">
-                            Select articles to include, or use the top 5 by score. Generates a conversational
-                            Alex vs Morgan debate script and converts it to audio.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="p-10 space-y-8">
-                    {/* Article Selector */}
-                    <div className="rounded-2xl border border-white/10 overflow-hidden">
-                        <button
-                            onClick={() => setShowSelector(s => !s)}
-                            className="w-full flex items-center justify-between px-6 py-4 bg-white/5 hover:bg-white/10 transition-colors text-left"
-                        >
-                            <div className="flex items-center gap-3">
-                                <Sparkles className="w-4 h-4 text-indigo-400" />
-                                <span className="text-sm font-bold text-white uppercase tracking-widest">
-                                    {selectedIds.length > 0
-                                        ? `${selectedIds.length} article${selectedIds.length > 1 ? 's' : ''} selected`
-                                        : 'Select articles (optional — defaults to top 5)'}
-                                </span>
-                            </div>
-                            {showSelector
-                                ? <ChevronUp className="w-4 h-4 text-slate-400" />
-                                : <ChevronDown className="w-4 h-4 text-slate-400" />
-                            }
-                        </button>
-
-                        {showSelector && (
-                            <div className="max-h-72 overflow-y-auto divide-y divide-white/5">
-                                {stories.length === 0 ? (
-                                    <p className="px-6 py-4 text-sm text-slate-500">No stories available yet — run the pipeline first.</p>
-                                ) : (
-                                    stories.map(story => {
-                                        const selected = selectedIds.includes(story.id);
-                                        return (
-                                            <button
-                                                key={story.id}
-                                                onClick={() => toggleStory(story.id)}
-                                                className={`w-full flex items-start gap-3 px-6 py-3 text-left transition-colors ${selected ? 'bg-indigo-600/10' : 'hover:bg-white/5'}`}
-                                            >
-                                                {selected
-                                                    ? <CheckSquare className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
-                                                    : <Square className="w-4 h-4 text-slate-600 mt-0.5 shrink-0" />
-                                                }
-                                                <div className="min-w-0">
-                                                    <p className={`text-sm font-medium truncate ${selected ? 'text-indigo-300' : 'text-slate-300'}`}>
-                                                        {story.title}
-                                                    </p>
-                                                    <p className="text-[10px] text-slate-500 mt-0.5">
-                                                        {story.source} · Score {story.total_score ?? story.viral_score ?? '—'}
-                                                    </p>
-                                                </div>
-                                            </button>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Generate Button */}
-                    <div className="flex justify-center">
-                        <button
-                            onClick={generatePodcast}
-                            disabled={generating}
-                            className="inline-flex items-center gap-3 px-10 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-[1.5rem] font-black uppercase text-xs tracking-widest transition-all shadow-2xl shadow-indigo-600/20 active:scale-95"
-                        >
-                            {generating
-                                ? <RefreshCw className="w-5 h-5 animate-spin" />
-                                : <Mic className="w-5 h-5" />
-                            }
-                            {generating ? 'Generating…' : 'Generate Podcast'}
-                        </button>
-                    </div>
-
-                    {/* Latest Podcast */}
-                    {loading ? (
-                        <div className="space-y-4 animate-pulse">
-                            <div className="h-20 bg-white/5 rounded-2xl" />
-                        </div>
-                    ) : latestPodcast ? (
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-widest border-t border-white/5 pt-6">
-                                <Calendar className="w-4 h-4 text-indigo-500" />
-                                <span>
-                                    Latest: {new Date(latestPodcast.created_at).toLocaleDateString(undefined, {
-                                        month: 'long', day: 'numeric', year: 'numeric'
-                                    })}
-                                </span>
-                            </div>
-                            <AudioPlayer
-                                url={latestPodcast.audio_url}
-                                title={`Pulse Digest — ${new Date(latestPodcast.created_at).toLocaleDateString()}`}
-                            />
-                        </div>
-                    ) : (
-                        <div className="text-center py-8">
-                            <Activity className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                            <p className="text-slate-500 text-sm">No digest generated yet. Select articles above and click Generate.</p>
-                        </div>
-                    )}
-                </div>
-            </div>
+      {/* ── Page Header ── */}
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>
+          Podcast Studio
         </div>
-    );
+        <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3 }}>
+          AI Synthesis Pipeline V2.0
+        </div>
+      </div>
+
+      {/* ── Hero Card ── */}
+      <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15), rgba(0,212,168,0.08))', border: '1px solid rgba(108,99,255,0.2)', borderRadius: 'var(--radius-lg)', padding: 24, marginBottom: 16 }}>
+
+        {/* Branding */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, var(--accent), var(--teal))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Mic style={{ width: 20, height: 20, color: '#fff' }} />
+          </div>
+          <div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
+              Daily AI <span style={{ color: 'var(--accent)' }}>Pulse</span>
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--text3)', textTransform: 'uppercase' }}>
+              AI Synthesis Pipeline V2.0
+            </div>
+          </div>
+        </div>
+
+        <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 14 }}>
+          Select articles to include, or use the top 5 by score. Generates a conversational Alex vs Morgan debate script and converts it to audio.
+        </div>
+
+        {/* Article Selector */}
+        <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 12, overflow: 'hidden' }}>
+          <button
+            onClick={() => setShowSelector(s => !s)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+          >
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text2)', textTransform: 'uppercase' }}>
+              {selectedIds.length > 0 ? `${selectedIds.length} article${selectedIds.length > 1 ? 's' : ''} selected` : 'Select Articles (optional — defaults to top 5)'}
+            </span>
+            {showSelector ? <ChevronUp style={{ width: 14, height: 14, color: 'var(--text3)' }} /> : <ChevronDown style={{ width: 14, height: 14, color: 'var(--text3)' }} />}
+          </button>
+
+          {showSelector && (
+            <div style={{ maxHeight: 240, overflowY: 'auto', borderTop: '1px solid var(--border)' }} className="custom-scrollbar">
+              {stories.length === 0 ? (
+                <div style={{ padding: '12px 14px', fontSize: 12, color: 'var(--text3)' }}>No stories available — run the pipeline first.</div>
+              ) : stories.map(story => {
+                const sel = selectedIds.includes(story.id);
+                return (
+                  <button
+                    key={story.id}
+                    onClick={() => toggleStory(story.id)}
+                    style={{ width: '100%', display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: sel ? 'var(--accent-glow)' : 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}
+                  >
+                    {sel
+                      ? <CheckSquare style={{ width: 14, height: 14, color: 'var(--accent)', marginTop: 1, flexShrink: 0 }} />
+                      : <Square style={{ width: 14, height: 14, color: 'var(--text3)', marginTop: 1, flexShrink: 0 }} />
+                    }
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: sel ? 'var(--accent)' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{story.title}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>{story.source} · Score {story.total_score ?? '—'}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Generate Button */}
+        <button
+          onClick={generatePodcast}
+          disabled={generating}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 0', borderRadius: 8, border: '1px solid var(--accent)', background: generating ? 'var(--surface2)' : 'var(--accent)', color: generating ? 'var(--text3)' : '#fff', fontSize: 13, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.15s' }}
+        >
+          {generating ? <RefreshCw style={{ width: 14, height: 14 }} className="animate-spin" /> : <Mic style={{ width: 14, height: 14 }} />}
+          {generating ? 'Generating…' : '🎙 Generate Podcast'}
+        </button>
+
+        {/* Audio Player */}
+        {loading ? (
+          <div style={{ marginTop: 14, height: 80, background: 'var(--bg3)', borderRadius: 'var(--radius-lg)', animation: 'shimmer 1.5s infinite' }} />
+        ) : latestPodcast ? (
+          <div style={{ marginTop: 14, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 18px' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'var(--teal)' }}>●</span> Latest — {new Date(latestPodcast.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+              Pulse Digest — {new Date(latestPodcast.created_at).toLocaleDateString()}
+            </div>
+            <AudioPlayer url={latestPodcast.audio_url} title={`Pulse Digest — ${new Date(latestPodcast.created_at).toLocaleDateString()}`} />
+          </div>
+        ) : (
+          <div style={{ marginTop: 14, textAlign: 'center', padding: '24px 0' }}>
+            <Activity style={{ width: 28, height: 28, color: 'var(--text3)', margin: '0 auto 8px' }} />
+            <div style={{ fontSize: 12, color: 'var(--text3)' }}>No digest generated yet. Select articles above and click Generate.</div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Episode Archive ── */}
+      <div style={card}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>
+          Episode Archive
+        </div>
+        {latestPodcast ? (
+          <div 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 12, 
+              padding: '10px 0', 
+              borderBottom: '1px solid var(--border)',
+              cursor: 'pointer',
+              transition: 'background 0.15s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text3)', width: 70, flexShrink: 0 }}>
+              {new Date(latestPodcast.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', flex: 1 }}>
+              Pulse Digest — {new Date(latestPodcast.created_at).toLocaleDateString()}
+            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text2)', fontSize: 11, cursor: 'pointer' }}
+            >
+              ▶
+            </button>
+          </div>
+        ) : (
+          <div style={{ padding: '24px 0', textAlign: 'center', fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>
+            No episodes yet
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
 };
 
 export default PodcastView;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Sparkles, Brain, Info, RefreshCw, UserCheck } from 'lucide-react';
 import Button from './ui/Button';
 
@@ -10,7 +11,7 @@ export default function StyleProfile() {
     const fetchStyles = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/personalization/style');
+            const res = await apiFetch('/personalization/style');
             const data = await res.json();
             if (res.ok) {
                 setStyles(data.style || {});
@@ -46,26 +47,28 @@ export default function StyleProfile() {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-                <p className="text-gray-500">Analyzing your style preferences...</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
+                <RefreshCw className="animate-spin" style={{ width: 32, height: 32, color: 'var(--accent)', marginBottom: 16 }} />
+                <p style={{ color: 'var(--text2)' }}>Analyzing your style preferences...</p>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="p-6 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                <h3 className="font-bold mb-2">Error loading style profile</h3>
+            <div style={{ padding: 24, background: 'var(--red-dim)', border: '1px solid var(--red)', borderRadius: 'var(--radius-lg)', color: 'var(--red)' }}>
+                <h3 style={{ fontWeight: 700, marginBottom: 8 }}>Error loading style profile</h3>
                 <p>{error}</p>
-                <Button
+                <button
                     onClick={fetchStyles}
-                    variant="danger"
-                    size="md"
-                    className="mt-4"
+                    style={{
+                        marginTop: 16, padding: '8px 16px', borderRadius: 8,
+                        border: '1px solid var(--red)', background: 'var(--red)',
+                        color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                    }}
                 >
                     Retry
-                </Button>
+                </button>
             </div>
         );
     }
@@ -73,38 +76,43 @@ export default function StyleProfile() {
     const hasStyles = Object.entries(styles).some(([k, v]) => k !== 'learned' && v !== null && v !== undefined);
 
     return (
-        <div className="max-w-4xl mx-auto p-6 space-y-8">
-            <div className="flex items-center justify-between">
+        <div style={{ maxWidth: 800, margin: '0 auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                        <Brain className="w-8 h-8 text-purple-600" />
-                        Brand Voice & AI Personalization
+                    <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 12, lineHeight: 1.2 }}>
+                        <Brain style={{ width: 32, height: 32, color: 'var(--accent)' }} />
+                        Style Profile
                     </h1>
-                    <p className="text-gray-600 mt-2">
-                        Pulse Pro learns from your edits and feedback to mirror your unique writing style.
+                    <p style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>
+                        AI learns from your edits to mirror your writing style
                     </p>
                 </div>
-                <Button
+                <button
                     onClick={fetchStyles}
-                    variant="ghost"
-                    size="sm"
-                    icon={RefreshCw}
-                    className="rounded-full"
+                    style={{
+                        padding: 8, borderRadius: '50%',
+                        border: '1px solid var(--border)', background: 'var(--surface2)',
+                        color: 'var(--text2)', cursor: 'pointer',
+                    }}
                     title="Refresh profile"
-                />
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg3)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--surface2)'}
+                >
+                    <RefreshCw style={{ width: 16, height: 16 }} />
+                </button>
             </div>
 
             {!hasStyles ? (
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-8 text-center">
-                    <Sparkles className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Starting Your Journey</h2>
-                    <p className="text-gray-600 max-w-md mx-auto">
+                <div style={{ background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-lg)', padding: 32, textAlign: 'center' }}>
+                    <Sparkles style={{ width: 48, height: 48, color: 'var(--accent)', margin: '0 auto 16px' }} />
+                    <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Starting Your Journey</h2>
+                    <p style={{ fontSize: 12, color: 'var(--text2)', maxWidth: 400, margin: '0 auto' }}>
                         I haven't learned enough about your style yet. Start by editing generated content
                         or using the Thumbs Up/Down buttons on story cards!
                     </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
                     {Object.entries(styles)
                         .filter(([key, value]) => key !== 'learned' && value !== null && value !== undefined)
                         .map(([key, value]) => {
@@ -113,19 +121,31 @@ export default function StyleProfile() {
                                 : String(value).replace(/_/g, ' ');
                             const displayKey = String(key).replace(/_/g, ' ');
                             return (
-                                <div key={key} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="p-2 bg-purple-100 rounded-lg">
-                                            <UserCheck className="w-5 h-5 text-purple-700" />
+                                <div key={key} style={{
+                                    background: 'var(--surface)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: 'var(--radius-lg)',
+                                    padding: 16
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                                        <div style={{ padding: 6, background: 'var(--accent-glow)', borderRadius: 8 }}>
+                                            <UserCheck style={{ width: 16, height: 16, color: 'var(--accent)' }} />
                                         </div>
-                                        <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">
+                                        <h3 style={{ 
+                                            textTransform: 'uppercase', 
+                                            letterSpacing: '0.05em', 
+                                            marginBottom: 0,
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            color: 'var(--text2)'
+                                        }}>
                                             {displayKey}
                                         </h3>
                                     </div>
-                                    <div className="text-2xl font-bold text-purple-800 mb-2 capitalize">
+                                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent2)', marginBottom: 6, textTransform: 'capitalize' }}>
                                         {displayValue}
                                     </div>
-                                    <p className="text-gray-600 text-sm">
+                                    <p style={{ lineHeight: 1.5, fontSize: 12, color: 'var(--text2)' }}>
                                         {getStyleDescription(key, String(value))}
                                     </p>
                                 </div>
@@ -134,25 +154,25 @@ export default function StyleProfile() {
                 </div>
             )}
 
-            <div className="bg-gray-900 rounded-2xl p-8 text-white">
-                <div className="flex items-start gap-4">
-                    <div className="p-3 bg-white/10 rounded-xl">
-                        <Info className="w-6 h-6 text-blue-300" />
+            <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                    <div style={{ padding: 12, background: 'var(--surface2)', borderRadius: 12 }}>
+                        <Info style={{ width: 24, height: 24, color: 'var(--teal)' }} />
                     </div>
                     <div>
-                        <h3 className="text-xl font-bold mb-4">How does personalization work?</h3>
-                        <div className="space-y-4 text-gray-300 text-sm leading-relaxed">
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>How does personalization work?</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, color: 'var(--text2)', fontSize: 11, lineHeight: 1.6 }}>
                             <p>
-                                <strong className="text-white">Active Learning:</strong> Every time you click "Save" on an edit,
+                                <strong style={{ color: 'var(--text)' }}>Active Learning:</strong> Every time you click "Save" on an edit,
                                 Pulse Pro compares our initial draft with your final version to detect patterns in length,
                                 tone, and formatting.
                             </p>
                             <p>
-                                <strong className="text-white">Feedback Loop:</strong> Your Thumbs Up/Down feedback helps us
+                                <strong style={{ color: 'var(--text)' }}>Feedback Loop:</strong> Your Thumbs Up/Down feedback helps us
                                 prioritize style patterns that you align with.
                             </p>
                             <p>
-                                <strong className="text-white">Few-Shot Prompting:</strong> When generating new content, we
+                                <strong style={{ color: 'var(--text)' }}>Few-Shot Prompting:</strong> When generating new content, we
                                 inject your best past edits as examples into the AI's technical prompt, creating a
                                 personalized brand-voice mirror.
                             </p>

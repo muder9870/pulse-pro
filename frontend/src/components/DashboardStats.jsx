@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { FileText, Sparkles, CheckCircle, TrendingUp, AlertTriangle } from 'lucide-react';
-import { Card, Badge } from './ui';
-import { SkeletonStats } from './ui/Skeleton';
+import { useNavigate } from 'react-router-dom';
+import { PageSkeleton } from './Skeleton';
 import FeatureErrorBoundary from './FeatureErrorBoundary';
 
 const DashboardStats = React.memo(({ activeTheme }) => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalArticles: 0,
     processedArticles: 0,
@@ -21,7 +23,7 @@ const DashboardStats = React.memo(({ activeTheme }) => {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/stats/dashboard');
+      const res = await apiFetch('/stats/dashboard');
       if (!res.ok) {
         throw new Error(`Status ${res.status}`);
       }
@@ -52,7 +54,7 @@ const DashboardStats = React.memo(({ activeTheme }) => {
 
   const fetchStatsIndividually = async () => {
     try {
-      const storiesRes = await fetch('/api/stories?limit=all');
+      const storiesRes = await apiFetch('/stories?limit=all');
       if (!storiesRes.ok) {
         throw new Error(`Failed to fetch stories: ${storiesRes.status}`);
       }
@@ -90,20 +92,23 @@ const DashboardStats = React.memo(({ activeTheme }) => {
   };
 
   if (stats.loading) {
-    return <SkeletonStats count={4} className="mb-12" />;
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 48 }}>
+        {[1,2,3,4].map(i => (
+          <div key={i} style={{ height: 110, background: 'var(--surface)', borderRadius: 'var(--radius-lg)', animation: 'shimmer 1.5s infinite' }} />
+        ))}
+      </div>
+    );
   }
 
   if (stats.loadError) {
     return (
-      <div className="mb-12 p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-        <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
-          <AlertTriangle className="w-5 h-5" />
-          <span className="font-medium">{stats.loadError}</span>
+      <div style={{ marginBottom: 48, padding: 24, background: 'var(--red-dim)', border: '1px solid var(--red)', borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--red)' }}>
+          <AlertTriangle style={{ width: 20, height: 20 }} />
+          <span style={{ fontWeight: 500 }}>{stats.loadError}</span>
         </div>
-        <button 
-          onClick={fetchStats}
-          className="mt-3 text-sm text-red-600 dark:text-red-400 hover:underline"
-        >
+        <button onClick={fetchStats} style={{ marginTop: 12, fontSize: 12, color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
           Try again
         </button>
       </div>
@@ -121,31 +126,41 @@ const DashboardStats = React.memo(({ activeTheme }) => {
     window.dispatchEvent(new CustomEvent('dashboard-filter', { 
       detail: { filter: item.filter } 
     }));
+    navigate('/articles');
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-fade-in">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 48 }} className="animate-fade-in">
       {items.map((item, idx) => (
-        <Card 
-          key={idx} 
+        <div
+          key={idx}
           onClick={() => handleCardClick(item)}
-          className="dark:bg-slate-900/40 bg-white backdrop-blur-xl dark:border-white/10 border-slate-200 shadow-xl dark:hover:bg-slate-900/60 hover:bg-slate-50 transition-all duration-300 group cursor-pointer active:scale-95"
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '16px 18px',
+            cursor: 'pointer',
+            transition: 'border-color 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
+          onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
         >
-          <Card.Content className="p-7">
-            <div className="flex items-center justify-between mb-6">
-              <div className="w-12 h-12 rounded-2xl dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <item.icon className={`w-6 h-6 ${activeTheme === 'dark' ? 'text-white' : `text-${item.color}-600`}`} />
-              </div>
-              <Badge variant="secondary" className="text-[9px] uppercase tracking-widest">
-                {item.status}
-              </Badge>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--surface2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <item.icon style={{ width: 20, height: 20, color: 'var(--text2)' }} />
             </div>
-            <div className="text-4xl font-black dark:text-white text-slate-900 mb-1 tracking-tight">
-              {item.value}
-            </div>
-            <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{item.label}</div>
-          </Card.Content>
-        </Card>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: 'var(--text2)' }}>
+              {item.status}
+            </span>
+          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--text)', lineHeight: 1, marginBottom: 4 }}>
+            {item.value}
+          </div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            {item.label}
+          </div>
+        </div>
       ))}
     </div>
   );

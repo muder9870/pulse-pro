@@ -63,6 +63,12 @@ class ProcessedArticle(Base):
     priority_score: Mapped[float] = mapped_column(Float, default=0.0)
     priority_reason: Mapped[Optional[str]] = mapped_column(Text)
     generated: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Pipeline / StoryCard workflow (exposed on GET /api/stories as review_status, needs_review, etc.)
+    story_review_status: Mapped[str] = mapped_column(String(32), default="none")  # none | pending | approved
+    content_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    pipeline_needs_review: Mapped[bool] = mapped_column(Boolean, default=False)
+    ready_to_schedule: Mapped[bool] = mapped_column(Boolean, default=False)
     
     # LLM Validation fields (Phase A)
     llm_raw_output: Mapped[Optional[str]] = mapped_column(Text)
@@ -269,7 +275,7 @@ class ArticleAudio(Base):
     __tablename__ = "article_audio"
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    article_id: Mapped[int] = mapped_column(ForeignKey("processed_articles.id"))
+    article_id: Mapped[Optional[int]] = mapped_column(ForeignKey("processed_articles.id"))
     audio_url: Mapped[Optional[str]] = mapped_column(String)
     local_path: Mapped[Optional[str]] = mapped_column(String)
     voice: Mapped[Optional[str]] = mapped_column(String)
@@ -474,6 +480,17 @@ class IdempotencyLog(Base):
     article_id = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class RelevanceKeyword(Base):
+    __tablename__ = "relevance_keywords"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    keyword: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    category: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), onupdate=func.now()
+    )
+
 # ============================================================================
 # INDICES FOR NEW MODELS
 # ============================================================================
@@ -494,3 +511,4 @@ Index("idx_affiliate_links_keyword", AffiliateLink.keyword)
 Index("idx_user_feedback_article", UserFeedback.article_id)
 Index("idx_idempotency_created_at", IdempotencyLog.created_at)
 Index("idx_video_scripts_article", VideoScript.article_id)
+Index("idx_relevance_keywords_keyword", RelevanceKeyword.keyword)

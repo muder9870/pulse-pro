@@ -7,6 +7,33 @@ from backend.db.models import RawArticle
 
 stories_bp = Blueprint("stories_v2", __name__, url_prefix="/api/stories")
 
+
+@stories_bp.route("/<int:article_id>/pipeline", methods=["PATCH"])
+@limiter.limit("120 per minute")
+def patch_story_pipeline(article_id: int):
+    """Update pipeline workflow flags for a story (raw article id). Body: optional review_status, content_approved, needs_review, ready_to_schedule."""
+    db = SessionLocal()
+    try:
+        body = request.get_json(silent=True) or {}
+        repo = ArticleRepository(db)
+        try:
+            updated = repo.update_pipeline_state(
+                article_id,
+                review_status=body.get("review_status"),
+                content_approved=body.get("content_approved"),
+                needs_review=body.get("needs_review"),
+                ready_to_schedule=body.get("ready_to_schedule"),
+            )
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        if updated is None:
+            return jsonify({"error": "Story not found or not analyzed yet"}), 404
+        return jsonify(updated), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
 @stories_bp.route("/sources")
 def get_sources():
     """Get unique sources from raw_articles with counts."""

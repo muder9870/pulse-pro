@@ -31,16 +31,16 @@ class Task(Enum):
 
 # Task-specific routing with fallback chains
 TASK_ROUTING: Dict[Task, List[str]] = {
-    Task.ANALYSIS:      ["cerebras", "groq", "gemini", "openrouter", "mistral", "pollinations_text"],
-    Task.TAGGING:       ["cerebras", "groq", "gemini", "openrouter", "mistral", "pollinations_text"],
-    Task.SOCIAL_SHORT:  ["groq", "cerebras", "gemini", "openrouter", "mistral", "pollinations_text"],
-    Task.SOCIAL_LONG:   ["groq", "cerebras", "gemini", "openrouter", "mistral"],
-    Task.VIDEO_SCRIPT:  ["groq", "cerebras", "gemini", "openrouter", "mistral"],
-    Task.RESEARCH:      ["openrouter", "gemini", "groq", "cerebras", "mistral"],
-    Task.DEEP_ANALYSIS: ["openrouter", "gemini", "groq", "cerebras"],
-    Task.DECISION:      ["groq", "cerebras", "gemini", "openrouter", "mistral"],
-    Task.BLOG:          ["openrouter", "gemini", "groq", "cerebras", "mistral"],
-    Task.AUDIO_SCRIPT:  ["groq", "cerebras", "gemini", "openrouter", "mistral"],
+    Task.ANALYSIS:      ["cerebras", "mistral", "groq", "gemini", "openrouter", "pollinations_text"],
+    Task.TAGGING:       ["cerebras", "mistral", "groq", "gemini", "openrouter", "pollinations_text"],
+    Task.SOCIAL_SHORT:  ["cerebras", "mistral", "groq", "gemini", "openrouter", "pollinations_text"],
+    Task.SOCIAL_LONG:   ["cerebras", "mistral", "groq", "gemini", "openrouter"],
+    Task.VIDEO_SCRIPT:  ["cerebras", "mistral", "groq", "gemini", "openrouter"],
+    Task.RESEARCH:      ["cerebras", "mistral", "groq", "gemini", "openrouter"],
+    Task.DEEP_ANALYSIS: ["cerebras", "mistral", "groq", "gemini", "openrouter"],
+    Task.DECISION:      ["cerebras", "mistral", "groq", "gemini", "openrouter"],
+    Task.BLOG:          ["cerebras", "mistral", "groq", "gemini", "openrouter"],
+    Task.AUDIO_SCRIPT:  ["cerebras", "mistral", "groq", "gemini", "openrouter"],
 }
 
 # Response format for consistency

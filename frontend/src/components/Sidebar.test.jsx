@@ -26,6 +26,8 @@ vi.mock('lucide-react', () => ({
   Rss: () => <span data-testid="icon-rss">📡</span>,
   UserCheck: () => <span data-testid="icon-user">👤</span>,
   Chrome: () => <span data-testid="icon-chrome">🌐</span>,
+  Search: () => <span data-testid="icon-search">🔍</span>,
+  Bell: () => <span data-testid="icon-bell">🔔</span>,
 }));
 
 describe('Sidebar', () => {
@@ -87,27 +89,19 @@ describe('Sidebar', () => {
     expect(screen.getByText('15')).toBeInTheDocument();
   });
 
-  it('expands/collapses settings deep links', () => {
+  it('expands/collapses source folders section', () => {
     render(
       <MemoryRouter>
         <Sidebar {...defaultProps} />
       </MemoryRouter>
     );
 
-    // Initially collapsed
-    expect(screen.queryByText('Monetization')).not.toBeInTheDocument();
-
-    // Click to expand
-    const settingsToggle = screen.getByText('Quick Links');
-    fireEvent.click(settingsToggle);
-
-    // Now visible
-    expect(screen.getByText('Monetization')).toBeInTheDocument();
-    expect(screen.getByText('Health')).toBeInTheDocument();
-    expect(screen.getByText('Webhooks')).toBeInTheDocument();
-    expect(screen.getByText('RSS Feeds')).toBeInTheDocument();
-    expect(screen.getByText('Style')).toBeInTheDocument();
-    expect(screen.getByText('Extension')).toBeInTheDocument();
+    expect(screen.getByText('arxiv')).toBeInTheDocument();
+    const toggle = screen.getByText('Source Folders');
+    fireEvent.click(toggle);
+    expect(screen.queryByText('arxiv')).not.toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.getByText('arxiv')).toBeInTheDocument();
   });
 
   it('calls onClose when Escape key is pressed', () => {
@@ -144,15 +138,13 @@ describe('Sidebar', () => {
     expect(sourceElement).toBeInTheDocument();
   });
 
-  it('renders skip link target id', () => {
+  it('renders sidebar as aside landmark', () => {
     render(
       <MemoryRouter>
         <Sidebar {...defaultProps} />
       </MemoryRouter>
     );
 
-    // The sidebar is a navigation landmark
-    const nav = document.querySelector('nav');
-    expect(nav).toBeInTheDocument();
+    expect(document.querySelector('aside')).toBeTruthy();
   });
 });

@@ -9,8 +9,8 @@ AI Pulse Pro is a self-hosted AI content automation platform. It fetches AI/ML a
 1. **Fetches** AI/ML content from arXiv, GitHub trending, RSS feeds (35+ defaults), Gmail newsletters, and Reddit
 2. **Analyzes** each article with an LLM — summary, viral hook, key innovation, sentiment, and scores (viral / tech / relevance)
 3. **Prioritizes** articles using a decision engine (HIGH / MEDIUM / LOW)
-4. **Generates** platform-specific posts for Twitter/X, LinkedIn, Reddit, HackerNews, Medium, Dev.to, Facebook, Instagram, TikTok, Threads, YouTube, Telegram, Discord, and more
-5. **Schedules** posts for publishing via APScheduler
+4. **Scores** articles with keyword-based relevance boost (configurable keyword list in Settings → Keywords)
+5. **User-triggered**: Browse the scored feed, select an article, choose platforms, click Generate — content is created only on demand
 6. **Publishes** long-form blog posts to Medium, Dev.to, and WordPress
 7. **Tracks** engagement metrics and platform ROI
 8. **Deep-dives** into arXiv papers — downloads PDFs, extracts methodology, results, limitations, and authors via LLM
@@ -99,8 +99,7 @@ GROQ_API_KEY=                           # Groq free API key
 
 # Pipeline throughput
 INGEST_CAP_PER_SOURCE=50               # Max articles fetched per source per run
-ANALYSIS_LIMIT=10                       # Max articles analyzed per run
-CONTENT_TOP_LIMIT=5                     # Max articles to generate content for
+ANALYSIS_LIMIT=0                        # Max articles analyzed per run (0 = all)
 CONTENT_PLATFORMS=twitter,linkedin,reddit,hackernews,medium
 
 # Data sources (optional)
@@ -149,6 +148,7 @@ NOTIFY_WEBHOOK_URL=                     # Slack/Discord webhook
 | **Style Profile** | View AI-learned writing style preferences (tone, length, emoji usage) |
 | **Browser Widget** | Instructions for installing the Chrome extension for one-click article capture |
 | **Interface** | Theme selection (Light, Dark, Azure Light, Azure Dark, System) |
+| **Keywords** | Manage the keyword list used to boost article relevance scores |
 | **Advanced** | Pipeline control, scheduler toggle, performance metrics, cache stats, RSS health check, content export |
 
 ---
@@ -175,6 +175,10 @@ The Research tab provides deep analysis of arXiv papers:
 | GET | `/api/pipeline/status` | Current pipeline state |
 | GET | `/api/pipeline/stream` | Real-time pipeline progress (SSE) |
 | POST | `/api/generate` | Generate content for an article |
+| GET | `/api/keywords` | List all relevance keywords |
+| POST | `/api/keywords` | Add a keyword |
+| DELETE | `/api/keywords/<id>` | Delete a keyword |
+| POST | `/api/keywords/bulk` | Bulk add keywords (skips duplicates) |
 | GET | `/api/export` | Export content as CSV or JSON |
 | POST | `/api/export/batch` | Batch export selected articles as Markdown |
 | GET | `/api/research/analysis/:id` | Get deep-dive analysis for an article |
@@ -317,6 +321,7 @@ ai-pulse-pro/
 
 | Version | Date | Notes |
 |---------|------|-------|
+| 2.5 | April 2026 | Pipeline/content decoupling: pipeline stops after scoring, content generation is user-triggered; keyword-based relevance scoring; Keywords tab in Settings |
 | 2.4 | April 2026 | Settings Hub stable: all 8 tabs wired, Advanced tools rewrite, real performance metrics |
 | 2.3 | April 2026 | Theme system unification (Azure themes), Research Deep Dive sync fix, Regenerate/Copy/Download actions |
 | 2.2 | April 2026 | Phase 3–5 refactor: React Router, Zustand, code splitting, rate limiting, CSP, Basic Auth |

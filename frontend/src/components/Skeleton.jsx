@@ -231,6 +231,25 @@ const LoadingSpinner = ({ size = 'md', className = '' }) => {
   );
 };
 
+/**
+ * SkeletonStats - Stats card skeleton for DashboardStats
+ * Matches the layout of dashboard stat cards
+ */
+const SkeletonStats = ({ count = 4, className = '' }) => (
+  <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${className}`}>
+    {Array.from({ length: count }).map((_, i) => (
+      <div key={i} className="p-7 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
+        <div className="flex items-center justify-between mb-6">
+          <div className="w-12 h-12 bg-gray-200 dark:bg-slate-700 rounded-full animate-pulse"></div>
+          <div className="h-4 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div>
+        </div>
+        <div className="h-10 bg-gray-200 dark:bg-slate-700 rounded animate-pulse mb-1"></div>
+        <div className="h-3 w-1/2 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div>
+      </div>
+    ))}
+  </div>
+);
+
 export { 
   StoryCardSkeleton, 
   FilterBarSkeleton, 
@@ -239,7 +258,8 @@ export {
   ListSkeleton, 
   ButtonLoader, 
   PageSkeleton, 
-  LoadingSpinner 
+  LoadingSpinner,
+  SkeletonStats
 };
 
 // Default export for backward compatibility

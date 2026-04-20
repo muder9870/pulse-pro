@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Share2, Plus, Trash2, Globe, RefreshCw, AlertCircle, CheckCircle2, Shield, Activity, Play } from 'lucide-react';
 import Input from './ui/Input';
 import Checkbox from './ui/Checkbox';
@@ -24,7 +25,7 @@ const WebhookManager = () => {
     const fetchWebhooks = async () => {
         setLoading(true);
         try {
-            const response = await fetch('/api/integrations/webhooks');
+            const response = await apiFetch('/integrations/webhooks');
             const data = await response.json();
             setWebhooks(data);
         } catch (err) {
@@ -37,7 +38,7 @@ const WebhookManager = () => {
     const handleAddWebhook = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/integrations/webhooks', {
+            const response = await apiFetch('/integrations/webhooks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newWebhook),
@@ -59,7 +60,7 @@ const WebhookManager = () => {
     const handleDeleteWebhook = async (id) => {
         if (!window.confirm('Delete this webhook?')) return;
         try {
-            await fetch(`/api/integrations/webhooks/${id}`, { method: 'DELETE' });
+            await apiFetch(`integrations/webhooks/${id}`, { method: 'DELETE' });
             setSuccess('Webhook removed');
             fetchWebhooks();
             setTimeout(() => setSuccess(null), 2000);
@@ -70,7 +71,7 @@ const WebhookManager = () => {
 
     const handleToggleWebhook = async (id, enabled) => {
         try {
-            await fetch(`/api/integrations/webhooks/${id}/toggle`, {
+            await apiFetch(`integrations/webhooks/${id}/toggle`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled: !enabled }),
@@ -84,7 +85,7 @@ const WebhookManager = () => {
     const handleTestWebhook = async () => {
         setTesting(true);
         try {
-            const response = await fetch('/api/integrations/test', { method: 'POST' });
+            const response = await apiFetch('/integrations/test', { method: 'POST' });
             if (!response.ok) throw new Error('Test failed');
             setSuccess('Test event dispatched to all enabled webhooks!');
             setTimeout(() => setSuccess(null), 3000);
@@ -96,94 +97,130 @@ const WebhookManager = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+        <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg3)' }}>
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <Share2 className="w-5 h-5 text-indigo-500" />
-                        Outbound Webhooks
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, lineHeight: 1.2 }}>
+                        <Share2 style={{ width: 20, height: 20, color: 'var(--accent)' }} />
+                        Webhooks
                     </h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Connect AI Pulse Pro to Zapier, Slack, or custom endpoints.
+                    <p style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
+                        Connect to Zapier, Slack, or custom endpoints
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div style={{ display: 'flex', gap: 8 }}>
                     <button
                         onClick={handleTestWebhook}
                         disabled={testing}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)',
+                            background: 'var(--surface2)', color: 'var(--text)', fontSize: 12, fontWeight: 500,
+                            cursor: 'pointer', opacity: testing ? 0.5 : 1,
+                        }}
                     >
-                        {testing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                        {testing ? <RefreshCw className="animate-spin" style={{ width: 14, height: 14 }} /> : <Play style={{ width: 14, height: 14 }} />}
                         Test Webhooks
                     </button>
                     <button
                         onClick={() => setIsAdding(!isAdding)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm"
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            padding: '6px 12px', borderRadius: 8, border: '1px solid var(--accent)',
+                            background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 500,
+                            cursor: 'pointer',
+                        }}
                     >
-                        {isAdding ? 'Cancel' : <><Plus className="w-4 h-4" /> New Webhook</>}
+                        {isAdding ? 'Cancel' : <><Plus style={{ width: 14, height: 14 }} /> New Webhook</>}
                     </button>
                 </div>
             </div>
 
-            <div className="p-6">
+            <div style={{ padding: 20 }}>
                 {error && (
-                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5" />
-                        <span className="text-sm">{error}</span>
+                    <div style={{ marginBottom: 16, padding: 12, background: 'var(--red-dim)', border: '1px solid var(--red)', borderRadius: 8, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <AlertCircle style={{ width: 18, height: 18 }} />
+                        <span style={{ fontSize: 12 }}>{error}</span>
                     </div>
                 )}
 
                 {success && (
-                    <div className="mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-lg flex items-center gap-3">
-                        <CheckCircle2 className="w-5 h-5" />
-                        <span className="text-sm">{success}</span>
+                    <div style={{ marginBottom: 16, padding: 12, background: 'var(--green-dim)', border: '1px solid var(--green)', borderRadius: 8, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <CheckCircle2 style={{ width: 18, height: 18 }} />
+                        <span style={{ fontSize: 12 }}>{success}</span>
                     </div>
                 )}
 
                 {isAdding && (
-                    <form onSubmit={handleAddWebhook} className="mb-8 p-6 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Input
-                                type="text"
-                                label="Webhook Name"
-                                placeholder="e.g. Zapier Workflow"
-                                value={newWebhook.name}
-                                onChange={(e) => setNewWebhook({ ...newWebhook, name: e.target.value })}
-                                required
-                                fullWidth
-                            />
-                            <Input
-                                type="url"
-                                label="Destination URL"
-                                placeholder="https://hooks.zapier.com/..."
-                                value={newWebhook.url}
-                                onChange={(e) => setNewWebhook({ ...newWebhook, url: e.target.value })}
-                                required
-                                fullWidth
-                            />
-                            <Input
-                                type="password"
-                                label="Secret Token (Optional)"
-                                placeholder="••••••••"
-                                icon={Shield}
-                                value={newWebhook.secret}
-                                onChange={(e) => setNewWebhook({ ...newWebhook, secret: e.target.value })}
-                                fullWidth
-                            />
-                            <Input
-                                type="text"
-                                label="Event Triggers (comma-separated)"
-                                placeholder="pipeline_complete, error"
-                                icon={Activity}
-                                value={newWebhook.events}
-                                onChange={(e) => setNewWebhook({ ...newWebhook, events: e.target.value })}
-                                fullWidth
-                            />
+                    <form onSubmit={handleAddWebhook} style={{ marginBottom: 32, padding: 20, background: 'var(--bg3)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+                            <div>
+                                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginBottom: 6, display: 'block' }}>Webhook Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Zapier Workflow"
+                                    value={newWebhook.name}
+                                    onChange={(e) => setNewWebhook({ ...newWebhook, name: e.target.value })}
+                                    required
+                                    style={{
+                                        width: '100%', padding: '8px 12px', borderRadius: 8,
+                                        border: '1px solid var(--border)', background: 'var(--surface2)',
+                                        color: 'var(--text)', fontSize: 12,
+                                    }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginBottom: 6, display: 'block' }}>Destination URL</label>
+                                <input
+                                    type="url"
+                                    placeholder="https://hooks.zapier.com/..."
+                                    value={newWebhook.url}
+                                    onChange={(e) => setNewWebhook({ ...newWebhook, url: e.target.value })}
+                                    required
+                                    style={{
+                                        width: '100%', padding: '8px 12px', borderRadius: 8,
+                                        border: '1px solid var(--border)', background: 'var(--surface2)',
+                                        color: 'var(--text)', fontSize: 12,
+                                    }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginBottom: 6, display: 'block' }}>Secret Token (Optional)</label>
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={newWebhook.secret}
+                                    onChange={(e) => setNewWebhook({ ...newWebhook, secret: e.target.value })}
+                                    style={{
+                                        width: '100%', padding: '8px 12px', borderRadius: 8,
+                                        border: '1px solid var(--border)', background: 'var(--surface2)',
+                                        color: 'var(--text)', fontSize: 12,
+                                    }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginBottom: 6, display: 'block' }}>Event Triggers (comma-separated)</label>
+                                <input
+                                    type="text"
+                                    placeholder="pipeline_complete, error"
+                                    value={newWebhook.events}
+                                    onChange={(e) => setNewWebhook({ ...newWebhook, events: e.target.value })}
+                                    style={{
+                                        width: '100%', padding: '8px 12px', borderRadius: 8,
+                                        border: '1px solid var(--border)', background: 'var(--surface2)',
+                                        color: 'var(--text)', fontSize: 12,
+                                    }}
+                                />
+                            </div>
                         </div>
-                        <div className="mt-6 flex justify-end">
+                        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
                             <button
                                 type="submit"
-                                className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all font-semibold shadow-md active:scale-95"
+                                style={{
+                                    padding: '8px 24px', borderRadius: 8, border: '1px solid var(--accent)',
+                                    background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600,
+                                    cursor: 'pointer',
+                                }}
                             >
                                 Create Webhook
                             </button>
@@ -192,58 +229,56 @@ const WebhookManager = () => {
                 )}
 
                 {loading ? (
-                    <div className="flex justify-center py-12">
-                        <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+                        <RefreshCw className="animate-spin" style={{ width: 32, height: 32, color: 'var(--accent)' }} />
                     </div>
                 ) : webhooks.length === 0 ? (
-                    <div className="text-center py-12 bg-slate-50 dark:bg-slate-900/20 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-                        <Globe className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
-                        <p className="text-slate-500 dark:text-slate-400 font-medium">No webhooks configured.</p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
-                            Webhooks allow you to push updates to other apps automatically when events occur in AI Pulse Pro.
+                    <div style={{ textAlign: 'center', padding: 48, background: 'var(--bg3)', borderRadius: 12, border: '2px dashed var(--border)' }}>
+                        <Globe style={{ width: 48, height: 48, color: 'var(--text3)', margin: '0 auto 12px' }} />
+                        <p style={{ color: 'var(--text2)', fontWeight: 500, fontSize: 13 }}>No webhooks configured.</p>
+                        <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, maxWidth: 300, margin: '8px auto 0' }}>
+                            Webhooks allow you to push updates to other apps automatically when events occur.
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="pp-card" style={{ padding: '0 16px', display: 'flex', flexDirection: 'column' }}>
                         {webhooks.map((wh) => (
-                            <div key={wh.id} className={`p-5 rounded-xl border transition-all ${wh.enabled ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-75'}`}>
-                                <div className="flex justify-between items-start mb-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${wh.enabled ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-500'}`}>
-                                            <Globe className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-900 dark:text-white">{wh.name}</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">{wh.url}</p>
-                                        </div>
+                            <div key={wh.id} className="webhook-row" style={{ opacity: wh.enabled ? 1 : 0.75 }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                    <div style={{
+                                        padding: 8, borderRadius: 8,
+                                        background: wh.enabled ? 'var(--accent-glow)' : 'var(--bg3)',
+                                        color: wh.enabled ? 'var(--accent)' : 'var(--text3)',
+                                    }}>
+                                        <Globe style={{ width: 16, height: 16 }} />
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <label className="relative inline-flex items-center cursor-pointer scale-90">
-                                            <input
-                                                type="checkbox"
-                                                className="sr-only peer"
-                                                checked={wh.enabled}
-                                                onChange={() => handleToggleWebhook(wh.id, wh.enabled)}
-                                            />
-                                            <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                                        </label>
-                                        <button
-                                            onClick={() => handleDeleteWebhook(wh.id)}
-                                            className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                    <div className="webhook-info">
+                                        <span className="webhook-name">{wh.name}</span>
+                                        <span className="webhook-url" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>{wh.url}</span>
+                                        {wh.events && (
+                                            <div className="webhook-events">
+                                                {wh.events.split(',').map(event => (
+                                                    <span key={event} className="event-tag">
+                                                        {event.trim()}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                {wh.events && (
-                                    <div className="flex flex-wrap gap-1 mt-2">
-                                        {wh.events.split(',').map(event => (
-                                            <span key={event} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-full uppercase tracking-tight">
-                                                {event.trim()}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                    <div 
+                                        className={`toggle ${wh.enabled ? 'on' : 'off'}`} 
+                                        onClick={() => handleToggleWebhook(wh.id, wh.enabled)} 
+                                    />
+                                    <button
+                                        onClick={() => handleDeleteWebhook(wh.id)}
+                                        className="pp-btn pp-btn-ghost"
+                                        style={{ padding: 6, borderRadius: 8, border: 'none' }}
+                                    >
+                                        <Trash2 style={{ width: 14, height: 14 }} />
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

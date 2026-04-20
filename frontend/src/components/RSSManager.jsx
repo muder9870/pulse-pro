@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 import { Plus, Trash2, RefreshCw, Upload, Download, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
-import Input from './ui/Input';
-import Select from './ui/Select';
-import Checkbox from './ui/Checkbox';
 
 function RSSManager() {
   const [feeds, setFeeds] = useState([]);
@@ -24,7 +22,7 @@ function RSSManager() {
 
   const fetchFeeds = async () => {
     try {
-      const response = await fetch('/api/rss/feeds');
+      const response = await apiFetch('/rss/feeds');
       if (response.ok) {
         const data = await response.json();
         setFeeds(data.feeds || []);
@@ -41,7 +39,7 @@ function RSSManager() {
     
     setAdding(true);
     try {
-      const response = await fetch('/api/rss/feeds', {
+      const response = await apiFetch('/rss/feeds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -69,7 +67,7 @@ function RSSManager() {
     if (!confirm('Are you sure you want to delete this RSS feed?')) return;
 
     try {
-      const response = await fetch(`/api/rss/feeds/${feedId}`, {
+      const response = await apiFetch(`rss/feeds/${feedId}`, {
         method: 'DELETE'
       });
 
@@ -85,7 +83,7 @@ function RSSManager() {
 
   const toggleFeed = async (feedId, active) => {
     try {
-      const response = await fetch(`/api/rss/feeds/${feedId}`, {
+      const response = await apiFetch(`rss/feeds/${feedId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !active })
@@ -102,7 +100,7 @@ function RSSManager() {
   const fetchAllFeeds = async () => {
     setFetchingAll(true);
     try {
-      const response = await fetch('/api/rss/fetch-all', {
+      const response = await apiFetch('/rss/fetch-all', {
         method: 'POST'
       });
 
@@ -125,31 +123,26 @@ function RSSManager() {
 
     setAdding(true);
     try {
-      const response = await fetch('/api/rss/add-defaults', {
+      const response = await apiFetch('/rss/add-defaults', {
         method: 'POST'
       });
 
       if (response.ok) {
         const data = await response.json();
         
-        // Check for partial success
         if (data.failed && data.failed > 0) {
-          // Partial success: some feeds added, some failed
           const totalAttempted = data.added + data.failed;
           let message = `Added ${data.added} out of ${totalAttempted} feeds. ${data.failed} feeds failed.`;
-          
-          // Optionally log failure details for user action
           if (data.failures && data.failures.length > 0) {
-            console.log('Failed feeds:', data.failures);
+            if (import.meta.env.DEV) {
+              console.log('Failed feeds:', data.failures);
+            }
             message += '\n\nCheck console for details about failed feeds.';
           }
-          
           alert(message);
         } else if (data.added === 0) {
-          // Complete failure
           alert('Failed to add default feeds');
         } else {
-          // All success
           alert(`Added ${data.added} default RSS feeds`);
         }
         
@@ -171,7 +164,7 @@ function RSSManager() {
     setImporting(true);
     try {
       const content = await file.text();
-      const response = await fetch('/api/rss/import-opml', {
+      const response = await apiFetch('/rss/import-opml', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ opml_content: content })
@@ -189,17 +182,17 @@ function RSSManager() {
       alert(`Failed to import OPML: ${error.message}`);
     } finally {
       setImporting(false);
-      event.target.value = ''; // Reset file input
+      event.target.value = '';
     }
   };
 
   const getStatusIcon = (feed) => {
     if (feed.last_error) {
-      return <XCircle className="w-4 h-4 text-red-500" title={feed.last_error} />;
+      return <XCircle style={{ width: 16, height: 16, color: 'var(--red)' }} title={feed.last_error} />;
     } else if (feed.fetch_count > 0) {
-      return <CheckCircle className="w-4 h-4 text-green-500" title="Working" />;
+      return <CheckCircle style={{ width: 16, height: 16, color: 'var(--green)' }} title="Working" />;
     } else {
-      return <AlertCircle className="w-4 h-4 text-yellow-500" title="Not fetched yet" />;
+      return <AlertCircle style={{ width: 16, height: 16, color: 'var(--amber)' }} title="Not fetched yet" />;
     }
   };
 
@@ -210,139 +203,236 @@ function RSSManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
-        <span className="ml-2 text-gray-600">Loading RSS feeds...</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+        <RefreshCw className="animate-spin" style={{ width: 24, height: 24, color: 'var(--accent)' }} />
+        <span style={{ marginLeft: 8, color: 'var(--text2)' }}>Loading RSS feeds...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">RSS Feed Manager</h2>
-          <p className="text-gray-600">Manage your AI/ML content sources</p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
+            Source Manager
+          </h2>
+          <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--text2)', marginTop: 6, opacity: 0.8 }}>
+            Configure and synchronize intelligence intake streams
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={fetchAllFeeds}
             disabled={fetchingAll}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '8px 16px', borderRadius: 10, border: '1px solid var(--teal)',
+              background: 'var(--teal-dim)', color: 'var(--teal)', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', opacity: fetchingAll ? 0.5 : 1,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--teal)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'var(--teal-dim)'}
           >
-            <RefreshCw className={`w-4 h-4 ${fetchingAll ? 'animate-spin' : ''}`} />
-            {fetchingAll ? 'Fetching...' : 'Fetch All'}
+            <RefreshCw style={{ width: 14, height: 14 }} className={fetchingAll ? 'animate-spin' : ''} />
+            {fetchingAll ? 'Syncing...' : 'Sync All Sources'}
           </button>
         </div>
       </div>
 
       {/* Add Feed Form */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold mb-4">Add New RSS Feed</h3>
-        <div className="flex gap-4">
-          <Input
-            type="url"
-            value={newFeedUrl}
-            onChange={(e) => setNewFeedUrl(e.target.value)}
-            placeholder="https://example.com/feed.xml"
-            fullWidth
-          />
-          <Select
+      <div style={{ 
+        background: 'var(--surface)', 
+        border: '1px solid var(--border)', 
+        borderRadius: 'var(--radius-lg)', 
+        padding: '24px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+          <div style={{ width: 4, height: 16, background: 'var(--accent)', borderRadius: 2 }} />
+          <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text)' }}>Register New Source</h3>
+        </div>
+        
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 260, position: 'relative' }}>
+            <input
+              type="url"
+              value={newFeedUrl}
+              onChange={(e) => setNewFeedUrl(e.target.value)}
+              placeholder="Enter RSS or Atom Feed URL"
+              style={{
+                width: '100%',
+                padding: '10px 14px', borderRadius: 10,
+                border: '1px solid var(--border)', background: 'var(--bg3)',
+                color: 'var(--text)', fontSize: 13,
+                outline: 'none',
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+            />
+          </div>
+          <select
             value={newFeedCategory}
             onChange={(e) => setNewFeedCategory(e.target.value)}
-            options={categories}
-          />
+            style={{
+              padding: '10px 14px', borderRadius: 10,
+              border: '1px solid var(--border)', background: 'var(--bg3)',
+              color: 'var(--text)', fontSize: 13, cursor: 'pointer',
+              outline: 'none',
+            }}
+          >
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
           <button
             onClick={addFeed}
             disabled={adding || !newFeedUrl.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '10px 20px', borderRadius: 10, border: 'none',
+              background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', opacity: (adding || !newFeedUrl.trim()) ? 0.5 : 1,
+              transition: 'transform 0.1s, opacity 0.2s',
+            }}
+            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <Plus className="w-4 h-4" />
-            {adding ? 'Adding...' : 'Add Feed'}
+            {adding ? <RefreshCw className="animate-spin" style={{ width: 14, height: 14 }} /> : <Plus style={{ width: 16, height: 16 }} />}
+            {adding ? 'Processing...' : 'Register Source'}
           </button>
         </div>
 
         {/* Quick Actions */}
-        <div className="flex gap-4 mt-4 pt-4 border-t border-gray-200">
+        <div style={{ display: 'flex', gap: 12, marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
           <button
             onClick={addDefaultFeeds}
             disabled={adding}
-            className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '8px 16px', borderRadius: 8, border: '1px solid var(--accent2)',
+              background: 'transparent', color: 'var(--accent2)', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', opacity: adding ? 0.5 : 1,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent2)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--accent2)'; }}
           >
-            <Download className="w-4 h-4" />
-            Add 35+ Default Feeds
+            <Download style={{ width: 14, height: 14 }} />
+            Load Preset AI/ML Library
           </button>
           
-          <label className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer text-sm">
-            <Upload className="w-4 h-4" />
-            {importing ? 'Importing...' : 'Import OPML'}
+          <label style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '8px 16px', borderRadius: 8, border: '1px solid var(--amber)',
+            background: 'transparent', color: 'var(--amber)', fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', opacity: importing ? 0.5 : 1,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--amber)'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--amber)'; }}>
+            <Upload style={{ width: 14, height: 14 }} />
+            {importing ? 'Importing...' : 'Import OPML Bundle'}
             <input
               type="file"
               accept=".opml,.xml"
               onChange={handleFileImport}
               disabled={importing}
-              className="hidden"
+              style={{ display: 'none' }}
             />
           </label>
         </div>
       </div>
 
       {/* Feeds List */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold">RSS Feeds ({feeds.length})</h3>
+      <div style={{ 
+        background: 'var(--surface)', 
+        border: '1px solid var(--border)', 
+        borderRadius: 'var(--radius-lg)',
+        overflow: 'hidden'
+      }}>
+        <div style={{ 
+          padding: '16px 24px', 
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'var(--surface2)'
+        }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text)' }}>
+            Active Intelligence Streams ({feeds.length})
+          </h3>
         </div>
         
         {feeds.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            <p>No RSS feeds configured yet.</p>
-            <p className="text-sm mt-2">Add some feeds above or import from OPML to get started.</p>
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text2)' }}>
+            <div style={{ fontSize: 32, marginBottom: 16, opacity: 0.3 }}>📡</div>
+            <p style={{ fontWeight: 500 }}>No active streams detected.</p>
+            <p style={{ fontSize: 12, marginTop: 6, color: 'var(--text3)' }}>Register a source above to begin ingestion.</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div style={{ display: 'flex', flexDirection: 'column', padding: '0 16px' }}>
             {feeds.map((feed) => (
-              <div key={feed.id} className="p-4 hover:bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                      {getStatusIcon(feed)}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-gray-900 truncate">
-                          {feed.title}
-                        </h4>
-                        <p className="text-xs text-gray-500 truncate">
-                          {feed.url}
-                        </p>
-                      </div>
+              <div key={feed.id} className="source-row">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24 }}>
+                  {getStatusIcon(feed)}
+                </div>
+
+                <div className="source-name-col">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
+                    <span className="source-name-text">
+                      {feed.title}
+                    </span>
+                    <span className="pp-badge pp-badge-accent">
+                      {feed.category}
+                    </span>
+                  </div>
+                  <div className="source-url-text">
+                    {feed.url}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)' }}>
+                      {feed.total_items} items
                     </div>
-                    
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        {feed.category}
-                      </span>
-                      <span>{feed.total_items} items</span>
-                      <span>{feed.fetch_count} fetches</span>
-                      <span>Last: {formatDate(feed.last_fetched)}</span>
-                      {feed.error_count > 0 && (
-                        <span className="text-red-600">{feed.error_count} errors</span>
-                      )}
+                    <div style={{ fontSize: 10, color: 'var(--text3)' }}>
+                      Synced {formatDate(feed.last_fetched)}
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2 ml-4">
-                    <Checkbox
-                      checked={feed.active}
-                      onChange={() => toggleFeed(feed.id, feed.active)}
-                      label="Active"
-                    />
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div 
+                      onClick={() => toggleFeed(feed.id, feed.active)}
+                      style={{ 
+                        display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                        padding: '4px 10px', borderRadius: 20,
+                        background: feed.active ? 'var(--green-dim)' : 'var(--surface2)',
+                        border: `1px solid ${feed.active ? 'var(--green)' : 'var(--border)'}`,
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ 
+                        width: 6, height: 6, borderRadius: '50%', 
+                        background: feed.active ? 'var(--green)' : 'var(--text3)',
+                        boxShadow: feed.active ? '0 0 6px var(--green)' : 'none'
+                      }} />
+                      <span style={{ fontSize: 11, fontWeight: 600, color: feed.active ? 'var(--green)' : 'var(--text3)' }}>
+                        {feed.active ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
                     
                     <button
                       onClick={() => deleteFeed(feed.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                      title="Delete feed"
+                      className="pp-btn pp-btn-ghost"
+                      style={{ padding: 6, borderRadius: 8, border: 'none' }}
+                      title="Remove source"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 style={{ width: 16, height: 16 }} />
                     </button>
                   </div>
                 </div>
@@ -353,15 +443,23 @@ function RSSManager() {
       </div>
 
       {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="text-sm font-semibold text-blue-900 mb-2">How to get your 38 Inoreader sources:</h4>
-        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-          <li>Go to Inoreader → Settings → Import/Export</li>
-          <li>Click "Export subscriptions as OPML"</li>
-          <li>Save the .opml file to your computer</li>
-          <li>Use the "Import OPML" button above to upload it</li>
-          <li>All your 38 sources will be added automatically!</li>
-        </ol>
+      <div style={{
+        background: 'rgba(108,99,255,0.05)', 
+        border: '1px dashed var(--accent)',
+        borderRadius: 'var(--radius-lg)', 
+        padding: '20px',
+        display: 'flex',
+        gap: 16,
+      }}>
+        <div style={{ fontSize: 24, opacity: 0.6 }}>💡</div>
+        <div>
+          <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 8, textTransform: 'uppercase' }}>Onboarding Your Sources</h4>
+          <ol style={{ fontSize: 12, color: 'var(--text2)', display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 20 }}>
+            <li>Export your subscriptions from your current RSS reader as an **OPML file**.</li>
+            <li>Click **"Import OPML Bundle"** above and select the file.</li>
+            <li>Pulse Pro will automatically map and register all streams into the decision engine.</li>
+          </ol>
+        </div>
       </div>
     </div>
   );

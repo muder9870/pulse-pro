@@ -15,6 +15,7 @@ from .logging_utils import init_logging
 from .config import settings
 from .db.session import init_db, SessionLocal, get_db_health
 from .db.repositories.system_repository import SystemRepository
+from .db.repositories.keyword_repository import KeywordRepository
 from .main_pipeline import run_daily_pipeline
 from .notifications import notify_pipeline_run
 from .scheduler import SchedulerManager
@@ -38,6 +39,7 @@ from .api.routes.performance import performance_bp
 from .api.routes.export import export_bp
 from .api.routes.articles import articles_bp
 from .api.routes.podcast import podcast_bp
+from .api.routes.keywords import keywords_bp
 
 # Shared state
 from .api.state import pipeline_lock, pipeline_state
@@ -116,6 +118,7 @@ def create_app() -> Flask:
     app.register_blueprint(export_bp)
     app.register_blueprint(articles_bp)
     app.register_blueprint(podcast_bp)
+    app.register_blueprint(keywords_bp)
 
     # Metrics endpoint
     @app.route('/metrics')
@@ -125,6 +128,13 @@ def create_app() -> Flask:
 
     # Ensure schema exists
     init_db()
+
+    # Seed default keywords on first run (no-op if table already has rows)
+    _seed_db = SessionLocal()
+    try:
+        KeywordRepository(_seed_db).seed_defaults()
+    finally:
+        _seed_db.close()
 
     def _get_pref(key: str) -> str | None:
         db = SessionLocal()

@@ -108,9 +108,10 @@ export const useBundleSizeMonitor = () => {
     if ('performance' in window && 'memory' in performance) {
       const memoryInfo = performance.memory;
       
-      console.log('Memory usage:', {
-        usedJSHeapSize: `${(memoryInfo.usedJSHeapSize / 1048576).toFixed(2)} MB`,
-        totalJSHeapSize: `${(memoryInfo.totalJSHeapSize / 1048576).toFixed(2)} MB`,
+      if (import.meta.env.DEV) {
+        console.log('Memory usage:', {
+          usedJSHeapSize: `${(memoryInfo.usedJSHeapSize / 1048576).toFixed(2)} MB`,
+          totalJSHeapSize: `${(memoryInfo.totalJSHeapSize / 1048576).toFixed(2)} MB`,
         jsHeapSizeLimit: `${(memoryInfo.jsHeapSizeLimit / 1048576).toFixed(2)} MB`
       });
     }

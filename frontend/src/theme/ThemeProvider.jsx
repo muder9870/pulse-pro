@@ -112,6 +112,22 @@ export const ThemeProvider = ({ children, defaultTheme }) => {
     root.style.setProperty('--color-text-secondary', colors.text.secondary[themeMode]);
     root.style.setProperty('--color-border', colors.border[themeMode]);
 
+    // T7: Bridge --color-* to Pulse shell vars for unified theming
+    // This ensures Button.jsx and all shell components use the same visual language
+    // regardless of which token layer they consume (--color-* vs --accent/--surface)
+    // Per DESIGN_SYSTEM_GUIDE.md § 2.2: Map --color-* to Pulse tokens
+    root.style.setProperty('--color-primary', 'var(--accent)');
+    root.style.setProperty('--color-secondary', 'var(--accent2)');
+    root.style.setProperty('--color-success', 'var(--teal)');
+    root.style.setProperty('--color-danger', 'var(--red)');
+    root.style.setProperty('--color-warning', 'var(--amber)');
+    root.style.setProperty('--color-info', 'var(--accent)');
+    root.style.setProperty('--color-background', 'var(--bg)');
+    root.style.setProperty('--color-surface', 'var(--surface)');
+    root.style.setProperty('--color-text-primary', 'var(--text)');
+    root.style.setProperty('--color-text-secondary', 'var(--text2)');
+    root.style.setProperty('--color-border', 'var(--border)');
+
     setActiveTheme(themeMode);
   }, [theme, setActiveTheme]);
 

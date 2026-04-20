@@ -41,6 +41,10 @@ CREATE TABLE IF NOT EXISTS processed_articles (
     llm_raw_output TEXT,
     llm_validation_error TEXT,
     llm_fallback INTEGER DEFAULT 0,
+    story_review_status VARCHAR(32) DEFAULT 'none',
+    content_approved BOOLEAN DEFAULT FALSE,
+    pipeline_needs_review BOOLEAN DEFAULT FALSE,
+    ready_to_schedule BOOLEAN DEFAULT FALSE,
     CONSTRAINT uq_processed_articles_raw_article_id UNIQUE (raw_article_id)
 );
 

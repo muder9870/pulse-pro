@@ -1,16 +1,25 @@
 import React, { useState, useCallback } from 'react';
-import Input from './ui/Input';
-import Button from './ui/Button';
-import Badge from './ui/Badge';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSources } from '../hooks/useStories';
-import { Search, Filter, X, ChevronDown, Calendar, Tag, Globe, SlidersHorizontal } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
-const FilterBar = ({ filters = {}, onFilterChange, onRefresh, isLoading = false }) => {
+const sel = {
+  background: 'var(--surface2)',
+  border: '1px solid var(--border)',
+  borderRadius: 6,
+  padding: '5px 10px',
+  color: 'var(--text)',
+  fontSize: 12,
+  fontFamily: 'var(--font-body)',
+  outline: 'none',
+  cursor: 'pointer',
+  width: '100%',
+};
+
+const FilterBar = ({ filters = {}, onFilterChange }) => {
   const { data: sources = [] } = useSources();
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [searchValue, setSearchValue] = useState(filters.search || '');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const debouncedSearch = useDebounce(searchValue, 300);
 
@@ -20,187 +29,121 @@ const FilterBar = ({ filters = {}, onFilterChange, onRefresh, isLoading = false 
     }
   }, [debouncedSearch]);
 
-  const handleFilterChange = useCallback((key, value) => {
+  const set = useCallback((key, value) => {
     onFilterChange?.({ ...filters, [key]: value });
   }, [filters, onFilterChange]);
 
-  const handleClearAll = useCallback(() => {
+  const clearAll = useCallback(() => {
     setSearchValue('');
     onFilterChange?.({ source: '', scoreRange: '', dateRange: '', hasContent: false, analyzed: false, deepDive: false, search: '' });
   }, [onFilterChange]);
 
-  const hasActiveFilters = filters.source || filters.scoreRange || filters.dateRange || filters.hasContent || filters.analyzed || filters.deepDive || filters.search;
-
+  const hasActive = filters.source || filters.scoreRange || filters.dateRange || filters.hasContent || filters.analyzed || filters.deepDive || filters.search;
   const sourceList = Array.isArray(sources) ? sources : [];
 
   return (
-    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 space-y-4">
-      {/* Mobile Filter Toggle */}
-      <div className="flex items-center gap-2 lg:hidden">
-        <Input
-          type="text"
-          placeholder="Search stories..."
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-          className="flex-1"
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowMobileFilters(!showMobileFilters)}
-          icon={SlidersHorizontal}
-        >
-          Filters
-          {hasActiveFilters && (
-            <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-600 text-white text-xs rounded-full">
-              {Object.values(filters).filter(Boolean).length}
-            </span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Row 1: search + source + score + date + clear */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Search */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', flex: '1 1 160px', minWidth: 140 }}>
+          <Search style={{ width: 12, height: 12, color: 'var(--text3)', flexShrink: 0 }} />
+          <input
+            type="text"
+            placeholder="Search…"
+            value={searchValue}
+            onChange={e => setSearchValue(e.target.value)}
+            style={{ background: 'none', border: 'none', outline: 'none', color: 'var(--text)', fontSize: 12, fontFamily: 'var(--font-body)', width: '100%' }}
+          />
+          {searchValue && (
+            <button onClick={() => setSearchValue('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 0 }}>
+              <X style={{ width: 11, height: 11 }} />
+            </button>
           )}
-        </Button>
-      </div>
-
-      {/* Desktop Filters / Mobile Expanded */}
-      <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block`}>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 hidden lg:block">
-            <Input
-              type="text"
-              placeholder="Search stories..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              fullWidth
-            />
-          </div>
-
-          <div className="w-full sm:w-48">
-            <select
-              value={filters.source || ''}
-              onChange={(e) => handleFilterChange('source', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Sources</option>
-              {sourceList.map(source => (
-                <option key={source.name} value={source.name}>
-                  {source.name} ({source.count})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="w-full sm:w-40">
-            <select
-              value={filters.scoreRange || ''}
-              onChange={(e) => handleFilterChange('scoreRange', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Any Score</option>
-              <option value="85-100">High (85-100)</option>
-              <option value="70-84">Medium (70-84)</option>
-              <option value="0-69">Low (0-69)</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              icon={Filter}
-            >
-              Advanced
-              <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-            </Button>
-
-            {hasActiveFilters && (
-              <Button variant="outline" size="sm" onClick={handleClearAll} icon={X}>
-                Clear
-              </Button>
-            )}
-
-            <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} icon={Search} />
-          </div>
         </div>
+
+        {/* Source */}
+        <select value={filters.source || ''} onChange={e => set('source', e.target.value)} style={{ ...sel, flex: '0 0 140px' }}>
+          <option value="">All Sources</option>
+          {sourceList.map(s => <option key={s.name} value={s.name}>{s.name} ({s.count})</option>)}
+        </select>
+
+        {/* Score */}
+        <select value={filters.scoreRange || ''} onChange={e => set('scoreRange', e.target.value)} style={{ ...sel, flex: '0 0 130px' }}>
+          <option value="">Any Score</option>
+          <option value="85-100">High (85-100)</option>
+          <option value="70-84">Medium (70-84)</option>
+          <option value="0-69">Low (0-69)</option>
+        </select>
+
+        {/* Date */}
+        <select value={filters.dateRange || ''} onChange={e => set('dateRange', e.target.value)} style={{ ...sel, flex: '0 0 120px' }}>
+          <option value="">Any Time</option>
+          <option value="today">Today</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+        </select>
+
+        {/* Advanced toggle */}
+        <button
+          onClick={() => setShowAdvanced(v => !v)}
+          style={{ padding: '5px 10px', borderRadius: 6, border: `1px solid ${showAdvanced ? 'var(--accent)' : 'var(--border)'}`, background: showAdvanced ? 'var(--accent-glow)' : 'transparent', color: showAdvanced ? 'var(--accent)' : 'var(--text2)', fontSize: 11, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}
+        >
+          More {showAdvanced ? '▴' : '▾'}
+        </button>
+
+        {hasActive && (
+          <button
+            onClick={clearAll}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--red)', background: 'var(--red-dim)', color: 'var(--red)', fontSize: 11, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            <X style={{ width: 11, height: 11 }} /> Clear
+          </button>
+        )}
       </div>
 
-      {/* Active Filters */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Active:</span>
-          {filters.source && (
-            <Badge variant="secondary">
-              <Globe className="w-3 h-3 mr-1 inline" />{filters.source}
-              <button onClick={() => handleFilterChange('source', '')} className="ml-1"><X className="w-3 h-3 inline" /></button>
-            </Badge>
-          )}
-          {filters.scoreRange && (
-            <Badge variant="secondary">
-              Score: {filters.scoreRange}
-              <button onClick={() => handleFilterChange('scoreRange', '')} className="ml-1"><X className="w-3 h-3 inline" /></button>
-            </Badge>
-          )}
-          {filters.hasContent && (
-            <Badge variant="secondary">
-              Has Content
-              <button onClick={() => handleFilterChange('hasContent', false)} className="ml-1"><X className="w-3 h-3 inline" /></button>
-            </Badge>
-          )}
-          {filters.analyzed && (
-            <Badge variant="secondary">
-              Analyzed
-              <button onClick={() => handleFilterChange('analyzed', false)} className="ml-1"><X className="w-3 h-3 inline" /></button>
-            </Badge>
-          )}
+      {/* Row 2: advanced checkboxes */}
+      {showAdvanced && (
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+          {[
+            { key: 'hasContent', label: 'Has Content' },
+            { key: 'analyzed',   label: 'Analyzed' },
+            { key: 'deepDive',   label: 'Deep Dive' },
+          ].map(item => (
+            <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text2)', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={filters[item.key] || false}
+                onChange={e => set(item.key, e.target.checked)}
+                style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
+              />
+              {item.label}
+            </label>
+          ))}
         </div>
       )}
 
-      {/* Advanced Filters */}
-      {showAdvanced && (
-        <div className="border-t border-gray-200 dark:border-slate-700 pt-4 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date Range</label>
-              <select
-                value={filters.dateRange || ''}
-                onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Any Time</option>
-                <option value="today">Today</option>
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.hasContent || false}
-                onChange={(e) => handleFilterChange('hasContent', e.target.checked)}
-                className="rounded border-gray-300 dark:border-slate-600"
-              />
-              Has Generated Content
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.analyzed || false}
-                onChange={(e) => handleFilterChange('analyzed', e.target.checked)}
-                className="rounded border-gray-300 dark:border-slate-600"
-              />
-              Analyzed
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.deepDive || false}
-                onChange={(e) => handleFilterChange('deepDive', e.target.checked)}
-                className="rounded border-gray-300 dark:border-slate-600"
-              />
-              Deep Dive
-            </label>
-          </div>
+      {/* Active filter chips */}
+      {hasActive && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {filters.source && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'var(--accent-glow)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>
+              {filters.source}
+              <button onClick={() => set('source', '')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', padding: 0 }}><X style={{ width: 10, height: 10 }} /></button>
+            </span>
+          )}
+          {filters.scoreRange && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'var(--amber-dim)', color: 'var(--amber)', border: '1px solid var(--amber)' }}>
+              Score: {filters.scoreRange}
+              <button onClick={() => set('scoreRange', '')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--amber)', padding: 0 }}><X style={{ width: 10, height: 10 }} /></button>
+            </span>
+          )}
+          {filters.hasContent && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'var(--teal-dim)', color: 'var(--teal)', border: '1px solid var(--teal)' }}>
+              Has Content
+              <button onClick={() => set('hasContent', false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--teal)', padding: 0 }}><X style={{ width: 10, height: 10 }} /></button>
+            </span>
+          )}
         </div>
       )}
     </div>

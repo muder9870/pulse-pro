@@ -2,19 +2,19 @@ import React from 'react';
 import { Clock } from 'lucide-react';
 
 const PLATFORMS = [
-  { id: 'twitter', label: 'Twitter / X', implemented: false },  // Coming Soon
-  { id: 'threads', label: 'Threads', implemented: false },
-  { id: 'linkedin', label: 'LinkedIn', implemented: false },  // Coming Soon
-  { id: 'reddit', label: 'Reddit', implemented: false },
-  { id: 'facebook', label: 'Facebook', implemented: false },
-  { id: 'instagram', label: 'Instagram', implemented: false },
-  { id: 'medium', label: 'Medium', implemented: true },
-  { id: 'telegram', label: 'Telegram', implemented: true },
-  { id: 'discord', label: 'Discord', implemented: true },
-  { id: 'newsletter', label: 'Newsletter', implemented: true },
-  { id: 'blog', label: 'Blog', implemented: true },
-  { id: 'tiktok', label: 'TikTok', implemented: false },
-  { id: 'youtube', label: 'YouTube', implemented: false },
+  { id: 'twitter',   label: 'Twitter / X', implemented: true },
+  { id: 'linkedin',  label: 'LinkedIn',    implemented: true },
+  { id: 'blog',      label: 'Blog / Article', implemented: true },
+  { id: 'instagram', label: 'Instagram',   implemented: true },
+  { id: 'facebook',  label: 'Facebook',    implemented: true },
+  { id: 'reddit',    label: 'Reddit',      implemented: true },
+  { id: 'youtube',   label: 'YouTube',     implemented: true },
+  { id: 'threads',   label: 'Threads',     implemented: true },
+  { id: 'medium',    label: 'Medium',      implemented: false },
+  { id: 'telegram',  label: 'Telegram',    implemented: false },
+  { id: 'discord',   label: 'Discord',     implemented: false },
+  { id: 'newsletter', label: 'Newsletter',  implemented: false },
+  { id: 'tiktok',    label: 'TikTok',      implemented: false },
 ];
 
 // Unimplemented platforms list for Coming Soon section
