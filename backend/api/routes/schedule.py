@@ -68,6 +68,7 @@ def delete_scheduled_post(post_id):
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
+@schedule_bp.post("/api/schedule/queue")
 @limiter.limit("20 per minute")
 def queue_scheduled_post():
     """Queue an article for publishing on a specific platform at a scheduled time.
