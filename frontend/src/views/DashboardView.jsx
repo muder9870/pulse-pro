@@ -8,6 +8,7 @@ import FeatureErrorBoundary from '../components/FeatureErrorBoundary';
 import PipelineStatus from '../components/PipelineStatus';
 import { useNavigate } from 'react-router-dom';
 import { useStories as useStoriesContext } from '../context/StoriesContext';
+import { apiFetch } from '../api/client';
 
 /* ─── Pulse Pro token helpers ─────────────────────────────────────── */
 const card = {
@@ -20,42 +21,6 @@ const SectionLabel = ({ children, sub }) => (
   <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
     {children}
     {sub && <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)' }}>{sub}</span>}
-  </div>
-);
-
-/* ─── KPI Card ─────────────────────────────────────────────────────── */
-const KpiCard = ({ label, value, trend, trendUp, sub, onClick }) => (
-  <div
-    onClick={onClick}
-    style={{ 
-      ...card, 
-      padding: '16px 18px', 
-      transition: 'all 0.15s', 
-      cursor: onClick ? 'pointer' : 'default' 
-    }}
-    onMouseEnter={e => {
-      e.currentTarget.style.borderColor = 'var(--border2)';
-      if (onClick) e.currentTarget.style.transform = 'translateY(-1px)';
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.borderColor = 'var(--border)';
-      if (onClick) e.currentTarget.style.transform = 'translateY(0)';
-    }}
-  >
-    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 8 }}>
-      {label}
-    </div>
-    <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>
-      {value}
-    </div>
-    {trend && (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 11, color: trendUp ? 'var(--green)' : 'var(--red)' }}>
-        {trendUp ? '↑' : '↓'} {trend}
-      </div>
-    )}
-    {sub && (
-      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>{sub}</div>
-    )}
   </div>
 );
 
@@ -121,6 +86,32 @@ const DashboardView = ({ handleRunPipeline }) => {
   // Get data from context (T10 refactoring)
   const { stories = [], loading } = useStoriesContext();
 
+  // Fetch analytics data to match Analytics page
+  const [analyticsStats, setAnalyticsStats] = React.useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await apiFetch('/analytics');
+        if (res.ok) {
+          const data = await res.json();
+          setAnalyticsStats({
+            total: data.total_articles || 0,
+            analyzed: data.processed_articles || 0,
+            avgScore: Math.round(data.avg_viral_score || 0),
+            withContent: Object.values(data.content_generation?.by_platform || {}).reduce((a, b) => a + b, 0)
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch analytics:', err);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
+
   // Setup Guide dismiss state (Phase 1: T1.2)
   const [setupDismissed, setSetupDismissed] = React.useState(() => {
     return localStorage.getItem('pulse-setup-dismissed') === 'true';
@@ -136,10 +127,11 @@ const DashboardView = ({ handleRunPipeline }) => {
     [stories]
   );
 
-  const totalArticles = stories.length;
-  const analyzed = stories.filter(s => s.summary).length;
-  const contentReady = stories.filter(s => s.posts?.length > 0).length;
-  const qualityPct = totalArticles > 0 ? Math.round((analyzed / totalArticles) * 100) : 0;
+  const totalArticles = analyticsStats?.total || stories.length;
+  const analyzed = analyticsStats?.analyzed || stories.filter(s => s.summary).length;
+  const contentReady = analyticsStats?.withContent || stories.filter(s => s.posts?.length > 0).length;
+  const qualityPct = analyticsStats?.avgScore || (totalArticles > 0 ? Math.round((analyzed / totalArticles) * 100) : 0);
+  const coveragePct = totalArticles > 0 ? Math.round((analyzed / totalArticles) * 100) : 0;
 
   const quickNav = [
     { id: 'articles',  label: 'Production Feed',    icon: BookOpen,  desc: `${contentReady} ready to publish` },
@@ -153,81 +145,6 @@ const DashboardView = ({ handleRunPipeline }) => {
   return (
     <FeatureErrorBoundary name="Dashboard">
       <div style={{ paddingBottom: 48 }}>
-
-        {/* ── Focus Banner ── */}
-        <section className="dashboard-hero">
-          <div className="dashboard-hero-grid">
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12 }}>
-                Front Page Overview
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--text)', lineHeight: 1.05, marginBottom: 10 }}>
-                Command Center
-              </div>
-              <div style={{ fontSize: 14, color: 'var(--text2)', maxWidth: 620, lineHeight: 1.6 }}>
-                One page for intake health, launch readiness, and the next move across your publishing system.
-              </div>
-
-              <div className="dashboard-hero-metrics">
-                <div className="dashboard-hero-metric">
-                  <span className="dashboard-hero-metric-value">{totalArticles}</span>
-                  <span className="dashboard-hero-metric-label">tracked stories</span>
-                </div>
-                <div className="dashboard-hero-metric">
-                  <span className="dashboard-hero-metric-value">{qualityPct}%</span>
-                  <span className="dashboard-hero-metric-label">analysis coverage</span>
-                </div>
-                <div className="dashboard-hero-metric">
-                  <span className="dashboard-hero-metric-value">{contentReady}</span>
-                  <span className="dashboard-hero-metric-label">ready to publish</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="dashboard-hero-actions">
-              <button
-                onClick={contentReady > 0 ? () => navigate('/articles') : handleRunPipeline}
-                className="pp-btn pp-btn-primary"
-                style={{ justifyContent: 'center' }}
-              >
-                {contentReady > 0 ? 'Review Launch Queue' : 'Run Pipeline'}
-              </button>
-              <button
-                onClick={() => navigate(contentReady > 0 ? '/calendar' : '/settings')}
-                className="pp-btn"
-                style={{ justifyContent: 'center' }}
-              >
-                {contentReady > 0 ? 'Open Calendar' : 'Open Settings'}
-              </button>
-              <div className="dashboard-hero-note">
-                <span className="pp-badge pp-badge-accent">Priority</span>
-                <span>
-                  {contentReady > 0
-                    ? `${contentReady} article${contentReady !== 1 ? 's are' : ' is'} waiting for publication review.`
-                    : 'No launch-ready content yet. Run the pipeline to refresh the front of the queue.'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {contentReady > 0 && (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '3px solid var(--accent)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ fontSize: 20 }}>🚀</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 2 }}>Today's Focus</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
-                {contentReady} article{contentReady !== 1 ? 's are' : ' is'} ready to launch. Publish them now to maximize reach.
-              </div>
-            </div>
-            <button
-              onClick={() => navigate('/articles')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}
-            >
-              Review & Launch →
-            </button>
-          </div>
-        )}
 
         {/* ── Setup Guide ── */}
         {!setupDismissed && (
@@ -270,35 +187,44 @@ const DashboardView = ({ handleRunPipeline }) => {
           <PipelineStatus />
         </div>
 
-        {/* ── KPI Cards ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 18 }}>
-          <KpiCard 
-            label="Intelligence Base" 
-            value={totalArticles} 
-            trend={`+${Math.min(12, totalArticles)} today`} 
-            trendUp 
-            onClick={() => navigate('/articles')}
-          />
-          <KpiCard 
-            label="AI Processed" 
-            value={analyzed} 
-            sub={`${qualityPct}% coverage`} 
-            trendUp 
-            onClick={() => navigate('/articles?filter=analyzed')}
-          />
-          <KpiCard 
-            label="Quality Index" 
-            value={`${qualityPct}%`} 
-            trend="needs more analysis" 
-            trendUp={qualityPct > 50} 
-            onClick={() => navigate('/analytics')}
-          />
-          <KpiCard 
-            label="Content Ready" 
-            value={contentReady} 
-            sub={contentReady > 0 ? `${contentReady} to publish` : 'Run pipeline'} 
-            onClick={() => contentReady > 0 ? navigate('/articles?filter=ready') : handleRunPipeline()}
-          />
+        {/* ── KPI Cards (Primary Metrics) - Matching Analytics Page ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
+          {[
+            { label: 'Intelligence Base', value: totalArticles,       trend: '↑ +12 today',   trendUp: true,  sub: 'Live feed', action: 'articles' },
+            { label: 'AI Processed',      value: analyzed,    trend: `↑ ${qualityPct}% coverage`, trendUp: true, sub: 'High accuracy', action: 'analyzed' },
+            { label: 'Quality Index',     value: `${qualityPct}%`, trend: qualityPct < 50 ? '↓ Run pipeline to improve' : '↑ Good', trendUp: qualityPct >= 50, sub: '', action: 'scores' },
+            { label: 'Content Ready',     value: contentReady, trend: '↑ +5 today',    trendUp: true,  sub: 'Generation ready', action: 'ready' },
+          ].map((item, i) => (
+            <div
+              key={i}
+              style={{ 
+                ...card, 
+                padding: '20px 22px',
+                transition: 'all 0.15s', 
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+              }}
+              onClick={() => {
+                if (item.action === 'articles') navigate('/articles');
+                else if (item.action === 'analyzed') navigate('/articles?filter=analyzed');
+                else if (item.action === 'scores') navigate('/articles');
+                else if (item.action === 'ready') navigate('/articles?filter=ready');
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--accent)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(108, 99, 255, 0.15)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--border)';
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 10 }}>{item.label}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>{item.value ?? 0}</div>
+              <div style={{ fontSize: 11, color: item.trendUp ? 'var(--green)' : 'var(--red)', marginTop: 8, fontWeight: 500 }}>{item.trend}</div>
+              {item.sub && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>{item.sub}</div>}
+            </div>
+          ))}
         </div>
 
         {/* ── Live Intelligence Feed ── */}

@@ -12,6 +12,7 @@ import { useStories, useSources } from './hooks/useStories';
 import { usePipeline } from './hooks/usePipeline';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from './store/appStore';
+import NotificationPanel from './components/NotificationPanel';
 import { apiFetch } from './api/client';
 import { usePipelineRun } from './hooks/usePipelineRun';
 import { useScheduleModal } from './hooks/useScheduleModal';
@@ -174,6 +175,26 @@ function AppContent() {
   const setBulkOperationState = useAppStore((s) => s.setBulkOperationState);
   const bulkOperationError = useAppStore((s) => s.bulkOperationError);
   const setBulkOperationError = useAppStore((s) => s.setBulkOperationError);
+  
+  // Notification system — from Zustand store
+  const notifications = useAppStore((s) => s.notifications);
+  const removeNotification = useAppStore((s) => s.removeNotification);
+  const addNotification = useAppStore((s) => s.addNotification);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+
+  // Add welcome notification on first load (for testing)
+  useEffect(() => {
+    const hasShownWelcome = sessionStorage.getItem('welcome-notification-shown');
+    if (!hasShownWelcome) {
+      addNotification({
+        type: 'info',
+        title: 'Welcome to AI Pulse Pro',
+        message: 'Notification system is active. You\'ll receive updates for pipeline runs, content generation, and more.',
+        timestamp: new Date().toISOString(),
+      });
+      sessionStorage.setItem('welcome-notification-shown', 'true');
+    }
+  }, [addNotification]);
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const dayOptions = [
@@ -269,8 +290,16 @@ function AppContent() {
         console.log('Pipeline finished. Invalidating stories cache...');
       }
       queryClient.invalidateQueries(['stories']);
+      
+      // Add notification for pipeline completion
+      addNotification({
+        type: 'success',
+        title: 'Pipeline Completed',
+        message: 'Successfully fetched and analyzed new articles',
+        timestamp: new Date().toISOString(),
+      });
     }
-  }, [pipelineStatus.stage, queryClient]);
+  }, [pipelineStatus.stage, queryClient, addNotification]);
 
   // Clear selection when navigating away from articles/dashboard
   useEffect(() => {
@@ -560,9 +589,23 @@ function AppContent() {
       // Show completion feedback (Requirements 4.3, 4.4, 10.3, 10.4, 10.5)
       if (failedArticles.length === 0) {
         toast.success(`Successfully generated content for ${successCount} article${successCount > 1 ? 's' : ''}!`);
+        // Add notification for successful content generation
+        addNotification({
+          type: 'success',
+          title: 'Content Generated',
+          message: `Successfully generated content for ${successCount} article${successCount > 1 ? 's' : ''}`,
+          timestamp: new Date().toISOString(),
+        });
       } else if (successCount > 0) {
         // Show success toast for successful articles
         toast.success(`Generated ${successCount} article${successCount > 1 ? 's' : ''} successfully`);
+        // Add notification for partial success
+        addNotification({
+          type: 'warning',
+          title: 'Content Generation Partial Success',
+          message: `Generated ${successCount} article${successCount > 1 ? 's' : ''}, but ${failedArticles.length} failed`,
+          timestamp: new Date().toISOString(),
+        });
         // Show error component with details of failed articles (Requirements 10.3, 10.4, 10.5)
         setBulkOperationError({
           isVisible: true,
@@ -574,6 +617,13 @@ function AppContent() {
           }
         });
       } else {
+        // Add notification for complete failure
+        addNotification({
+          type: 'error',
+          title: 'Content Generation Failed',
+          message: `Failed to generate content for ${failedArticles.length} article${failedArticles.length > 1 ? 's' : ''}`,
+          timestamp: new Date().toISOString(),
+        });
         // All articles failed - show error component (Requirements 10.3, 10.4, 10.5)
         setBulkOperationError({
           isVisible: true,
@@ -689,10 +739,24 @@ function AppContent() {
       if (failedArticles.length === 0) {
         // Show success toast and clear selection on completion (Requirement 5.4)
         toast.success(`Successfully scheduled ${successCount} article${successCount > 1 ? 's' : ''} for ${options.platform}!`);
+        // Add notification for successful scheduling
+        addNotification({
+          type: 'success',
+          title: 'Articles Scheduled',
+          message: `Successfully scheduled ${successCount} article${successCount > 1 ? 's' : ''} for ${options.platform}`,
+          timestamp: new Date().toISOString(),
+        });
         clearSelection();
       } else if (successCount > 0) {
         // Show success toast for successful articles
         toast.success(`Scheduled ${successCount} article${successCount > 1 ? 's' : ''} successfully`);
+        // Add notification for partial success
+        addNotification({
+          type: 'warning',
+          title: 'Scheduling Partial Success',
+          message: `Scheduled ${successCount} article${successCount > 1 ? 's' : ''}, but ${failedArticles.length} failed`,
+          timestamp: new Date().toISOString(),
+        });
         // Show error component with details of failed articles (Requirements 10.3, 10.4, 10.5)
         setBulkOperationError({
           isVisible: true,
@@ -704,6 +768,13 @@ function AppContent() {
           }
         });
       } else {
+        // Add notification for complete failure
+        addNotification({
+          type: 'error',
+          title: 'Scheduling Failed',
+          message: `Failed to schedule ${failedArticles.length} article${failedArticles.length > 1 ? 's' : ''}`,
+          timestamp: new Date().toISOString(),
+        });
         // All articles failed - show error component (Requirements 10.3, 10.4, 10.5)
         setBulkOperationError({
           isVisible: true,
@@ -810,9 +881,23 @@ function AppContent() {
       // Show completion feedback (Requirement 6.5, 10.3, 10.4, 10.5)
       if (failedArticles.length === 0) {
         toast.success(`Successfully added tags to ${successCount} article${successCount > 1 ? 's' : ''}!`);
+        // Add notification for successful tagging
+        addNotification({
+          type: 'success',
+          title: 'Tags Added',
+          message: `Successfully added tags to ${successCount} article${successCount > 1 ? 's' : ''}`,
+          timestamp: new Date().toISOString(),
+        });
       } else if (successCount > 0) {
         // Show success toast for successful articles
         toast.success(`Tagged ${successCount} article${successCount > 1 ? 's' : ''} successfully`);
+        // Add notification for partial success
+        addNotification({
+          type: 'warning',
+          title: 'Tagging Partial Success',
+          message: `Tagged ${successCount} article${successCount > 1 ? 's' : ''}, but ${failedArticles.length} failed`,
+          timestamp: new Date().toISOString(),
+        });
         // Show error component with details of failed articles (Requirements 10.3, 10.4, 10.5)
         setBulkOperationError({
           isVisible: true,
@@ -824,6 +909,13 @@ function AppContent() {
           }
         });
       } else {
+        // Add notification for complete failure
+        addNotification({
+          type: 'error',
+          title: 'Tagging Failed',
+          message: `Failed to add tags to ${failedArticles.length} article${failedArticles.length > 1 ? 's' : ''}`,
+          timestamp: new Date().toISOString(),
+        });
         // All articles failed - show error component (Requirements 10.3, 10.4, 10.5)
         setBulkOperationError({
           isVisible: true,
@@ -897,9 +989,24 @@ function AppContent() {
 
       // Show success toast (Task 7.2)
       toast.success(`Successfully exported ${articleIds.length} article${articleIds.length > 1 ? 's' : ''}!`);
+      
+      // Add notification for successful export
+      addNotification({
+        type: 'success',
+        title: 'Articles Exported',
+        message: `Successfully exported ${articleIds.length} article${articleIds.length > 1 ? 's' : ''} to Markdown`,
+        timestamp: new Date().toISOString(),
+      });
 
     } catch (error) {
       console.error('Bulk export error:', error);
+      // Add notification for export failure
+      addNotification({
+        type: 'error',
+        title: 'Export Failed',
+        message: `Failed to export ${articleIds.length} article${articleIds.length > 1 ? 's' : ''}: ${error.message}`,
+        timestamp: new Date().toISOString(),
+      });
       // Show error toast if export fails (Task 7.2, Requirements 10.3, 10.4, 10.5)
       const failedArticles = articleIds.map(id => {
         const article = stories.find(s => s.id === id);
@@ -1107,9 +1214,24 @@ function AppContent() {
 
       // Show success toast with count of deleted articles (Requirement 9.4)
       toast.success(`Successfully deleted ${articleIds.length} article${articleIds.length > 1 ? 's' : ''}!`);
+      
+      // Add notification for successful deletion
+      addNotification({
+        type: 'success',
+        title: 'Articles Deleted',
+        message: `Successfully deleted ${articleIds.length} article${articleIds.length > 1 ? 's' : ''}`,
+        timestamp: new Date().toISOString(),
+      });
 
     } catch (error) {
       console.error('Bulk delete error:', error);
+      // Add notification for deletion failure
+      addNotification({
+        type: 'error',
+        title: 'Deletion Failed',
+        message: `Failed to delete ${articleIds.length} article${articleIds.length > 1 ? 's' : ''}: ${error.message}`,
+        timestamp: new Date().toISOString(),
+      });
       // Show error component if deletion fails (Requirement 9.5, 10.3, 10.4, 10.5)
       const failedArticles = articleIds.map(id => {
         const article = stories.find(s => s.id === id);
@@ -1359,6 +1481,92 @@ function AppContent() {
               <Calendar style={{ width: 16, height: 16, opacity: 0.7 }} />
             </button>
 
+            <button
+              onClick={() => setNotificationOpen(true)}
+              title="Notifications"
+              className="hidden sm:flex items-center justify-center flex-shrink-0"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text2)',
+                cursor: 'pointer',
+                position: 'relative',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              {notifications.length > 0 && (
+                <span style={{ 
+                  position: 'absolute', 
+                  top: -4, 
+                  right: -4, 
+                  width: 16, 
+                  height: 16, 
+                  borderRadius: '50%', 
+                  background: 'var(--red)', 
+                  color: '#fff', 
+                  fontSize: 9, 
+                  fontWeight: 700, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  border: '2px solid var(--bg)'
+                }}>
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                // Export stories data as JSON
+                const dataStr = JSON.stringify(stories, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `pulse-pro-export-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                toast.success('Data exported successfully');
+                // Add notification for export
+                addNotification({
+                  type: 'success',
+                  title: 'Data Exported',
+                  message: `Exported ${stories.length} articles to JSON`,
+                  timestamp: new Date().toISOString(),
+                });
+              }}
+              title="Export Data"
+              className="hidden sm:flex items-center justify-center flex-shrink-0"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text2)',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </button>
+
             {currentView !== 'dashboard' && (
               <button
                 onClick={handleExport}
@@ -1556,6 +1764,14 @@ function AppContent() {
         itemCount={bulkConfirmation.itemCount}
         onConfirm={bulkConfirmation.onConfirm}
         onCancel={() => setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null })}
+      />
+
+      {/* Notification Panel */}
+      <NotificationPanel
+        isOpen={notificationOpen}
+        onClose={() => setNotificationOpen(false)}
+        notifications={notifications}
+        onRemoveNotification={removeNotification}
       />
     </div>
   );
