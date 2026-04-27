@@ -80,6 +80,24 @@ export default function MediaGallery() {
     finally { setIsGenerating(false); }
   };
 
+  const handleGenerateQuoteCard = async () => {
+    if (!selectedStoryId) return;
+    setIsGenerating(true);
+    try {
+      const res = await apiFetch('/media/generate-quote-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ article_id: selectedStoryId })
+      });
+      if (res.ok) {
+        toast.success('Quote card generated successfully!');
+        await fetchAllAssets();
+        setActiveTab('gallery');
+      } else { toast.error('Failed to generate quote card'); }
+    } catch (err) { toast.error('Quote card generation failed: ' + err.message); }
+    finally { setIsGenerating(false); }
+  };
+
   const handleGenerateVideoScript = async (platform) => {
     if (!selectedStoryId) return;
     setIsGenerating(true);
@@ -99,7 +117,13 @@ export default function MediaGallery() {
     finally { setIsGenerating(false); }
   };
 
-  const filteredAssets = filter === 'all' ? assets : assets.filter(a => a.asset_type === filter);
+  const filteredAssets = filter === 'all' 
+    ? assets 
+    : filter === 'quote_card'
+    ? assets.filter(a => a.asset_type === 'image' && a.media_type === 'quote-card')
+    : filter === 'image'
+    ? assets.filter(a => a.asset_type === 'image' && a.media_type !== 'quote-card')
+    : assets.filter(a => a.asset_type === filter);
 
   const handleMediaCardClick = (asset) => {
     setSelectedAsset(asset);
@@ -288,25 +312,24 @@ export default function MediaGallery() {
               </button>
             </div>
 
-            {/* Video Scripts */}
+            {/* Quote Card */}
             <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px' }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Video style={{ width: 13, height: 13, color: 'var(--amber)' }} /> Short-form Script
+                <Sparkles style={{ width: 13, height: 13, color: 'var(--amber)' }} /> Quote Card
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text2)', marginBottom: 10 }}>Generate 60s viral scripts for social video platforms.</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {['tiktok', 'reels', 'shorts'].map(platform => (
-                  <button
-                    key={platform}
-                    onClick={() => handleGenerateVideoScript(platform)}
-                    disabled={isGenerating || !selectedStoryId}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 0', borderRadius: 6, border: '1px solid var(--border2)', background: 'var(--surface2)', color: !selectedStoryId ? 'var(--text3)' : 'var(--text)', fontSize: 11, fontWeight: 500, cursor: !selectedStoryId ? 'not-allowed' : 'pointer', textTransform: 'capitalize' }}
-                  >
-                    Generate {platform} Script
-                  </button>
-                ))}
-              </div>
+              <div style={{ fontSize: 10, color: 'var(--text2)', marginBottom: 10 }}>Generate a styled quote card with article text. No API key required.</div>
+              <button
+                onClick={handleGenerateQuoteCard}
+                disabled={isGenerating || !selectedStoryId}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 0', borderRadius: 6, border: '1px solid var(--amber)', background: !selectedStoryId ? 'var(--surface2)' : 'var(--amber)', color: !selectedStoryId ? 'var(--text3)' : '#fff', fontSize: 11, fontWeight: 500, cursor: !selectedStoryId ? 'not-allowed' : 'pointer' }}
+              >
+                {isGenerating ? <RefreshCw style={{ width: 12, height: 12 }} className="animate-spin" /> : <Sparkles style={{ width: 12, height: 12 }} />}
+                Generate Quote Card
+              </button>
             </div>
+
+            {/* Video Scripts - REMOVED per user request */}
+            {/* TikTok, Reels, Shorts scripts removed */}
           </div>
         </div>
       ) : (
@@ -315,9 +338,9 @@ export default function MediaGallery() {
           {/* Filter tabs */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 14, alignItems: 'center' }}>
             {[
-              { key: 'all',          label: `All Assets (${assets.length})` },
-              { key: 'image',        label: 'Images' },
-              { key: 'video_script', label: 'Video Scripts' },
+              { key: 'all',        label: `All Assets (${assets.length})` },
+              { key: 'image',      label: 'Images' },
+              { key: 'quote_card', label: 'Quote Cards' },
             ].map(t => (
               <button key={t.key} onClick={() => setFilter(t.key)} style={btn(filter === t.key)}>{t.label}</button>
             ))}
@@ -406,15 +429,15 @@ export default function MediaGallery() {
           ) : filteredAssets.length === 0 ? (
             <div style={{ ...card, padding: '60px 20px', textAlign: 'center' }}>
               <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--surface2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 24 }}>🖼</div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>No assets yet</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>No media assets yet</div>
               <div style={{ fontSize: 12, color: 'var(--text2)', maxWidth: 280, margin: '0 auto 16px' }}>
-                Generate visual assets or video scripts for your articles. Enable image generation in Settings first.
+                Generate AI images or quote cards for your articles to use in social media and content marketing.
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, maxWidth: 400, margin: '20px auto 0', textAlign: 'left' }}>
                 {[
-                  { num: '1️⃣', title: 'Enable in Settings', desc: 'Turn on image generation feature flag' },
-                  { num: '2️⃣', title: 'Pick an Article', desc: 'Select from your article feed' },
-                  { num: '3️⃣', title: 'Generate & Download', desc: 'AI creates matching visuals' },
+                  { num: '1️⃣', title: 'Select Article', desc: 'Choose from your processed stories' },
+                  { num: '2️⃣', title: 'Generate Asset', desc: 'Create AI image or quote card' },
+                  { num: '3️⃣', title: 'Download & Share', desc: 'Use in your content marketing' },
                 ].map(step => (
                   <div key={step.num} style={{ padding: 10, background: 'var(--surface2)', borderRadius: 8, border: '1px solid var(--border)' }}>
                     <div style={{ fontSize: 16, marginBottom: 4 }}>{step.num}</div>

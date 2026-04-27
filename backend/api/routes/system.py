@@ -17,6 +17,60 @@ def health():
     """Simple health check endpoint."""
     return {"status": "ok"}, 200
 
+@system_bp.get("/api/system/feature-flags")
+def get_feature_flags():
+    """Get all feature flags."""
+    from backend.feature_flags import feature_flags
+    return jsonify({
+        "flags": feature_flags.get_all_flags(),
+        "disabled": feature_flags.get_disabled_features()
+    }), 200
+
+
+@system_bp.post("/api/system/feature-flags")
+def update_feature_flags():
+    """Update feature flags dynamically (runtime only, not persisted to .env)."""
+    from backend.feature_flags import FeatureFlags
+    
+    data = request.json or {}
+    updates = data.get("flags", {})
+    
+    if not updates:
+        return jsonify({"error": "No flags provided"}), 400
+    
+    # Update feature flags in memory
+    updated = []
+    for flag_name, enabled in updates.items():
+        flag_attr = flag_name.upper().replace("_GENERATION", "").replace("_", "_")
+        if flag_name == "audio_generation":
+            FeatureFlags.FEATURE_AUDIO = bool(enabled)
+            updated.append(flag_name)
+        elif flag_name == "image_generation":
+            FeatureFlags.FEATURE_IMAGE = bool(enabled)
+            updated.append(flag_name)
+        elif flag_name == "quote_card_generation":
+            FeatureFlags.FEATURE_QUOTE_CARD = bool(enabled)
+            updated.append(flag_name)
+        elif flag_name == "content_generation":
+            FeatureFlags.FEATURE_CONTENT_GENERATION = bool(enabled)
+            updated.append(flag_name)
+        elif flag_name == "blog_generation":
+            FeatureFlags.FEATURE_BLOG_GENERATION = bool(enabled)
+            updated.append(flag_name)
+        elif flag_name == "research_analysis":
+            FeatureFlags.FEATURE_RESEARCH_ANALYSIS = bool(enabled)
+            updated.append(flag_name)
+        elif flag_name == "hashtag_recommendations":
+            FeatureFlags.FEATURE_HASHTAG_RECOMMENDATIONS = bool(enabled)
+            updated.append(flag_name)
+    
+    return jsonify({
+        "message": f"Updated {len(updated)} feature flag(s)",
+        "updated": updated,
+        "flags": FeatureFlags.get_all_flags()
+    }), 200
+
+
 @system_bp.get("/api/system/health")
 def system_health_route():
     """Comprehensive system health endpoint with circuit breaker state and feature flags."""

@@ -213,6 +213,10 @@ class ImageEngine:
     ) -> None:
         db = SessionLocal()
         try:
+            # article_id is processed_article_id, save it directly
             MediaRepository(db).save_image(article_id, image_url, local_path, media_type, prompt)
+        except Exception as e:
+            logger.error(f"Failed to save image to database: {e}")
+            # Don't raise - image file is already saved, just log the DB error
         finally:
             db.close()

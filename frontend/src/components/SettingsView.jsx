@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     DollarSign, Activity, Share2, Chrome, Rss, UserCheck,
-    Settings, ChevronRight, Shield, Zap, Layout, Terminal, Tag
+    Settings, ChevronRight, Shield, Zap, Layout, Terminal, Tag, Flag
 } from 'lucide-react';
 
 /* Import setting modules directly */
@@ -16,6 +16,7 @@ import ThemeSelector from './ThemeSelector';
 import AdvancedTools from './AdvancedTools';
 import KeywordsManager from './KeywordsManager';
 import LLMProviders from './LLMProviders';
+import FeatureFlagsManager from './FeatureFlagsManager';
 
 const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -106,6 +107,14 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
                     iconEmoji: '❤',
                     iconBg: 'var(--green-dim)',
                     component: SystemHealth
+                },
+                {
+                    id: 'features',
+                    label: 'Feature Flags',
+                    icon: Flag,
+                    iconEmoji: '🚩',
+                    iconBg: 'var(--accent-glow)',
+                    component: FeatureFlagsManager
                 },
                 {
                     id: 'llm',
