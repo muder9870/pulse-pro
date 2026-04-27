@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
 import {
-    Terminal, RefreshCw, Download, Zap, Database, Activity,
+    Terminal, RefreshCw, Database, Activity,
     CheckCircle, AlertCircle, Clock, BarChart3, Cpu, Trash2,
-    Play, ChevronDown, ChevronUp, Key, ExternalLink
+    Play
 } from 'lucide-react';
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
@@ -101,40 +101,6 @@ function ResultBadge({ ok, text }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function AdvancedTools({ activeTheme }) {
-    // ── Pipeline ──────────────────────────────────────────────────────────────
-    const [pipelineStatus, setPipelineStatus] = useState(null);
-    const [pipelineRunning, setPipelineRunning] = useState(false);
-    const [pipelineMsg, setPipelineMsg] = useState(null);
-
-    const fetchPipelineStatus = async () => {
-        try {
-            const res = await apiFetch('/pipeline/status');
-            const data = await res.json();
-            setPipelineStatus(data);
-        } catch { /* silent */ }
-    };
-
-    useEffect(() => {
-        fetchPipelineStatus();
-        const t = setInterval(fetchPipelineStatus, 10000);
-        return () => clearInterval(t);
-    }, []);
-
-    const runPipeline = async () => {
-        setPipelineRunning(true);
-        setPipelineMsg(null);
-        try {
-            const res = await apiFetch('/pipeline/run', { method: 'POST' });
-            const data = await res.json();
-            setPipelineMsg({ ok: res.ok, text: data.message || (res.ok ? 'Pipeline started' : data.error) });
-        } catch (e) {
-            setPipelineMsg({ ok: false, text: e.message });
-        } finally {
-            setPipelineRunning(false);
-            setTimeout(fetchPipelineStatus, 2000);
-        }
-    };
-
     // ── Performance metrics ───────────────────────────────────────────────────
     const [perfMetrics, setPerfMetrics] = useState(null);
     const [perfLoading, setPerfLoading] = useState(false);
@@ -230,44 +196,27 @@ export default function AdvancedTools({ activeTheme }) {
         }
     };
 
-    // ── Export ────────────────────────────────────────────────────────────────
-    const [exportLoading, setExportLoading] = useState(false);
-    const [exportMsg, setExportMsg] = useState(null);
-
-    const runExport = async () => {
-        setExportLoading(true);
-        setExportMsg(null);
-        try {
-            // Use CSV format for a clean file download
-            const res = await apiFetch('/export?format=csv&limit=500');
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                setExportMsg({ ok: false, text: err.error || 'Export failed' });
-                return;
-            }
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `pulse-export-${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            setExportMsg({ ok: true, text: 'Export downloaded' });
-        } catch (e) {
-            setExportMsg({ ok: false, text: e.message });
-        } finally {
-            setExportLoading(false);
-        }
-    };
-
     // ── Scheduler ─────────────────────────────────────────────────────────────
     const [scheduleInfo, setScheduleInfo] = useState(null);
     const [scheduleLoading, setScheduleLoading] = useState(false);
+    const [scheduleTime, setScheduleTime] = useState('09:00');
+    const [scheduleDays, setScheduleDays] = useState(['mon', 'tue', 'wed', 'thu', 'fri']);
+    const [scheduleEnabled, setScheduleEnabled] = useState(true);
+    const [showScheduleConfig, setShowScheduleConfig] = useState(false);
 
     const fetchSchedule = async () => {
         try {
             const res = await apiFetch('/schedule');
-            if (res.ok) setScheduleInfo(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                setScheduleInfo(data);
+                // Update local state from server data
+                if (data.schedule) {
+                    setScheduleTime(data.schedule.time || '09:00');
+                    setScheduleDays(data.schedule.days || ['mon', 'tue', 'wed', 'thu', 'fri']);
+                    setScheduleEnabled(data.schedule.enabled !== false);
+                }
+            }
         } catch { /* silent */ }
     };
 
@@ -282,6 +231,51 @@ export default function AdvancedTools({ activeTheme }) {
             setScheduleLoading(false);
         }
     };
+
+    const saveScheduleConfig = async () => {
+        setScheduleLoading(true);
+        try {
+            const res = await apiFetch('/scheduler/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    enabled: scheduleEnabled,
+                    days: scheduleDays,
+                    time: scheduleTime
+                })
+            });
+            
+            if (res.ok) {
+                await fetchSchedule();
+                // Show success feedback (you can add a toast notification here)
+            } else {
+                const error = await res.json();
+                console.error('Failed to save schedule config:', error);
+            }
+        } catch (e) {
+            console.error('Failed to save schedule config:', e);
+        } finally {
+            setScheduleLoading(false);
+        }
+    };
+
+    const toggleDay = (day) => {
+        setScheduleDays(prev => 
+            prev.includes(day) 
+                ? prev.filter(d => d !== day)
+                : [...prev, day]
+        );
+    };
+
+    const dayOptions = [
+        { key: 'mon', label: 'Mon' },
+        { key: 'tue', label: 'Tue' },
+        { key: 'wed', label: 'Wed' },
+        { key: 'thu', label: 'Thu' },
+        { key: 'fri', label: 'Fri' },
+        { key: 'sat', label: 'Sat' },
+        { key: 'sun', label: 'Sun' },
+    ];
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -303,107 +297,207 @@ export default function AdvancedTools({ activeTheme }) {
                 <div>
                     <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>Developer & Operations Tools</p>
                     <p style={{ fontSize: 12, color: 'var(--amber)', marginTop: 2, opacity: 0.9 }}>
-                        These tools directly affect the pipeline, database, and scheduler. Use with care.
+                        These tools directly affect the database and scheduler. Use with care.
                     </p>
                 </div>
             </div>
 
-            {/* Pipeline Control */}
-            <Section title="Pipeline Control" icon={Play}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                background: pipelineStatus?.running ? 'var(--amber)' :
-                                    pipelineStatus?.status === 'error' ? 'var(--red)' : 'var(--green)',
-                                boxShadow: pipelineStatus?.running ? '0 0 8px var(--amber)' : 'none'
-                            }} className={pipelineStatus?.running ? 'animate-pulse' : ''} />
-                            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' }}>
-                                {pipelineStatus?.status ?? 'Unknown'}
-                            </span>
-                        </div>
-                        {pipelineStatus?.last_finished_at && (
-                            <p style={{ fontSize: 12, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <Clock style={{ width: 12, height: 12 }} />
-                                Last run: {new Date(pipelineStatus.last_finished_at).toLocaleString()}
-                            </p>
-                        )}
-                        {pipelineStatus?.last_error && (
-                            <p style={{ 
-                                fontSize: 12, 
-                                color: 'var(--red)', 
-                                fontFamily: 'monospace', 
-                                maxWidth: 400, 
-                                overflow: 'hidden', 
-                                textOverflow: 'ellipsis', 
-                                whiteSpace: 'nowrap' 
-                            }} title={pipelineStatus.last_error}>
-                                {pipelineStatus.last_error}
-                            </p>
-                        )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        {pipelineMsg && <ResultBadge ok={pipelineMsg.ok} text={pipelineMsg.text} />}
-                        <ActionButton
-                            onClick={runPipeline}
-                            loading={pipelineRunning}
-                            disabled={pipelineStatus?.running}
-                            icon={Zap}
-                        >
-                            {pipelineStatus?.running ? 'Running…' : 'Run Pipeline Now'}
-                        </ActionButton>
-                    </div>
-                </div>
-            </Section>
-
             {/* Scheduler */}
             <Section title="Automation Scheduler" icon={Clock}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        {scheduleInfo ? (
-                            <>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span style={{
-                                        width: 8,
-                                        height: 8,
-                                        borderRadius: '50%',
-                                        background: scheduleInfo.running ? 'var(--green)' : 'var(--text3)'
-                                    }} />
-                                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                                        {scheduleInfo.running ? 'Active' : 'Stopped'}
-                                    </span>
-                                </div>
-                                {scheduleInfo.next_run_time && (
-                                    <p style={{ fontSize: 12, color: 'var(--text3)' }}>
-                                        Next run: {new Date(scheduleInfo.next_run_time).toLocaleString()}
-                                    </p>
-                                )}
-                            </>
-                        ) : (
-                            <p style={{ fontSize: 13, color: 'var(--text3)' }}>Loading scheduler status…</p>
-                        )}
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Status Display */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {scheduleInfo ? (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: '50%',
+                                            background: scheduleInfo.running ? 'var(--green)' : 'var(--text3)'
+                                        }} />
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                                            {scheduleInfo.running ? 'Active' : 'Stopped'}
+                                        </span>
+                                    </div>
+                                    {scheduleInfo.schedule && (
+                                        <p style={{ fontSize: 12, color: 'var(--text3)' }}>
+                                            Runs {scheduleInfo.schedule.days?.join(', ')} at {scheduleInfo.schedule.time}
+                                        </p>
+                                    )}
+                                    {scheduleInfo.next_run_time && (
+                                        <p style={{ fontSize: 12, color: 'var(--text3)' }}>
+                                            Next run: {new Date(scheduleInfo.next_run_time).toLocaleString()}
+                                        </p>
+                                    )}
+                                </>
+                            ) : (
+                                <p style={{ fontSize: 13, color: 'var(--text3)' }}>Loading scheduler status…</p>
+                            )}
+                        </div>
                         <ActionButton
-                            onClick={() => toggleScheduler(true)}
-                            loading={scheduleLoading}
-                            variant="success"
-                            icon={Play}
-                        >
-                            Enable
-                        </ActionButton>
-                        <ActionButton
-                            onClick={() => toggleScheduler(false)}
-                            loading={scheduleLoading}
+                            onClick={() => setShowScheduleConfig(!showScheduleConfig)}
                             variant="outline"
-                            icon={Activity}
+                            icon={Clock}
                         >
-                            Disable
+                            {showScheduleConfig ? 'Hide Configuration' : 'Configure Schedule'}
                         </ActionButton>
                     </div>
+
+                    {/* Collapsible Configuration Section */}
+                    {showScheduleConfig && (
+                        <div style={{ 
+                            padding: 20, 
+                            borderRadius: 10, 
+                            background: 'var(--surface2)', 
+                            border: '1px solid var(--border)',
+                            animation: 'slideDown 0.2s ease-out'
+                        }}>
+                            <h4 style={{ 
+                                fontSize: 11, 
+                                fontWeight: 700, 
+                                textTransform: 'uppercase', 
+                                letterSpacing: '0.05em', 
+                                color: 'var(--text3)', 
+                                marginBottom: 16 
+                            }}>
+                                Schedule Configuration
+                            </h4>
+
+                            {/* Enable/Disable Toggle */}
+                            <label style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: 12, 
+                                cursor: 'pointer',
+                                marginBottom: 20
+                            }}>
+                                <div style={{ 
+                                    width: 44, 
+                                    height: 26, 
+                                    borderRadius: 13, 
+                                    position: 'relative', 
+                                    transition: 'background 0.2s', 
+                                    background: scheduleEnabled ? 'var(--accent)' : 'var(--surface)', 
+                                    border: '1px solid var(--border)', 
+                                    flexShrink: 0 
+                                }}>
+                                    <div style={{ 
+                                        position: 'absolute', 
+                                        top: 3, 
+                                        width: 18, 
+                                        height: 18, 
+                                        background: '#fff', 
+                                        borderRadius: '50%', 
+                                        transition: 'left 0.2s', 
+                                        left: scheduleEnabled ? 22 : 3 
+                                    }} />
+                                </div>
+                                <input 
+                                    type="checkbox" 
+                                    checked={scheduleEnabled} 
+                                    onChange={(e) => setScheduleEnabled(e.target.checked)} 
+                                    style={{ display: 'none' }} 
+                                />
+                                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                                    Enable Automated Pipeline Runs
+                                </span>
+                            </label>
+
+                            {/* Days Selection */}
+                            <div style={{ marginBottom: 20 }}>
+                                <label style={{ 
+                                    fontSize: 11, 
+                                    fontWeight: 700, 
+                                    color: 'var(--text3)', 
+                                    textTransform: 'uppercase', 
+                                    letterSpacing: '0.05em',
+                                    display: 'block',
+                                    marginBottom: 10
+                                }}>
+                                    Active Days
+                                </label>
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(7, 1fr)', 
+                                    gap: 6 
+                                }}>
+                                    {dayOptions.map((d) => (
+                                        <button
+                                            key={d.key}
+                                            onClick={() => toggleDay(d.key)}
+                                            style={{
+                                                padding: '10px 0', 
+                                                borderRadius: 10, 
+                                                fontSize: 10, 
+                                                fontWeight: 700,
+                                                textTransform: 'uppercase', 
+                                                cursor: 'pointer', 
+                                                transition: 'all 0.15s',
+                                                background: scheduleDays.includes(d.key) ? 'var(--accent)' : 'var(--surface)',
+                                                border: `1px solid ${scheduleDays.includes(d.key) ? 'var(--accent)' : 'var(--border)'}`,
+                                                color: scheduleDays.includes(d.key) ? '#fff' : 'var(--text2)',
+                                            }}
+                                        >
+                                            {d.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Time Selection */}
+                            <div style={{ marginBottom: 20 }}>
+                                <label style={{ 
+                                    fontSize: 11, 
+                                    fontWeight: 700, 
+                                    color: 'var(--text3)', 
+                                    textTransform: 'uppercase', 
+                                    letterSpacing: '0.05em',
+                                    display: 'block',
+                                    marginBottom: 10
+                                }}>
+                                    Run Time
+                                </label>
+                                <input
+                                    type="time"
+                                    value={scheduleTime}
+                                    onChange={(e) => setScheduleTime(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 12px',
+                                        borderRadius: 10,
+                                        border: '1px solid var(--border)',
+                                        background: 'var(--surface)',
+                                        color: 'var(--text)',
+                                        fontSize: 13,
+                                        fontWeight: 600,
+                                        fontFamily: 'var(--font-body)'
+                                    }}
+                                />
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                <ActionButton
+                                    onClick={saveScheduleConfig}
+                                    loading={scheduleLoading}
+                                    variant="primary"
+                                    icon={CheckCircle}
+                                >
+                                    Save Configuration
+                                </ActionButton>
+                                <ActionButton
+                                    onClick={() => toggleScheduler(scheduleEnabled)}
+                                    loading={scheduleLoading}
+                                    variant={scheduleEnabled ? 'success' : 'outline'}
+                                    icon={scheduleEnabled ? Play : Activity}
+                                >
+                                    {scheduleEnabled ? 'Apply & Enable' : 'Apply & Disable'}
+                                </ActionButton>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </Section>
 
@@ -595,26 +689,6 @@ export default function AdvancedTools({ activeTheme }) {
                             icon={Activity}
                         >
                             Run Health Check
-                        </ActionButton>
-                    </div>
-                </div>
-            </Section>
-
-            {/* Export */}
-            <Section title="Export Content" icon={Download}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-                    <p style={{ fontSize: 13, color: 'var(--text2)' }}>
-                        Download all generated content as a Markdown file.
-                    </p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        {exportMsg && <ResultBadge ok={exportMsg.ok} text={exportMsg.text} />}
-                        <ActionButton
-                            onClick={runExport}
-                            loading={exportLoading}
-                            variant="outline"
-                            icon={Download}
-                        >
-                            Export to Markdown
                         </ActionButton>
                     </div>
                 </div>
