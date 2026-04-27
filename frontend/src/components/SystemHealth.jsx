@@ -86,7 +86,6 @@ export default function SystemHealth({ onBack }) {
     const fallback = health?.fallback_statistics || {};
     const pipeline = health?.pipeline || {};
     const vitals = health?.vitals || {};
-    const featureFlags = health?.feature_flags || {};
     const disabledFeatures = health?.disabled_features || [];
     const allOk = services.length > 0 && services.every(s => s.status === 'ok');
 
@@ -350,28 +349,6 @@ export default function SystemHealth({ onBack }) {
                     </div>
                 )}
             </section>
-
-            {/* Feature Flags */}
-            {Object.keys(featureFlags).length > 0 && (
-                <section>
-                    <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Flag style={{ width: 14, height: 14 }} /> Feature Flags
-                        {disabledFeatures.length > 0 && (
-                            <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--amber-dim)', color: 'var(--amber)', padding: '2px 8px', borderRadius: 12 }}>
-                                {disabledFeatures.length} disabled
-                            </span>
-                        )}
-                    </h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
-                        {Object.entries(featureFlags).map(([flag, enabled]) => (
-                            <div key={flag} className="feature-flag">
-                                <span className="flag-name" style={{ textTransform: 'capitalize' }}>{flag.replace(/_/g, ' ')}</span>
-                                <div className={`toggle ${enabled ? 'on' : 'off'}`} />
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
         </div>
     );
 }

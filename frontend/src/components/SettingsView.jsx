@@ -40,7 +40,7 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
 
     const tabGroups = [
         {
-            label: 'Content & Sources',
+            label: 'Content & AI',
             tabs: [
                 {
                     id: 'rss',
@@ -49,6 +49,14 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
                     iconEmoji: '📡',
                     iconBg: 'var(--teal-dim)',
                     component: RSSManager
+                },
+                {
+                    id: 'llm',
+                    label: 'LLM Providers',
+                    icon: Zap,
+                    iconEmoji: '🤖',
+                    iconBg: 'var(--accent-glow)',
+                    component: LLMProviders
                 },
                 {
                     id: 'style',
@@ -69,16 +77,8 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
             ]
         },
         {
-            label: 'Integrations',
+            label: 'Integrations & Publishing',
             tabs: [
-                {
-                    id: 'webhooks',
-                    label: 'Webhooks',
-                    icon: Share2,
-                    iconEmoji: '🔗',
-                    iconBg: 'rgba(236,72,153,0.1)',
-                    component: WebhookManager
-                },
                 {
                     id: 'monetization',
                     label: 'Monetization',
@@ -86,6 +86,14 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
                     iconEmoji: '💰',
                     iconBg: 'var(--green-dim)',
                     component: MonetizationManager
+                },
+                {
+                    id: 'webhooks',
+                    label: 'Webhooks',
+                    icon: Share2,
+                    iconEmoji: '🔗',
+                    iconBg: 'rgba(236,72,153,0.1)',
+                    component: WebhookManager
                 },
                 {
                     id: 'extension',
@@ -98,16 +106,8 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
             ]
         },
         {
-            label: 'System',
+            label: 'System & Advanced',
             tabs: [
-                {
-                    id: 'health',
-                    label: 'System Health',
-                    icon: Activity,
-                    iconEmoji: '❤',
-                    iconBg: 'var(--green-dim)',
-                    component: SystemHealth
-                },
                 {
                     id: 'features',
                     label: 'Feature Flags',
@@ -117,12 +117,12 @@ const SettingsView = ({ initialTab = 'monetization', activeTheme }) => {
                     component: FeatureFlagsManager
                 },
                 {
-                    id: 'llm',
-                    label: 'LLM Providers',
-                    icon: Zap,
-                    iconEmoji: '🤖',
-                    iconBg: 'var(--accent-glow)',
-                    component: LLMProviders
+                    id: 'health',
+                    label: 'System Health',
+                    icon: Activity,
+                    iconEmoji: '❤',
+                    iconBg: 'var(--green-dim)',
+                    component: SystemHealth
                 },
                 {
                     id: 'theme',

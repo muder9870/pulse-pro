@@ -101,22 +101,6 @@ function ResultBadge({ ok, text }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function AdvancedTools({ activeTheme }) {
-    // ── LLM Provider Status ───────────────────────────────────────────────────
-    const [llmProviders, setLlmProviders] = useState(null);
-    const [llmLoading, setLlmLoading] = useState(false);
-
-    const fetchLlmProviders = async () => {
-        setLlmLoading(true);
-        try {
-            const res = await apiFetch('/system/llm-providers');
-            if (res.ok) setLlmProviders(await res.json());
-        } catch { /* silent */ } finally {
-            setLlmLoading(false);
-        }
-    };
-
-    useEffect(() => { fetchLlmProviders(); }, []);
-
     // ── Pipeline ──────────────────────────────────────────────────────────────
     const [pipelineStatus, setPipelineStatus] = useState(null);
     const [pipelineRunning, setPipelineRunning] = useState(false);
@@ -323,93 +307,6 @@ export default function AdvancedTools({ activeTheme }) {
                     </p>
                 </div>
             </div>
-
-            {/* LLM Provider Status */}
-            <Section title="LLM Providers" icon={Key}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <p style={{ fontSize: 13, color: 'var(--text2)' }}>
-                        {llmProviders
-                            ? `${llmProviders.configured_count} of ${llmProviders.total_count} providers configured`
-                            : 'Loading…'}
-                    </p>
-                    <ActionButton onClick={fetchLlmProviders} loading={llmLoading} variant="outline" icon={RefreshCw}>
-                        Refresh
-                    </ActionButton>
-                </div>
-                {llmProviders?.providers ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {llmProviders.providers.map(p => (
-                            <div key={p.name} style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '12px 16px',
-                                borderRadius: 'var(--radius-lg)',
-                                border: '1px solid var(--border)',
-                                background: p.configured ? 'var(--green-dim)' : 'var(--surface2)'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                                    {p.configured
-                                        ? <CheckCircle style={{ width: 16, height: 16, color: 'var(--green)', flexShrink: 0 }} />
-                                        : <AlertCircle style={{ width: 16, height: 16, color: 'var(--text3)', flexShrink: 0 }} />
-                                    }
-                                    <div style={{ minWidth: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <span style={{ 
-                                                fontSize: 13, 
-                                                fontWeight: 700, 
-                                                color: p.configured ? 'var(--text)' : 'var(--text3)' 
-                                            }}>
-                                                {p.name}
-                                            </span>
-                                            {p.free && (
-                                                <span style={{
-                                                    fontSize: 9,
-                                                    fontWeight: 700,
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: '0.05em',
-                                                    padding: '2px 6px',
-                                                    borderRadius: 20,
-                                                    background: 'var(--green-dim)',
-                                                    color: 'var(--green)'
-                                                }}>
-                                                    Free
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p style={{ fontSize: 10, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.model}</p>
-                                    </div>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, marginLeft: 16 }}>
-                                    {!p.configured && p.get_key_url && (
-                                        <a
-                                            href={p.get_key_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
-                                                gap: 4, 
-                                                fontSize: 12, 
-                                                fontWeight: 700, 
-                                                color: 'var(--accent)', 
-                                                textDecoration: 'none'
-                                            }}
-                                        >
-                                            Get Key <ExternalLink style={{ width: 12, height: 12 }} />
-                                        </a>
-                                    )}
-                                    {p.configured && (
-                                        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)' }}>Configured</span>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', padding: 16 }}>Loading provider status…</p>
-                )}
-            </Section>
 
             {/* Pipeline Control */}
             <Section title="Pipeline Control" icon={Play}>
