@@ -192,6 +192,56 @@ def scheduler_disable():
             db.close()
     return jsonify({"error": "Scheduler not initialized"}), 500
 
+@system_bp.post("/api/scheduler/config")
+def update_scheduler_config():
+    """Update scheduler configuration (days and time)."""
+    if not hasattr(current_app, 'scheduler_manager'):
+        return jsonify({"error": "Scheduler not initialized"}), 500
+    
+    try:
+        from backend.scheduler import save_schedule, normalize_schedule
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No configuration provided"}), 400
+        
+        # Validate required fields
+        if "days" not in data or "time" not in data:
+            return jsonify({"error": "Missing required fields: days and time"}), 400
+        
+        # Validate days format (should be list of day abbreviations)
+        valid_days = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+        if not isinstance(data["days"], list) or not all(day in valid_days for day in data["days"]):
+            return jsonify({"error": "Invalid days format. Expected list of: mon, tue, wed, thu, fri, sat, sun"}), 400
+        
+        # Validate time format (should be HH:MM)
+        import re
+        if not isinstance(data["time"], str) or not re.match(r"^\d{1,2}:\d{2}$", data["time"]):
+            return jsonify({"error": "Invalid time format. Expected HH:MM"}), 400
+        
+        # Ensure enabled field exists
+        if "enabled" not in data:
+            data["enabled"] = True
+        
+        # Save configuration to database
+        normalized = save_schedule(data)
+        
+        # Apply configuration to running scheduler
+        current_app.scheduler_manager.apply(normalized)
+        
+        logger.info(f"Scheduler configuration updated: days={data['days']}, time={data['time']}, enabled={data['enabled']}")
+        
+        return jsonify({
+            "status": "success",
+            "message": "Scheduler configuration updated",
+            "config": normalized,
+            "info": current_app.scheduler_manager.get_info()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Failed to update scheduler config: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @system_bp.get("/api/system/llm-providers")
 def llm_providers_status():
     """Return configuration status for all LLM providers."""

@@ -1566,27 +1566,6 @@ function AppContent() {
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
             </button>
-
-            {currentView !== 'dashboard' && (
-              <button
-                onClick={handleExport}
-                title="Export"
-                className="hidden sm:flex items-center justify-center flex-shrink-0"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text2)',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.background = 'var(--surface2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
-              >
-                <Download style={{ width: 16, height: 16, opacity: 0.7 }} />
-              </button>
-            )}
           </div>
         </header>
 

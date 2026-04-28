@@ -59,10 +59,7 @@ const normalizeHashtag = (value) => {
   return null;
 };
 
-const chipBase =
-  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors duration-150 min-h-[32px]';
-
-function PlatformPill({
+function PlatformCard({
   platform,
   channelStatus,
   isGenerating,
@@ -72,94 +69,94 @@ function PlatformPill({
 }) {
   const { id, label, icon: Icon } = platform;
 
-  if (isGenerating) {
-    return (
-      <span
-        className={`${chipBase} cursor-not-allowed opacity-80`}
-        style={{
-          borderColor: 'var(--border2)',
-          background: 'var(--surface2)',
-          color: 'var(--text3)',
-        }}
-      >
-        <Loader2 className="w-3 h-3 animate-spin shrink-0" />
-        {label}
-      </span>
-    );
-  }
+  const getStatusConfig = () => {
+    if (isGenerating) {
+      return {
+        icon: Loader2,
+        iconClass: 'animate-spin',
+        bg: 'var(--surface2)',
+        border: 'var(--border2)',
+        text: 'var(--text3)',
+        label: 'Generating...',
+        clickable: false,
+      };
+    }
+    if (hasError) {
+      return {
+        icon: RotateCcw,
+        iconClass: '',
+        bg: 'var(--red-dim)',
+        border: 'rgba(239,68,68,0.45)',
+        text: 'var(--red)',
+        label: 'Retry',
+        clickable: true,
+        onClick: () => onGenerate(id),
+      };
+    }
+    if (channelStatus === 'published') {
+      return {
+        icon: CheckCircle2,
+        iconClass: '',
+        bg: 'var(--green-dim)',
+        border: 'rgba(16,185,129,0.45)',
+        text: 'var(--green)',
+        label: 'Published',
+        clickable: true,
+        onClick: onViewContent,
+      };
+    }
+    if (channelStatus === 'generated') {
+      return {
+        icon: Icon,
+        iconClass: '',
+        bg: 'var(--teal-dim)',
+        border: 'rgba(0,212,168,0.45)',
+        text: 'var(--teal)',
+        label: 'Ready',
+        clickable: true,
+        onClick: onViewContent,
+      };
+    }
+    return {
+      icon: Icon,
+      iconClass: 'opacity-60',
+      bg: 'var(--surface2)',
+      border: 'var(--border2)',
+      text: 'var(--text3)',
+      label: 'Generate',
+      clickable: true,
+      onClick: () => onGenerate(id),
+    };
+  };
 
-  if (hasError) {
-    return (
-      <button
-        type="button"
-        onClick={() => onGenerate(id)}
-        title={`Retry — ${hasError}`}
-        className={chipBase}
-        style={{
-          borderColor: 'rgba(239,68,68,0.45)',
-          background: 'var(--red-dim)',
-          color: 'var(--red)',
-        }}
-      >
-        <RotateCcw className="w-3 h-3 shrink-0" />
-        {label}
-      </button>
-    );
-  }
-
-  if (channelStatus === 'published') {
-    return (
-      <button
-        type="button"
-        onClick={onViewContent}
-        title={`View ${label} content`}
-        className={chipBase}
-        style={{
-          borderColor: 'rgba(16,185,129,0.45)',
-          background: 'var(--green-dim)',
-          color: 'var(--green)',
-        }}
-      >
-        <CheckCircle2 className="w-3 h-3 shrink-0" />
-        {label}
-      </button>
-    );
-  }
-
-  if (channelStatus === 'generated') {
-    return (
-      <button
-        type="button"
-        onClick={onViewContent}
-        title={`View ${label} content`}
-        className={chipBase}
-        style={{
-          borderColor: 'rgba(0,212,168,0.45)',
-          background: 'var(--teal-dim)',
-          color: 'var(--teal)',
-        }}
-      >
-        <Icon className="w-3 h-3 shrink-0" />
-        {label}
-      </button>
-    );
-  }
+  const config = getStatusConfig();
+  const StatusIcon = config.icon;
+  const Component = config.clickable ? 'button' : 'div';
 
   return (
-    <button
-      type="button"
-      onClick={() => onGenerate(id)}
-      title={`Generate ${label} post`}
-      className={chipBase}
+    <Component
+      type={config.clickable ? 'button' : undefined}
+      onClick={config.onClick}
+      className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all duration-200 ${
+        config.clickable ? 'hover:scale-105 cursor-pointer' : 'cursor-not-allowed'
+      }`}
       style={{
-        borderColor: 'var(--border2)',
-        background: 'var(--surface2)',
-        color: 'var(--text2)',
+        background: config.bg,
+        borderColor: config.border,
+        minWidth: '90px',
       }}
+      title={`${label} - ${config.label}`}
     >
-      <Icon className="w-3 h-3 shrink-0 opacity-80" />
-      {label}
-    </button>
+      <StatusIcon className={`w-5 h-5 ${config.iconClass}`} style={{ color: config.text }} />
+      <div className="text-center">
+        <div className="text-xs font-semibold" style={{ color: config.text }}>
+          {label}
+        </div>
+        <div className="text-[10px] mt-0.5" style={{ color: config.text, opacity: 0.7 }}>
+          {config.label}
+        </div>
+      </div>
+    </Component>
   );
 }
 
@@ -654,140 +651,70 @@ const StoryCard = React.memo(
 
     return (
       <article
-        className={`group relative overflow-hidden rounded-[var(--radius-lg)] border transition-all duration-300 ${
+        className={`group relative overflow-hidden rounded-xl border transition-all duration-300 ${
           isSelected ? 'ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)] z-10' : ''
         }`}
         style={{
           background: 'var(--surface)',
           borderColor: isSelected ? 'var(--accent)' : 'var(--border)',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.35)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}
       >
-        <div
-          className={`h-1.5 transition-all duration-500 ${
-            isSelected ? 'w-full opacity-100' : 'w-0 group-hover:w-full opacity-90'
-          }`}
-          style={{
-            background: 'linear-gradient(90deg, var(--accent), var(--accent2), #EC4899)',
-          }}
-        />
-
         {onToggleSelection && (
           <div
-            className={`absolute top-5 left-5 z-20 transition-all duration-300 ${
+            className={`absolute top-4 left-4 z-20 transition-all duration-300 ${
               hasAnySelection || isSelected
                 ? 'opacity-100 scale-100'
                 : 'opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100'
             }`}
           >
-            <Checkbox checked={isSelected} onChange={onToggleSelection} className="w-5 h-5 shadow-inner" />
+            <Checkbox checked={isSelected} onChange={onToggleSelection} className="w-5 h-5 shadow-sm" />
           </div>
         )}
 
-        <div className="px-5 pt-5 pb-4 md:px-[18px] md:pt-[18px]">
-          <div className="flex justify-between items-start gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <span
-                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider"
-                  style={{
-                    background: 'var(--accent-glow)',
-                    color: 'var(--accent)',
-                    border: '1px solid rgba(108,99,255,0.25)',
-                  }}
-                >
-                  {(story.source || 'Source').toString().slice(0, 24)}
-                </span>
-                <span style={{ color: 'var(--text2)', fontSize: 11 }}>{timeLabel}</span>
-                {story.priority === 'HIGH' && (
-                  <span
-                    className="text-[10px] font-bold uppercase px-2 py-0.5 rounded"
-                    style={{ background: 'var(--red-dim)', color: 'var(--red)' }}
-                  >
-                    High priority
-                  </span>
-                )}
-              </div>
-
-              <h2
-                className="line-clamp-2 font-semibold leading-snug"
+        <div className="p-6">
+          {/* Header Section */}
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold"
                 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 15,
-                  color: 'var(--text)',
+                  background: 'var(--accent-glow)',
+                  color: 'var(--accent)',
                 }}
               >
-                {story.url ? (
-                  <a
-                    href={story.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-start gap-2 hover:opacity-90"
-                    style={{ color: 'inherit' }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="min-w-0">{story.title}</span>
-                    <ExternalLink className="w-4 h-4 shrink-0 mt-0.5 opacity-60" aria-hidden />
-                  </a>
-                ) : (
-                  story.title
-                )}
-              </h2>
-
-              <p
-                className="line-clamp-2 mt-2"
-                style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.55 }}
-              >
-                {story.summary || 'No summary yet.'}
-              </p>
-
-              {(tags.length > 0 || hashtags.length > 0) && (
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {tags.slice(0, 4).map((t) => (
-                    <span
-                      key={`t-${t}`}
-                      className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                      style={{
-                        background: 'var(--surface2)',
-                        color: 'var(--text2)',
-                        border: '1px solid var(--border)',
-                      }}
-                    >
-                      {t}
-                    </span>
-                  ))}
-                  {hashtags.slice(0, 2).map((h) => (
-                    <span
-                      key={`h-${h}`}
-                      className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                      style={{ color: 'var(--accent)', border: '1px solid rgba(108,99,255,0.35)' }}
-                    >
-                      {h}
-                    </span>
-                  ))}
-                </div>
+                {(story.source || 'Source').toString().slice(0, 24)}
+              </span>
+              <span className="text-xs" style={{ color: 'var(--text3)' }}>
+                {timeLabel}
+              </span>
+              {story.priority === 'HIGH' && (
+                <span
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-md"
+                  style={{ background: 'var(--red-dim)', color: 'var(--red)' }}
+                >
+                  High Priority
+                </span>
               )}
             </div>
-
-            <div className="flex flex-col items-end gap-2 shrink-0">
+            <div className="flex items-center gap-2">
               <span
-                className="font-mono text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                className="font-mono text-sm font-bold px-3 py-1.5 rounded-lg"
                 style={{
                   background: 'var(--amber-dim)',
                   color: 'var(--amber)',
-                  border: '1px solid rgba(245,158,11,0.35)',
                 }}
               >
-                {scoreVal} / 100
+                {scoreVal}
               </span>
               <span
-                className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md"
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap"
                 style={{
                   background:
                     pipelineState === PIPELINE_STATES.POSTED
                       ? 'var(--green-dim)'
                       : pipelineState === PIPELINE_STATES.NEEDS_GENERATION
-                        ? 'rgba(239,68,68,0.12)'
+                        ? 'var(--red-dim)'
                         : 'var(--teal-dim)',
                   color:
                     pipelineState === PIPELINE_STATES.POSTED
@@ -795,7 +722,6 @@ const StoryCard = React.memo(
                       : pipelineState === PIPELINE_STATES.NEEDS_GENERATION
                         ? 'var(--red)'
                         : 'var(--teal)',
-                  border: '1px solid var(--border)',
                 }}
               >
                 {STATE_LABELS[pipelineState]}
@@ -803,19 +729,81 @@ const StoryCard = React.memo(
             </div>
           </div>
 
-          <div
-            className="mt-4 pt-4"
-            style={{ borderTop: '1px solid var(--border)' }}
+          {/* Title Section */}
+          <h2
+            className="line-clamp-2 font-bold leading-tight mb-3"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.125rem',
+              color: 'var(--text)',
+            }}
           >
-            <p
-              className="text-[10px] font-bold uppercase tracking-[0.14em] mb-3"
+            {story.url ? (
+              <a
+                href={story.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-start gap-2 hover:opacity-80 transition-opacity"
+                style={{ color: 'inherit' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="min-w-0">{story.title}</span>
+                <ExternalLink className="w-4 h-4 shrink-0 mt-1 opacity-50" aria-hidden />
+              </a>
+            ) : (
+              story.title
+            )}
+          </h2>
+
+          {/* Summary */}
+          <p
+            className="line-clamp-2 mb-4"
+            style={{ fontSize: '0.875rem', color: 'var(--text2)', lineHeight: 1.6 }}
+          >
+            {story.summary || 'No summary yet.'}
+          </p>
+
+          {/* Tags */}
+          {(tags.length > 0 || hashtags.length > 0) && (
+            <div className="flex flex-wrap gap-2 mb-5">
+              {tags.slice(0, 4).map((t) => (
+                <span
+                  key={`t-${t}`}
+                  className="text-xs px-2.5 py-1 rounded-md font-medium"
+                  style={{
+                    background: 'var(--surface2)',
+                    color: 'var(--text2)',
+                  }}
+                >
+                  {t}
+                </span>
+              ))}
+              {hashtags.slice(0, 2).map((h) => (
+                <span
+                  key={`h-${h}`}
+                  className="text-xs px-2.5 py-1 rounded-md font-medium"
+                  style={{ 
+                    background: 'var(--accent-glow)',
+                    color: 'var(--accent)',
+                  }}
+                >
+                  {h}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Channels Grid */}
+          <div className="mb-5">
+            <h3
+              className="text-xs font-bold uppercase tracking-wider mb-3"
               style={{ color: 'var(--text3)' }}
             >
               Channels
-            </p>
-            <div className="flex flex-wrap gap-2">
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
               {PLATFORM_LIST.map((platform) => (
-                <PlatformPill
+                <PlatformCard
                   key={platform.id}
                   platform={platform}
                   channelStatus={getPlatformChannelStatus(platform.id, mergedPosts)}
@@ -835,18 +823,15 @@ const StoryCard = React.memo(
             </div>
           </div>
 
-          <div
-            className="flex flex-wrap items-center gap-3 mt-4 pt-4"
-            style={{ borderTop: '1px solid var(--border)' }}
-          >
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={executePrimary}
-              className="inline-flex flex-1 min-w-[200px] items-center justify-center gap-2 rounded-[var(--radius)] px-4 py-2.5 text-sm font-semibold min-h-[44px] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
               style={{
                 background: 'var(--accent)',
                 color: '#fff',
-                boxShadow: '0 4px 14px rgba(108,99,255,0.35)',
               }}
             >
               {primaryMeta.label}
@@ -862,9 +847,9 @@ const StoryCard = React.memo(
                 }
                 setExpanded((e) => !e);
               }}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius)] border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
               style={{
-                borderColor: 'var(--border2)',
+                borderColor: 'var(--border)',
                 background: 'var(--surface2)',
                 color: 'var(--text2)',
               }}
@@ -877,9 +862,9 @@ const StoryCard = React.memo(
             <button
               type="button"
               onClick={() => setBlogOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius)] border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
               style={{
-                borderColor: 'var(--border2)',
+                borderColor: 'var(--border)',
                 background: 'var(--surface2)',
                 color: 'var(--text2)',
               }}
@@ -891,9 +876,9 @@ const StoryCard = React.memo(
             <button
               type="button"
               onClick={() => setTagsModalOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius)] border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
               style={{
-                borderColor: 'var(--border2)',
+                borderColor: 'var(--border)',
                 background: 'var(--surface2)',
                 color: 'var(--text2)',
               }}
@@ -908,9 +893,9 @@ const StoryCard = React.memo(
 
         {expanded && (
           <div
-            className="space-y-8 px-5 pb-8 pt-2 md:px-[18px] animate-fade-in"
+            className="px-6 pb-6 pt-4 space-y-6"
             style={{
-              background: 'var(--bg2)',
+              background: 'var(--bg)',
               borderTop: '1px solid var(--border)',
             }}
           >
@@ -938,7 +923,7 @@ const StoryCard = React.memo(
               isGenerating={Object.values(platformGenerating).some(Boolean)}
             />
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {platforms.map((platform) => (
                 <ContentEditor
                   key={platform}
