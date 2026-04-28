@@ -146,7 +146,7 @@ export default function SystemHealth({ onBack }) {
                     label="LLM Providers"
                     value={cb.total_providers ?? '—'}
                     sub={(cb.providers || []).join(', ') || 'none'}
-                    color="blue"
+                    color="slate"
                 />
                 <StatCard
                     label="Fallback Rate"
