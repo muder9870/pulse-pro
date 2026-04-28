@@ -457,7 +457,7 @@ export default function AdvancedTools({ activeTheme }) {
                                     display: 'block',
                                     marginBottom: 10
                                 }}>
-                                    Run Time
+                                    Run Time (UTC)
                                 </label>
                                 <input
                                     type="time"
@@ -475,6 +475,14 @@ export default function AdvancedTools({ activeTheme }) {
                                         fontFamily: 'var(--font-body)'
                                     }}
                                 />
+                                <p style={{ 
+                                    fontSize: 11, 
+                                    color: 'var(--text3)', 
+                                    marginTop: 6,
+                                    fontStyle: 'italic'
+                                }}>
+                                    Note: Time is in UTC. Your local time is UTC{new Date().getTimezoneOffset() / -60 >= 0 ? '+' : ''}{new Date().getTimezoneOffset() / -60}.
+                                </p>
                             </div>
 
                             {/* Action Buttons */}
