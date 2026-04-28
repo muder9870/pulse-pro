@@ -12,7 +12,7 @@ function StatCard({ label, value, sub, color = 'slate' }) {
         green: { bg: 'var(--green-dim)', border: 'var(--green)', text: 'var(--green)' },
         red: { bg: 'var(--red-dim)', border: 'var(--red)', text: 'var(--red)' },
         amber: { bg: 'var(--amber-dim)', border: 'var(--amber)', text: 'var(--amber)' },
-        blue: { bg: 'rgba(59,130,246,0.1)', border: 'var(--blue)', text: 'var(--blue)' },
+        blue: { bg: 'var(--accent-glow)', border: 'var(--accent)', text: 'var(--accent)' },
         slate: { bg: 'var(--bg3)', border: 'var(--border)', text: 'var(--text2)' },
     };
     const style = colors[color] || colors.slate;
