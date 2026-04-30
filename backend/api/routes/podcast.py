@@ -44,7 +44,8 @@ def generate_podcast_endpoint():
       { "article_ids": [1, 2, 3], "limit": 5 }
 
     If article_ids is provided, uses those specific articles.
-    Otherwise uses top N articles by score (default 5).
+    If article_ids contains a single article, generates a per-article podcast.
+    Otherwise uses top N articles by score (default 5) for a daily digest.
     """
     try:
         data = request.json or {}
@@ -53,7 +54,13 @@ def generate_podcast_endpoint():
 
         from backend.generators.podcast_generator import PodcastGenerator
         generator = PodcastGenerator()
-        path = generator.generate_daily_digest_sync(article_ids=article_ids, limit=limit)
+        
+        # If single article, generate per-article podcast
+        if article_ids and len(article_ids) == 1:
+            path = generator.generate_article_podcast_sync(article_ids[0])
+        else:
+            # Generate daily digest
+            path = generator.generate_daily_digest_sync(article_ids=article_ids, limit=limit)
 
         if path:
             return jsonify({

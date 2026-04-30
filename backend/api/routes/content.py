@@ -24,11 +24,24 @@ def get_content(article_id, platform):
 
 @content_bp.get("/api/audio/<int:article_id>")
 def get_article_audio(article_id):
+    """Get audio assets for an article.
+    
+    Note: article_id is the raw article ID from the UI, but ArticleAudio
+    table references processed_articles.id, so we need to convert it.
+    """
     db = SessionLocal()
     try:
+        # Convert raw article ID to processed article ID
+        a_repo = ArticleRepository(db)
+        processed_id = a_repo.ensure_processed_id(article_id)
+        
+        if not processed_id:
+            # Article not processed yet, return empty array
+            return jsonify({"audio": []}), 200
+        
         rows = (
             db.query(ArticleAudio)
-            .filter(ArticleAudio.article_id == article_id)
+            .filter(ArticleAudio.article_id == processed_id)
             .order_by(ArticleAudio.created_at.desc())
             .all()
         )
@@ -101,10 +114,23 @@ def generate_content():
 
 @content_bp.get("/api/media/assets/<int:article_id>")
 def get_article_assets(article_id):
+    """Get media assets for an article.
+    
+    Note: article_id is the raw article ID from the UI, but ArticleImage/VideoScript
+    tables reference processed_articles.id, so we need to convert it.
+    """
     db = SessionLocal()
     try:
+        # Convert raw article ID to processed article ID
+        a_repo = ArticleRepository(db)
+        processed_id = a_repo.ensure_processed_id(article_id)
+        
+        if not processed_id:
+            # Article not processed yet, return empty arrays
+            return jsonify({"images": [], "video_scripts": []}), 200
+        
         repo = MediaRepository(db)
-        return jsonify({"images": repo.get_article_images(article_id), "video_scripts": repo.get_video_scripts(article_id)}), 200
+        return jsonify({"images": repo.get_article_images(processed_id), "video_scripts": repo.get_video_scripts(processed_id)}), 200
     finally:
         db.close()
 

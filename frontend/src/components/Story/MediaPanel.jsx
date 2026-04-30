@@ -1,10 +1,10 @@
 import React from 'react';
-import { Image, Music, FileText, Plus, Loader2, ExternalLink } from 'lucide-react';
+import { Image, Music, Plus, Loader2, ExternalLink } from 'lucide-react';
 import Button from '../ui/Button';
 
 /**
  * MediaPanel Component
- * Handles media assets, audio generation, and blog publishing
+ * Handles media assets and audio generation
  * 
  * @param {Object} props
  * @param {Array} props.media - Media assets array
@@ -14,7 +14,6 @@ import Button from '../ui/Button';
  * @param {Function} props.onGenerateImage - Image generation handler
  * @param {Function} props.onGenerateQuoteCard - Quote card generation handler
  * @param {Function} props.onGenerateAudio - Audio generation handler
- * @param {Function} props.onOpenBlogPublisher - Blog publisher open handler
  */
 const MediaPanel = ({
   media,
@@ -24,14 +23,24 @@ const MediaPanel = ({
   onGenerateImage,
   onGenerateQuoteCard,
   onGenerateAudio,
-  onOpenBlogPublisher,
 }) => {
+  console.log('MediaPanel received props:', { 
+    media, 
+    mediaCount: media?.length, 
+    audioAssets, 
+    audioCount: audioAssets?.length,
+    mediaLoading,
+    audioLoading
+  });
+  
   const hasMedia = media && media.length > 0;
   const hasAudio = audioAssets && audioAssets.length > 0;
+  
+  console.log('MediaPanel computed:', { hasMedia, hasAudio });
 
   return (
     <div className="space-y-6">
-      {/* Visual Assets Section */}
+      {/* Media Assets Section */}
       <div className="bg-white/90 backdrop-blur-xl rounded-2xl border border-gray-200 p-6 shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -39,7 +48,7 @@ const MediaPanel = ({
               <Image className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900">Visual Assets</h3>
+              <h3 className="font-bold text-gray-900">Media Assets</h3>
               <p className="text-xs text-gray-500">{hasMedia ? `${media.length} images` : 'No images generated'}</p>
             </div>
           </div>
@@ -75,8 +84,8 @@ const MediaPanel = ({
             {media.map((item, idx) => (
               <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer border border-gray-200 hover:border-pink-400 transition-colors">
                 <img 
-                  src={item.url || item.thumbnail} 
-                  alt={item.alt || `Asset ${idx + 1}`}
+                  src={item.image_url || item.local_path || item.url || item.thumbnail} 
+                  alt={item.prompt || item.alt || `Asset ${idx + 1}`}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -88,13 +97,13 @@ const MediaPanel = ({
         ) : (
           <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
             <Image className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">No visual assets yet</p>
+            <p className="text-sm text-gray-400">No media assets yet</p>
             <p className="text-xs text-gray-400 mt-1">Generate images or quote cards</p>
           </div>
         )}
       </div>
 
-      {/* Audio Assets Section */}
+      {/* Podcast Section */}
       <div className="bg-white/90 backdrop-blur-xl rounded-2xl border border-gray-200 p-6 shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -102,8 +111,8 @@ const MediaPanel = ({
               <Music className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900">Audio Content</h3>
-              <p className="text-xs text-gray-500">{hasAudio ? `${audioAssets.length} tracks` : 'No audio generated'}</p>
+              <h3 className="font-bold text-gray-900">Podcast</h3>
+              <p className="text-xs text-gray-500">{hasAudio ? `${audioAssets.length} episodes` : 'No podcast generated'}</p>
             </div>
           </div>
           
@@ -114,7 +123,7 @@ const MediaPanel = ({
             icon={audioLoading ? Loader2 : Plus}
             disabled={audioLoading}
           >
-            {audioLoading ? 'Generating...' : 'Generate Audio'}
+            {audioLoading ? 'Generating...' : 'Generate Podcast'}
           </Button>
         </div>
 
@@ -127,46 +136,29 @@ const MediaPanel = ({
                   <Music className="w-4 h-4 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{audio.title || `Audio Track ${idx + 1}`}</p>
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {audio.title || audio.voice || `Podcast Episode ${idx + 1}`}
+                  </p>
                   <p className="text-xs text-gray-500">{audio.duration || 'Unknown duration'}</p>
                 </div>
-                <button className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
+                <a 
+                  href={audio.url || audio.local_path} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                >
                   <Music className="w-4 h-4" />
-                </button>
+                </a>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
             <Music className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">No audio content yet</p>
-            <p className="text-xs text-gray-400 mt-1">Generate audio for podcast or social clips</p>
+            <p className="text-sm text-gray-400">No podcast content yet</p>
+            <p className="text-xs text-gray-400 mt-1">Generate podcast for audio distribution</p>
           </div>
         )}
-      </div>
-
-      {/* Blog Publishing Section */}
-      <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 backdrop-blur-xl rounded-2xl border border-indigo-200/50 p-6 shadow-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900">Long-Form Blog</h3>
-              <p className="text-xs text-gray-500">Publish to your connected blog platform</p>
-            </div>
-          </div>
-          
-          <Button
-            onClick={onOpenBlogPublisher}
-            variant="primary"
-            size="md"
-            icon={FileText}
-          >
-            Open Editor
-          </Button>
-        </div>
       </div>
     </div>
   );

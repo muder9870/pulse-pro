@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Edit3, CheckCircle, XCircle, Sparkles, ChevronRight } from 'lucide-react';
+import { RefreshCw, Edit3, CheckCircle, XCircle, Sparkles, Calendar, Send } from 'lucide-react';
 import Button from '../ui/Button';
 
 /**
@@ -20,6 +20,8 @@ import Button from '../ui/Button';
  * @param {Function} props.onLogEngagement - Log engagement
  * @param {Function} props.onOpenQualityDetail - Open quality detail modal
  * @param {Function} props.getGradeColor - Get grade color classes
+ * @param {Function} props.onSchedule - Open schedule modal for this platform
+ * @param {Function} props.onPostNow - Post now for this platform
  */
 const ContentEditor = ({
   platform,
@@ -35,6 +37,8 @@ const ContentEditor = ({
   onLogEngagement,
   onOpenQualityDetail,
   getGradeColor,
+  onSchedule,
+  onPostNow,
 }) => {
   const hasContent = content?.text && !content.text.startsWith('Error');
   const isPosted = content?.posted;
@@ -98,7 +102,29 @@ const ContentEditor = ({
             <RefreshCw className="w-4 h-4" />
           </button>
           
-          {/* Posted Toggle */}
+          {/* Schedule Button */}
+          {hasContent && (
+            <button
+              onClick={() => { onSchedule(platform); onLogEngagement('schedule', platform); }}
+              className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              title="Schedule Post"
+            >
+              <Calendar className="w-4 h-4" />
+            </button>
+          )}
+          
+          {/* Post Now Button */}
+          {hasContent && !isPosted && (
+            <button
+              onClick={() => { onPostNow(platform); onLogEngagement('post_now', platform); }}
+              className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+              title="Post Now"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          )}
+          
+          {/* Posted Status Toggle */}
           <button
             onClick={() => onTogglePosted(platform)}
             className={`p-2 rounded-lg transition-colors ${isPosted ? 'text-green-600 bg-green-100' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}

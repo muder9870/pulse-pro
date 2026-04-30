@@ -16,10 +16,19 @@ import {
   RotateCcw,
   ExternalLink,
   LayoutList,
+  FileCheck,
+  Send,
+  Star,
+  BarChart3,
+  Edit3,
+  Image as ImageIcon,
+  Quote,
+  Mic,
+  Tags,
+  Calendar,
 } from 'lucide-react';
 import BlogPublisher from './BlogPublisher';
 import ContentEditor from './Story/ContentEditor';
-import PublishPanel from './Story/PublishPanel';
 import MediaPanel from './Story/MediaPanel';
 import { QualityModal, TagsModal, EditModal } from './Story/StoryModals';
 import Checkbox from './ui/Checkbox';
@@ -59,6 +68,121 @@ const normalizeHashtag = (value) => {
   return null;
 };
 
+// Workflow Section Component
+function WorkflowSection({ number, title, description, icon: Icon, color, isExpanded, onToggle, isAvailable, children }) {
+  const colorStyles = {
+    purple: {
+      bg: 'rgba(139, 92, 246, 0.1)',
+      border: 'rgba(139, 92, 246, 0.3)',
+      text: 'rgb(139, 92, 246)',
+      iconBg: 'rgba(139, 92, 246, 0.15)',
+    },
+    green: {
+      bg: 'rgba(16, 185, 129, 0.1)',
+      border: 'rgba(16, 185, 129, 0.3)',
+      text: 'rgb(16, 185, 129)',
+      iconBg: 'rgba(16, 185, 129, 0.15)',
+    },
+    blue: {
+      bg: 'rgba(59, 130, 246, 0.1)',
+      border: 'rgba(59, 130, 246, 0.3)',
+      text: 'rgb(59, 130, 246)',
+      iconBg: 'rgba(59, 130, 246, 0.15)',
+    },
+    orange: {
+      bg: 'rgba(251, 146, 60, 0.1)',
+      border: 'rgba(251, 146, 60, 0.3)',
+      text: 'rgb(251, 146, 60)',
+      iconBg: 'rgba(251, 146, 60, 0.15)',
+    },
+  };
+
+  const style = colorStyles[color] || colorStyles.purple;
+
+  if (!isAvailable) {
+    return (
+      <div
+        className="rounded-lg border p-4 opacity-50"
+        style={{
+          background: 'var(--surface2)',
+          borderColor: 'var(--border)',
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold"
+            style={{
+              background: 'var(--surface)',
+              color: 'var(--text3)',
+            }}
+          >
+            {number}
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold" style={{ color: 'var(--text3)' }}>
+              {title}
+            </h4>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text3)' }}>
+              {description}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-lg border transition-all duration-200"
+      style={{
+        background: style.bg,
+        borderColor: style.border,
+      }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full p-4 flex items-center gap-3 hover:opacity-80 transition-opacity"
+      >
+        <div
+          className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold shrink-0"
+          style={{
+            background: style.iconBg,
+            color: style.text,
+          }}
+        >
+          {number}
+        </div>
+        <div
+          className="flex items-center justify-center w-9 h-9 rounded-lg shrink-0"
+          style={{
+            background: style.iconBg,
+          }}
+        >
+          <Icon className="w-5 h-5" style={{ color: style.text }} />
+        </div>
+        <div className="flex-1 text-left">
+          <h4 className="text-sm font-semibold" style={{ color: style.text }}>
+            {title}
+          </h4>
+          <p className="text-xs mt-0.5" style={{ color: style.text, opacity: 0.8 }}>
+            {description}
+          </p>
+        </div>
+        <ChevronDown
+          className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+          style={{ color: style.text }}
+        />
+      </button>
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-2">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlatformCard({
   platform,
   channelStatus,
@@ -77,7 +201,6 @@ function PlatformCard({
         bg: 'var(--surface2)',
         border: 'var(--border2)',
         text: 'var(--text3)',
-        label: 'Generating...',
         clickable: false,
       };
     }
@@ -88,7 +211,6 @@ function PlatformCard({
         bg: 'var(--red-dim)',
         border: 'rgba(239,68,68,0.45)',
         text: 'var(--red)',
-        label: 'Retry',
         clickable: true,
         onClick: () => onGenerate(id),
       };
@@ -100,7 +222,6 @@ function PlatformCard({
         bg: 'var(--green-dim)',
         border: 'rgba(16,185,129,0.45)',
         text: 'var(--green)',
-        label: 'Published',
         clickable: true,
         onClick: onViewContent,
       };
@@ -112,7 +233,6 @@ function PlatformCard({
         bg: 'var(--teal-dim)',
         border: 'rgba(0,212,168,0.45)',
         text: 'var(--teal)',
-        label: 'Ready',
         clickable: true,
         onClick: onViewContent,
       };
@@ -123,7 +243,6 @@ function PlatformCard({
       bg: 'var(--surface2)',
       border: 'var(--border2)',
       text: 'var(--text3)',
-      label: 'Generate',
       clickable: true,
       onClick: () => onGenerate(id),
     };
@@ -137,26 +256,35 @@ function PlatformCard({
     <Component
       type={config.clickable ? 'button' : undefined}
       onClick={config.onClick}
-      className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all duration-200 ${
-        config.clickable ? 'hover:scale-105 cursor-pointer' : 'cursor-not-allowed'
+      className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 ${
+        config.clickable ? 'hover:scale-110 cursor-pointer' : 'cursor-not-allowed'
       }`}
       style={{
         background: config.bg,
         borderColor: config.border,
-        minWidth: '90px',
       }}
-      title={`${label} - ${config.label}`}
+      title={label}
     >
       <StatusIcon className={`w-5 h-5 ${config.iconClass}`} style={{ color: config.text }} />
-      <div className="text-center">
-        <div className="text-xs font-semibold" style={{ color: config.text }}>
-          {label}
-        </div>
-        <div className="text-[10px] mt-0.5" style={{ color: config.text, opacity: 0.7 }}>
-          {config.label}
-        </div>
-      </div>
     </Component>
+  );
+}
+
+// Content Action Button Component (for Quote Card, Image, Podcast, Taxonomy)
+function ContentActionButton({ icon: Icon, label, onClick, color = 'var(--accent)' }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 hover:scale-110 cursor-pointer"
+      style={{
+        background: 'var(--surface2)',
+        borderColor: 'var(--border)',
+      }}
+      title={label}
+    >
+      <Icon className="w-5 h-5" style={{ color }} />
+    </button>
   );
 }
 
@@ -189,11 +317,19 @@ const StoryCard = React.memo(
     const initialPlatformsResolved =
       config.initialPlatforms ?? initialPlatforms;
 
-    const [platforms, setPlatforms] = useState(
-      initialPlatformsResolved.length > 0
-        ? initialPlatformsResolved
-        : story.platforms || (story.posts ? story.posts.map((p) => p.platform) : [])
-    );
+    const [platforms, setPlatforms] = useState(() => {
+      // Initialize platforms from config, initialPlatforms prop, or story data
+      if (initialPlatformsResolved.length > 0) {
+        return initialPlatformsResolved;
+      }
+      if (story.posts && story.posts.length > 0) {
+        return story.posts.map((p) => p.platform);
+      }
+      if (story.platforms && story.platforms.length > 0) {
+        return story.platforms;
+      }
+      return [];
+    });
     const [expanded, setExpanded] = useState(false);
     const [generatedContent, setGeneratedContent] = useState({});
     const [tagsModalOpen, setTagsModalOpen] = useState(false);
@@ -219,6 +355,12 @@ const StoryCard = React.memo(
     const [audioLoading] = useState(false);
     const [platformGenerating, setPlatformGenerating] = useState({});
     const [platformErrors, setPlatformErrors] = useState({});
+    const [workflowSections, setWorkflowSections] = useState({
+      summary: true, // Expanded by default
+      generate: false,
+      review: false,
+      analyze: false,
+    });
 
     const mergedPosts = useMemo(
       () => mergePostSnapshots(story, generatedContent),
@@ -258,6 +400,38 @@ const StoryCard = React.memo(
         });
       }
     }, [platforms, expanded, story.posts]);
+
+    // Auto-load content when Review section is opened
+    useEffect(() => {
+      if (workflowSections.review && platforms.length > 0) {
+        // Load media and audio assets
+        fetchMedia();
+        fetchAudio();
+        
+        platforms.forEach((p) => {
+          // Check if we already have content loaded
+          if (generatedContent[p]) return;
+          
+          // First check if we have it in story.posts
+          const existingPost = story.posts?.find((post) => post.platform === p);
+          if (existingPost && existingPost.content) {
+            setGeneratedContent((prev) => ({
+              ...prev,
+              [p]: {
+                text: existingPost.content,
+                posted: Boolean(existingPost.posted),
+                posted_at: existingPost.posted_at || null,
+              },
+            }));
+          }
+          
+          // Load hashtags if not already loaded
+          if (!recommendedHashtags[p]) {
+            fetchHashtags(p);
+          }
+        });
+      }
+    }, [workflowSections.review, platforms, story.posts, generatedContent, recommendedHashtags]);
 
     const tags = Array.isArray(tagsOverride)
       ? tagsOverride
@@ -317,9 +491,18 @@ const StoryCard = React.memo(
       try {
         const res = await apiFetch(`media/assets/${story.id}`);
         const data = await res.json();
-        if (res.ok) setMedia(data.images || []);
+        console.log('fetchMedia response for article', story.id, ':', data);
+        console.log('fetchMedia images array:', data.images);
+        if (res.ok && data.images) {
+          console.log('Setting media state with', data.images.length, 'images');
+          setMedia(data.images);
+        } else {
+          console.log('No images found or response not ok');
+          setMedia([]);
+        }
       } catch (_e) {
-        /* noop */
+        console.error('fetchMedia error:', _e);
+        setMedia([]);
       }
     };
 
@@ -327,9 +510,18 @@ const StoryCard = React.memo(
       try {
         const res = await apiFetch(`audio/${story.id}`);
         const data = await res.json();
-        if (res.ok) setAudioAssets(data.audio || []);
+        console.log('fetchAudio response for article', story.id, ':', data);
+        console.log('fetchAudio audio array:', data.audio);
+        if (res.ok && data.audio) {
+          console.log('Setting audioAssets state with', data.audio.length, 'audio files');
+          setAudioAssets(data.audio);
+        } else {
+          console.log('No audio found or response not ok');
+          setAudioAssets([]);
+        }
       } catch (_e) {
-        /* noop */
+        console.error('fetchAudio error:', _e);
+        setAudioAssets([]);
       }
     };
 
@@ -649,6 +841,28 @@ const StoryCard = React.memo(
 
     const scoreVal = Math.round(Number(story.total_score) || 0);
 
+    const toggleWorkflowSection = (section) => {
+      setWorkflowSections((prev) => ({ ...prev, [section]: !prev[section] }));
+    };
+
+    // Determine which workflow sections are available based on pipeline state
+    const availableSections = useMemo(() => {
+      // Check if we have any valid content (not errors)
+      const hasValidGeneratedContent = Object.values(generatedContent).some(
+        (c) => c && c.text && !c.text.startsWith('Error')
+      );
+      const hasValidPosts = story.posts && story.posts.length > 0 && story.posts.some(p => p.content);
+      const hasAnyContent = hasValidGeneratedContent || hasValidPosts;
+      
+      const sections = {
+        summary: true, // Always available
+        generate: true, // Always available - users can generate content anytime
+        review: hasAnyContent, // Available if any valid content exists
+        analyze: pipelineState === PIPELINE_STATES.POSTED,
+      };
+      return sections;
+    }, [pipelineState, generatedContent, story.posts]);
+
     return (
       <article
         className={`group relative overflow-hidden rounded-xl border transition-all duration-300 ${
@@ -672,300 +886,547 @@ const StoryCard = React.memo(
           </div>
         )}
 
-        <div className="p-6">
-          {/* Header Section */}
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2 flex-wrap">
+        <div className="p-5">
+          {/* Header Section - Source, Time, Priority */}
+          <div className="flex items-center gap-2 flex-wrap mb-4">
+            <span
+              className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold"
+              style={{
+                background: 'var(--accent-glow)',
+                color: 'var(--accent)',
+              }}
+            >
+              {(story.source || 'Source').toString().slice(0, 24)}
+            </span>
+            <span className="text-xs" style={{ color: 'var(--text3)' }}>
+              {timeLabel}
+            </span>
+            {story.priority === 'HIGH' && (
               <span
-                className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold"
-                style={{
-                  background: 'var(--accent-glow)',
-                  color: 'var(--accent)',
-                }}
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-md"
+                style={{ background: 'var(--red-dim)', color: 'var(--red)' }}
               >
-                {(story.source || 'Source').toString().slice(0, 24)}
+                High Priority
               </span>
-              <span className="text-xs" style={{ color: 'var(--text3)' }}>
-                {timeLabel}
-              </span>
-              {story.priority === 'HIGH' && (
-                <span
-                  className="text-[11px] font-semibold px-2.5 py-1 rounded-md"
-                  style={{ background: 'var(--red-dim)', color: 'var(--red)' }}
-                >
-                  High Priority
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className="font-mono text-sm font-bold px-3 py-1.5 rounded-lg"
-                style={{
-                  background: 'var(--amber-dim)',
-                  color: 'var(--amber)',
-                }}
-              >
-                {scoreVal}
-              </span>
-              <span
-                className="text-[11px] font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap"
-                style={{
-                  background:
-                    pipelineState === PIPELINE_STATES.POSTED
-                      ? 'var(--green-dim)'
-                      : pipelineState === PIPELINE_STATES.NEEDS_GENERATION
-                        ? 'var(--red-dim)'
-                        : 'var(--teal-dim)',
-                  color:
-                    pipelineState === PIPELINE_STATES.POSTED
-                      ? 'var(--green)'
-                      : pipelineState === PIPELINE_STATES.NEEDS_GENERATION
-                        ? 'var(--red)'
-                        : 'var(--teal)',
-                }}
-              >
-                {STATE_LABELS[pipelineState]}
-              </span>
-            </div>
+            )}
           </div>
 
-          {/* Title Section */}
-          <h2
-            className="line-clamp-2 font-bold leading-tight mb-3"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.125rem',
-              color: 'var(--text)',
-            }}
-          >
-            {story.url ? (
-              <a
-                href={story.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-start gap-2 hover:opacity-80 transition-opacity"
-                style={{ color: 'inherit' }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className="min-w-0">{story.title}</span>
-                <ExternalLink className="w-4 h-4 shrink-0 mt-1 opacity-50" aria-hidden />
-              </a>
-            ) : (
-              story.title
-            )}
-          </h2>
-
-          {/* Summary */}
-          <p
-            className="line-clamp-2 mb-4"
-            style={{ fontSize: '0.875rem', color: 'var(--text2)', lineHeight: 1.6 }}
-          >
-            {story.summary || 'No summary yet.'}
-          </p>
-
-          {/* Tags */}
-          {(tags.length > 0 || hashtags.length > 0) && (
-            <div className="flex flex-wrap gap-2 mb-5">
-              {tags.slice(0, 4).map((t) => (
-                <span
-                  key={`t-${t}`}
-                  className="text-xs px-2.5 py-1 rounded-md font-medium"
-                  style={{
-                    background: 'var(--surface2)',
-                    color: 'var(--text2)',
-                  }}
-                >
-                  {t}
-                </span>
-              ))}
-              {hashtags.slice(0, 2).map((h) => (
-                <span
-                  key={`h-${h}`}
-                  className="text-xs px-2.5 py-1 rounded-md font-medium"
-                  style={{ 
-                    background: 'var(--accent-glow)',
-                    color: 'var(--accent)',
-                  }}
-                >
-                  {h}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Channels Grid */}
-          <div className="mb-5">
-            <h3
-              className="text-xs font-bold uppercase tracking-wider mb-3"
-              style={{ color: 'var(--text3)' }}
+          {/* Workflow Sections */}
+          <div className="space-y-3 mb-5">
+            {/* 1. Summary Section - Contains Article Title, Score, Status, Summary, Tags */}
+            <WorkflowSection
+              number={1}
+              title="Summary"
+              description="Extract key takeaways from any article"
+              icon={FileCheck}
+              color="purple"
+              isExpanded={workflowSections.summary}
+              onToggle={() => toggleWorkflowSection('summary')}
+              isAvailable={availableSections.summary}
             >
-              Channels
-            </h3>
-            <div className="grid grid-cols-4 gap-2">
-              {PLATFORM_LIST.map((platform) => (
-                <PlatformCard
-                  key={platform.id}
-                  platform={platform}
-                  channelStatus={getPlatformChannelStatus(platform.id, mergedPosts)}
-                  isGenerating={!!platformGenerating[platform.id]}
-                  hasError={platformErrors[platform.id]}
-                  onGenerate={handleGenerateForPlatform}
-                  onViewContent={() => {
-                    logEngagement('view', platform.id);
-                    if (!expanded) {
-                      fetchMedia();
-                      fetchAudio();
+              <div className="space-y-3">
+                {/* Article Title with Score and Status */}
+                <div className="flex items-start justify-between gap-4">
+                  <h2
+                    className="line-clamp-2 font-bold leading-tight flex-1"
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '1.125rem',
+                      color: 'var(--text)',
+                    }}
+                  >
+                    {story.url ? (
+                      <a
+                        href={story.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-start gap-2 hover:opacity-80 transition-opacity"
+                        style={{ color: 'inherit' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="min-w-0">{story.title}</span>
+                        <ExternalLink className="w-4 h-4 shrink-0 mt-1 opacity-50" aria-hidden />
+                      </a>
+                    ) : (
+                      story.title
+                    )}
+                  </h2>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className="font-mono text-sm font-bold px-3 py-1.5 rounded-lg"
+                      style={{
+                        background: 'var(--amber-dim)',
+                        color: 'var(--amber)',
+                      }}
+                    >
+                      {scoreVal}
+                    </span>
+                    <span
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap"
+                      style={{
+                        background:
+                          pipelineState === PIPELINE_STATES.POSTED
+                            ? 'var(--green-dim)'
+                            : pipelineState === PIPELINE_STATES.NEEDS_GENERATION
+                              ? 'var(--red-dim)'
+                              : 'var(--teal-dim)',
+                        color:
+                          pipelineState === PIPELINE_STATES.POSTED
+                            ? 'var(--green)'
+                            : pipelineState === PIPELINE_STATES.NEEDS_GENERATION
+                              ? 'var(--red)'
+                              : 'var(--teal)',
+                      }}
+                    >
+                      {STATE_LABELS[pipelineState]}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Summary Text */}
+                <p className="text-sm" style={{ color: 'var(--text2)', lineHeight: 1.6 }}>
+                  {story.summary || 'No summary available yet.'}
+                </p>
+
+                {/* Tags */}
+                {(tags.length > 0 || hashtags.length > 0) && (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((t) => (
+                      <span
+                        key={`tag-${t}`}
+                        className="text-xs px-2.5 py-1 rounded-md font-medium"
+                        style={{
+                          background: 'var(--surface2)',
+                          color: 'var(--text2)',
+                        }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                    {hashtags.map((h) => (
+                      <span
+                        key={`hash-${h}`}
+                        className="text-xs px-2.5 py-1 rounded-md font-medium"
+                        style={{ 
+                          background: 'var(--accent-glow)',
+                          color: 'var(--accent)',
+                        }}
+                      >
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </WorkflowSection>
+
+            {/* 2. Content Generation Section */}
+            <WorkflowSection
+              number={2}
+              title="Content Generation"
+              description="Turn summaries into engaging content for any format"
+              icon={Edit3}
+              color="green"
+              isExpanded={workflowSections.generate}
+              onToggle={() => toggleWorkflowSection('generate')}
+              isAvailable={availableSections.generate}
+            >
+              <div className="space-y-3">
+                {/* Platforms Row */}
+                <div>
+                  <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text2)' }}>
+                    Platforms
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {PLATFORM_LIST.map((platform) => {
+                      const channelStatus = getPlatformChannelStatus(platform.id, mergedPosts);
+                      return (
+                        <PlatformCard
+                          key={platform.id}
+                          platform={platform}
+                          channelStatus={channelStatus}
+                          isGenerating={!!platformGenerating[platform.id]}
+                          hasError={platformErrors[platform.id]}
+                          onGenerate={handleGenerateForPlatform}
+                          onViewContent={() => {
+                            logEngagement('view', platform.id);
+                            // Add platform to platforms array if not already there
+                            if (!platforms.includes(platform.id)) {
+                              setPlatforms((prev) => [...prev, platform.id]);
+                            }
+                            // Load content if not already loaded
+                            if (!generatedContent[platform.id]) {
+                              const existingPost = story.posts?.find((post) => post.platform === platform.id);
+                              if (existingPost && existingPost.content) {
+                                setGeneratedContent((prev) => ({
+                                  ...prev,
+                                  [platform.id]: {
+                                    text: existingPost.content,
+                                    posted: Boolean(existingPost.posted),
+                                    posted_at: existingPost.posted_at || null,
+                                  },
+                                }));
+                              }
+                            }
+                            if (!expanded) {
+                              fetchMedia();
+                              fetchAudio();
+                            }
+                            setExpanded(true);
+                            // Open the review section to show the content
+                            setWorkflowSections((prev) => ({ ...prev, review: true }));
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Content Actions Row */}
+                <div>
+                  <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text2)' }}>
+                    Content Assets
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <ContentActionButton
+                      icon={Quote}
+                      label="Quote Card"
+                      onClick={async () => {
+                        try {
+                          const res = await apiFetch('/media/generate-quote-card', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                              article_id: story.id,
+                              text: story.summary || story.title,
+                              title: story.title
+                            }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            alert('Quote card generated successfully!');
+                            fetchMedia();
+                          } else {
+                            alert(`Error: ${data.error || 'Quote card generation failed'}`);
+                          }
+                        } catch (err) {
+                          alert(`Error: ${err.message}`);
+                        }
+                      }}
+                      color="rgb(139, 92, 246)"
+                    />
+                    <ContentActionButton
+                      icon={ImageIcon}
+                      label="Generate Image"
+                      onClick={async () => {
+                        try {
+                          const res = await apiFetch('/media/generate-image', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                              article_id: story.id,
+                              prompt: story.summary || story.title
+                            }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            alert('Image generated successfully!');
+                            fetchMedia();
+                          } else {
+                            alert(`Error: ${data.error || 'Image generation failed'}`);
+                          }
+                        } catch (err) {
+                          alert(`Error: ${err.message}`);
+                        }
+                      }}
+                      color="rgb(59, 130, 246)"
+                    />
+                    <ContentActionButton
+                      icon={Mic}
+                      label="Podcast"
+                      onClick={async () => {
+                        try {
+                          const res = await apiFetch('/generate/podcast', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                              article_ids: [story.id]
+                            }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            alert('Podcast generated successfully!');
+                            fetchAudio();
+                          } else {
+                            alert(`Error: ${data.error || 'Podcast generation failed'}`);
+                          }
+                        } catch (err) {
+                          alert(`Error: ${err.message}`);
+                        }
+                      }}
+                      color="rgb(236, 72, 153)"
+                    />
+                    <ContentActionButton
+                      icon={Tags}
+                      label="Taxonomy Management"
+                      onClick={() => setTagsModalOpen(true)}
+                      color="rgb(251, 146, 60)"
+                    />
+                  </div>
+                </div>
+
+                {/* Generate All Button */}
+                {platforms.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleBulkGenerate}
+                    disabled={Object.values(platformGenerating).some(Boolean)}
+                    className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+                    style={{
+                      background: 'rgb(16, 185, 129)',
+                      color: '#fff',
+                    }}
+                  >
+                    {Object.values(platformGenerating).some(Boolean) ? 'Generating...' : 'Generate All Selected'}
+                  </button>
+                )}
+              </div>
+            </WorkflowSection>
+
+            {/* 3. Review & Optimize Section */}
+            <WorkflowSection
+              number={3}
+              title="Review & Optimize"
+              description="Review, edit and optimize before you publish"
+              icon={Star}
+              color="orange"
+              isExpanded={workflowSections.review}
+              onToggle={() => toggleWorkflowSection('review')}
+              isAvailable={availableSections.review}
+            >
+              <div className="space-y-3">
+                {platforms.map((platform) => (
+                  <ContentEditor
+                    key={platform}
+                    platform={platform}
+                    content={generatedContent[platform]}
+                    qualityData={qualityData}
+                    qualityLoading={qualityLoading[platform]}
+                    hashtags={recommendedHashtags[platform]}
+                    onTogglePosted={togglePosted}
+                    onQualityCheck={fetchQualityCheck}
+                    onEdit={(p) => {
+                      setEditPlatform(p);
+                      setEditText(generatedContent[p]?.text || '');
+                      setEditModalOpen(true);
+                    }}
+                    onRegenerate={(p) => {
+                      setGeneratedContent((prev) => ({ ...prev, [p]: null }));
+                      fetchContent(p);
+                    }}
+                    onSchedule={(p) => {
+                      window.dispatchEvent(
+                        new CustomEvent('open-schedule-modal', {
+                          detail: { articleId: story.id, platform: p },
+                        })
+                      );
+                    }}
+                    onPostNow={async (p) => {
+                      try {
+                        await togglePosted(p);
+                        alert(`Posted to ${p} successfully!`);
+                      } catch (err) {
+                        alert(`Error posting to ${p}: ${err.message}`);
+                      }
+                    }}
+                    onFeedback={handleFeedback}
+                    onLogEngagement={logEngagement}
+                    onOpenQualityDetail={(plat, data) => {
+                      setActiveQualityDetail({ platform: plat, data });
+                      setQualityModalOpen(true);
+                    }}
+                    getGradeColor={getGradeColor}
+                  />
+                ))}
+                
+                {/* Bulk Actions */}
+                {platforms.length > 0 && (
+                  <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Blog Publisher Button */}
+                      <button
+                        type="button"
+                        onClick={() => setBlogOpen(true)}
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+                        style={{
+                          background: 'rgba(139, 92, 246, 0.1)',
+                          color: 'rgb(139, 92, 246)',
+                          border: '1px solid rgba(139, 92, 246, 0.3)',
+                        }}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Publish Blog
+                      </button>
+                      
+                      {/* Schedule All Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent('open-schedule-modal', {
+                              detail: { articleId: story.id, platforms },
+                            })
+                          );
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+                        style={{
+                          background: 'rgba(59, 130, 246, 0.1)',
+                          color: 'rgb(59, 130, 246)',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                        }}
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Schedule All
+                      </button>
+                      
+                      {/* Post All Now Button */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            for (const platform of platforms) {
+                              const content = generatedContent[platform];
+                              if (content && content.text && !content.text.startsWith('Error') && !content.posted) {
+                                await togglePosted(platform);
+                              }
+                            }
+                            alert('All content posted successfully!');
+                          } catch (err) {
+                            alert(`Error posting: ${err.message}`);
+                          }
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.1)',
+                          color: 'rgb(16, 185, 129)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                        }}
+                      >
+                        <Send className="w-4 h-4" />
+                        Post All Now
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                <MediaPanel
+                  media={media}
+                  mediaLoading={mediaLoading}
+                  audioAssets={audioAssets}
+                  audioLoading={audioLoading}
+                  onGenerateImage={async () => {
+                    try {
+                      const res = await apiFetch('/media/generate-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          article_id: story.id,
+                          prompt: story.summary || story.title
+                        }),
+                      });
+                      const data = await res.json();
+                      if (res.ok) {
+                        alert('Image generated successfully!');
+                        fetchMedia();
+                      } else {
+                        alert(`Error: ${data.error || 'Image generation failed'}`);
+                      }
+                    } catch (err) {
+                      alert(`Error: ${err.message}`);
                     }
-                    setExpanded(true);
+                  }}
+                  onGenerateQuoteCard={async () => {
+                    try {
+                      const res = await apiFetch('/media/generate-quote-card', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          article_id: story.id,
+                          text: story.summary || story.title,
+                          title: story.title
+                        }),
+                      });
+                      const data = await res.json();
+                      if (res.ok) {
+                        alert('Quote card generated successfully!');
+                        fetchMedia();
+                      } else {
+                        alert(`Error: ${data.error || 'Quote card generation failed'}`);
+                      }
+                    } catch (err) {
+                      alert(`Error: ${err.message}`);
+                    }
+                  }}
+                  onGenerateAudio={async () => {
+                    try {
+                      const res = await apiFetch('/generate/podcast', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          article_ids: [story.id]
+                        }),
+                      });
+                      const data = await res.json();
+                      if (res.ok) {
+                        alert('Podcast generated successfully!');
+                        fetchAudio();
+                      } else {
+                        alert(`Error: ${data.error || 'Podcast generation failed'}`);
+                      }
+                    } catch (err) {
+                      alert(`Error: ${err.message}`);
+                    }
                   }}
                 />
-              ))}
-            </div>
-          </div>
+              </div>
+            </WorkflowSection>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={executePrimary}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
-              style={{
-                background: 'var(--accent)',
-                color: '#fff',
-              }}
+            {/* 4. Analyze Section */}
+            <WorkflowSection
+              number={4}
+              title="Analyze"
+              description="Track performance and improve your strategy"
+              icon={BarChart3}
+              color="purple"
+              isExpanded={workflowSections.analyze}
+              onToggle={() => toggleWorkflowSection('analyze')}
+              isAvailable={availableSections.analyze}
             >
-              {primaryMeta.label}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (!expanded) {
-                  logEngagement('view');
-                  fetchMedia();
-                  fetchAudio();
-                }
-                setExpanded((e) => !e);
-              }}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-              style={{
-                borderColor: 'var(--border)',
-                background: 'var(--surface2)',
-                color: 'var(--text2)',
-              }}
-              title={expanded ? 'Collapse details' : 'Expand details'}
-              aria-expanded={expanded}
-            >
-              {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setBlogOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-              style={{
-                borderColor: 'var(--border)',
-                background: 'var(--surface2)',
-                color: 'var(--text2)',
-              }}
-              title="Blog generator"
-            >
-              <Sparkles className="w-5 h-5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTagsModalOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-              style={{
-                borderColor: 'var(--border)',
-                background: 'var(--surface2)',
-                color: 'var(--text2)',
-              }}
-              title="Tags"
-            >
-              <LayoutList className="w-5 h-5" />
-            </button>
+              <div className="space-y-2">
+                <p className="text-sm" style={{ color: 'var(--text2)' }}>
+                  Performance analytics will be available here once content is posted.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent('story-view-performance', { detail: { storyId: story.id } })
+                    );
+                  }}
+                  className="w-full px-4 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
+                  style={{
+                    background: 'rgba(139, 92, 246, 0.15)',
+                    color: 'rgb(139, 92, 246)',
+                  }}
+                >
+                  View Performance Dashboard
+                </button>
+              </div>
+            </WorkflowSection>
           </div>
         </div>
 
         <BlogPublisher open={blogOpen} onClose={() => setBlogOpen(false)} articleId={story.id} />
-
-        {expanded && (
-          <div
-            className="px-6 pb-6 pt-4 space-y-6"
-            style={{
-              background: 'var(--bg)',
-              borderTop: '1px solid var(--border)',
-            }}
-          >
-            <PublishPanel
-              platforms={platforms}
-              onChange={setPlatforms}
-              contentCount={
-                Object.values(generatedContent).filter((c) => c && c.text && !c.text.startsWith('Error'))
-                  .length
-              }
-              hasValidContent={
-                platforms.length > 0 &&
-                Object.values(generatedContent).filter((c) => c && c.text && !c.text.startsWith('Error'))
-                  .length === platforms.length
-              }
-              onSchedule={() => {
-                window.dispatchEvent(
-                  new CustomEvent('open-schedule-modal', {
-                    detail: { articleId: story.id },
-                  })
-                );
-              }}
-              onPublishNow={() => alert('Publish now coming soon!')}
-              onGenerate={handleBulkGenerate}
-              isGenerating={Object.values(platformGenerating).some(Boolean)}
-            />
-
-            <div className="space-y-3">
-              {platforms.map((platform) => (
-                <ContentEditor
-                  key={platform}
-                  platform={platform}
-                  content={generatedContent[platform]}
-                  qualityData={qualityData}
-                  qualityLoading={qualityLoading[platform]}
-                  hashtags={recommendedHashtags[platform]}
-                  onTogglePosted={togglePosted}
-                  onQualityCheck={fetchQualityCheck}
-                  onEdit={(p) => {
-                    setEditPlatform(p);
-                    setEditText(generatedContent[p]?.text || '');
-                    setEditModalOpen(true);
-                  }}
-                  onRegenerate={(p) => {
-                    setGeneratedContent((prev) => ({ ...prev, [p]: null }));
-                    fetchContent(p);
-                  }}
-                  onFeedback={handleFeedback}
-                  onLogEngagement={logEngagement}
-                  onOpenQualityDetail={(plat, data) => {
-                    setActiveQualityDetail({ platform: plat, data });
-                    setQualityModalOpen(true);
-                  }}
-                  getGradeColor={getGradeColor}
-                />
-              ))}
-            </div>
-
-            <MediaPanel
-              media={media}
-              mediaLoading={mediaLoading}
-              audioAssets={audioAssets}
-              audioLoading={audioLoading}
-              onGenerateImage={() => alert('Image generation triggered!')}
-              onGenerateQuoteCard={() => alert('Quote card triggered!')}
-              onGenerateAudio={() => alert('Audio sequence triggered!')}
-              onOpenBlogPublisher={() => setBlogOpen(true)}
-            />
-          </div>
-        )}
 
         <QualityModal
           open={qualityModalOpen}

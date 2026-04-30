@@ -128,6 +128,70 @@ class PodcastGenerator:
             self.log.error("Digest generation failed: %s", e)
             return None
 
+    def generate_article_podcast_sync(self, article_id: int) -> str | None:
+        """Generate a podcast for a single article."""
+        try:
+            return self._run_async(self.generate_article_podcast(article_id))
+        except Exception as e:
+            self.log.error("Article podcast generation failed: %s", e)
+            return None
+
+    async def generate_article_podcast(self, article_id: int) -> str | None:
+        """Generate a podcast for a single article with article_id linkage."""
+        from backend.db.session import SessionLocal
+        from backend.db.repositories.article_repository import ArticleRepository
+        from backend.db.models import RawArticle
+
+        db = SessionLocal()
+        try:
+            repo = ArticleRepository(db)
+            # Get the article
+            raw_article = db.query(RawArticle).filter(RawArticle.id == article_id).first()
+            if not raw_article:
+                self.log.warning(f"Article {article_id} not found")
+                return None
+            
+            story = repo._format_story(raw_article)
+            
+            # Get processed article ID for linking
+            processed_id = repo.ensure_processed_id(article_id)
+            if not processed_id:
+                self.log.warning(f"Article {article_id} not processed yet")
+                return None
+        finally:
+            db.close()
+
+        # Generate script for single article
+        from backend.llm.llm_router import smart_router, Task
+        try:
+            prompt = f"""Create an engaging podcast script for this article:
+
+Title: {story['title']}
+Summary: {story.get('summary', '')}
+
+Generate a conversational podcast script (2-3 minutes) that:
+1. Introduces the topic in an engaging way
+2. Explains the key points clearly
+3. Provides context and analysis
+4. Ends with a thought-provoking conclusion
+
+Keep it natural and conversational."""
+            
+            response = smart_router.generate(prompt, max_tokens=1024, task=Task.SOCIAL_LONG)
+            script = str(response)
+        except Exception as e:
+            self.log.error("LLM script generation failed: %s", e)
+            script = f"Today's story: {story['title']}. {story.get('summary', '')}"
+
+        # Generate audio with article_id linkage
+        filename = f"podcast_article_{article_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
+        path = await self.audio_engine.generate_audio(processed_id, script, filename=filename)
+
+        if path:
+            self.log.info(f"Article podcast generated for article {article_id}: {path}")
+            return path
+        return None
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
