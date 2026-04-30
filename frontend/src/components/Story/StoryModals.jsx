@@ -124,7 +124,7 @@ export const EditModal = ({ open, platform, text, setText, onSave, onClose, load
         <textarea 
           value={text} 
           onChange={(e) => setText(e.target.value)} 
-          className="w-full min-h-[250px] border border-gray-200 rounded-2xl p-4 text-sm font-mono leading-relaxed focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none shadow-inner" 
+          className="w-full min-h-[250px] border border-gray-200 rounded-2xl p-4 text-sm font-mono leading-relaxed focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none shadow-inner text-gray-900 bg-white" 
           placeholder="Refine post content..."
         />
         <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">

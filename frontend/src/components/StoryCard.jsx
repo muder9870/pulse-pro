@@ -1220,9 +1220,40 @@ const StoryCard = React.memo(
                       setEditText(generatedContent[p]?.text || '');
                       setEditModalOpen(true);
                     }}
-                    onRegenerate={(p) => {
+                    onRegenerate={async (p) => {
+                      // Clear existing content
                       setGeneratedContent((prev) => ({ ...prev, [p]: null }));
-                      fetchContent(p);
+                      
+                      // Force regeneration by calling the API directly
+                      try {
+                        const res = await apiFetch('/generate', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ article_id: story.id, platform: p }),
+                        });
+                        if (!res.ok) throw new Error('Generation failed');
+                        
+                        // Fetch the newly generated content
+                        const contentRes = await apiFetch(`content/${story.id}/${p}`);
+                        const data = await contentRes.json();
+                        
+                        setGeneratedContent((prev) => ({
+                          ...prev,
+                          [p]: {
+                            text: data.content,
+                            posted: Boolean(data.posted),
+                            posted_at: data.posted_at || null,
+                          },
+                        }));
+                        
+                        // Refresh hashtags
+                        fetchHashtags(p);
+                      } catch (err) {
+                        setGeneratedContent((prev) => ({
+                          ...prev,
+                          [p]: { text: 'Error: Regeneration failed.', posted: false, posted_at: null },
+                        }));
+                      }
                     }}
                     onSchedule={(p) => {
                       window.dispatchEvent(
@@ -1232,11 +1263,13 @@ const StoryCard = React.memo(
                       );
                     }}
                     onPostNow={async (p) => {
+                      // Note: This currently only marks as posted locally
+                      // Actual platform posting would require OAuth integrations
                       try {
                         await togglePosted(p);
-                        alert(`Posted to ${p} successfully!`);
+                        alert(`Marked as posted for ${p}. Note: Actual platform posting requires integration setup.`);
                       } catch (err) {
-                        alert(`Error posting to ${p}: ${err.message}`);
+                        alert(`Error marking as posted for ${p}: ${err.message}`);
                       }
                     }}
                     onFeedback={handleFeedback}

@@ -48,10 +48,28 @@ const BulkScheduleModal = ({ open, onClose, onSchedule, selectedCount }) => {
   const [platform, setPlatform] = useState('twitter');
   const [scheduleTime, setScheduleTime] = useState('');
   const [error, setError] = useState('');
+  const [preselectedPlatform, setPreselectedPlatform] = useState(null);
+
+  // Listen for schedule modal events to get preselected platform
+  React.useEffect(() => {
+    const handleScheduleEvent = (e) => {
+      const { platform: eventPlatform } = e.detail || {};
+      if (eventPlatform) {
+        setPreselectedPlatform(eventPlatform);
+        setPlatform(eventPlatform);
+      } else {
+        setPreselectedPlatform(null);
+      }
+    };
+    
+    window.addEventListener('open-schedule-modal', handleScheduleEvent);
+    return () => window.removeEventListener('open-schedule-modal', handleScheduleEvent);
+  }, []);
 
   if (!open) return null;
 
   const presets = getPresets();
+  const isPlatformLocked = Boolean(preselectedPlatform);
 
   const handlePreset = (date) => {
     setScheduleTime(toLocalDatetimeValue(date));
@@ -66,12 +84,14 @@ const BulkScheduleModal = ({ open, onClose, onSchedule, selectedCount }) => {
     setPlatform('twitter');
     setScheduleTime('');
     setError('');
+    setPreselectedPlatform(null);
   };
 
   const handleClose = () => {
     setPlatform('twitter');
     setScheduleTime('');
     setError('');
+    setPreselectedPlatform(null);
     onClose();
   };
 
@@ -108,15 +128,29 @@ const BulkScheduleModal = ({ open, onClose, onSchedule, selectedCount }) => {
         {/* Body */}
         <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Platform */}
-          <div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
-              Platform
-            </label>
-            <select value={platform} onChange={e => setPlatform(e.target.value)} style={sel}>
-              {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-            </select>
-          </div>
+          {/* Platform - Only show if not locked */}
+          {!isPlatformLocked && (
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
+                Platform
+              </label>
+              <select value={platform} onChange={e => setPlatform(e.target.value)} style={sel}>
+                {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+          )}
+          
+          {/* Platform - Show as locked/readonly if preselected */}
+          {isPlatformLocked && (
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
+                Platform
+              </label>
+              <div style={{ ...sel, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent-glow)', border: '1px solid var(--accent)', color: 'var(--accent)', fontWeight: 600 }}>
+                <span style={{ textTransform: 'capitalize' }}>{PLATFORMS.find(p => p.value === platform)?.label || platform}</span>
+              </div>
+            </div>
+          )}
 
           {/* Quick presets */}
           <div>
