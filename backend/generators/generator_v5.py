@@ -72,8 +72,13 @@ class ContentGenerator:
         self.router = smart_router
         self.log = logging.getLogger("content_generator")
 
-    def generate_for_article(self, article_id: int, platforms: List[str] | None = None) -> Dict[str, str]:
+    def generate_for_article(self, article_id: int, platforms: List[str] | None = None, force_regenerate: bool = False) -> Dict[str, str]:
         """Generate content for a single article across selected platforms.
+
+        Args:
+            article_id: The article ID to generate content for
+            platforms: List of platforms to generate for (None = all platforms)
+            force_regenerate: If True, bypass LLM cache and force new generation
 
         Returns a mapping of platform -> generated text.
         """
@@ -167,13 +172,13 @@ class ContentGenerator:
             )
 
             try:
-                # Check LLM cache first
+                # Check LLM cache first (unless force_regenerate is True)
                 from backend.llm_cache import get_cached_response, cache_llm_response
                 
                 task = PLATFORM_TASKS.get(platform_key, Task.SOCIAL_SHORT)
                 model_name = f"task_{task.value}"
                 
-                cached_text = get_cached_response(prompt, model=model_name)
+                cached_text = None if force_regenerate else get_cached_response(prompt, model=model_name)
                 if cached_text:
                     text = cached_text
                     self.log.info(f"llm_cache_hit platform={platform_key} article_id={article_id}")
@@ -184,7 +189,8 @@ class ContentGenerator:
                     
                     # Cache the response
                     cache_llm_response(prompt, text, model=model_name)
-                    self.log.info(f"llm_generated_and_cached platform={platform_key} article_id={article_id} provider={provider}")
+                    cache_status = "bypassed" if force_regenerate else "generated_and_cached"
+                    self.log.info(f"llm_{cache_status} platform={platform_key} article_id={article_id} provider={provider}")
                     
             except Exception as exc:
                 msg = f"{platform_key}: {exc}"

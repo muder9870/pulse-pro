@@ -96,6 +96,14 @@ def generate_content():
             platform:
               type: string
               description: Optional platform filter (e.g. twitter)
+            platforms:
+              type: array
+              items:
+                type: string
+              description: Optional list of platforms to generate for
+            force_regenerate:
+              type: boolean
+              description: If true, bypass LLM cache and force new generation
     responses:
       200:
         description: Content generated successfully
@@ -108,8 +116,12 @@ def generate_content():
     if err:
         body, status = err
         return jsonify(body), status
+    
+    # Check for force_regenerate parameter
+    force_regenerate = request.json.get("force_regenerate", False) if request.json else False
+    
     platforms = obj.platforms  # None → ContentGenerator uses all 8 defaults
-    results = ContentGenerator().generate_for_article(obj.article_id, platforms=platforms)
+    results = ContentGenerator().generate_for_article(obj.article_id, platforms=platforms, force_regenerate=force_regenerate)
     return jsonify({"status": "success", "results": results}), 200
 
 @content_bp.get("/api/media/assets/<int:article_id>")
@@ -287,12 +299,36 @@ def quality_check():
         data = request.json or {}
         article_id = data.get("article_id")
         content = data.get("content")
-        platform = data.get("platform")
+        platform = data.get("platform", "general")
+        
+        if not content:
+            return jsonify({"error": "Content is required"}), 400
         
         analyzer = ContentQualityAnalyzer()
-        score = analyzer.analyze_content(content, platform=platform)
+        metrics = analyzer.analyze_content_quality(content, platform=platform)
+        recommendations = analyzer.get_quality_recommendations(metrics, platform)
         
-        return jsonify({"status": "success", "quality_score": score}), 200
+        # Convert metrics to grade
+        overall = metrics.overall_score
+        if overall >= 85:
+            grade = "A"
+        elif overall >= 70:
+            grade = "B"
+        elif overall >= 55:
+            grade = "C"
+        else:
+            grade = "D"
+        
+        return jsonify({
+            "status": "success",
+            "grade": grade,
+            "overall_score": round(metrics.overall_score, 1),
+            "readability_score": round(metrics.readability_score, 1),
+            "engagement_potential": round(metrics.engagement_potential, 1),
+            "clarity_score": round(metrics.clarity_score, 1),
+            "uniqueness_score": round(metrics.uniqueness_score, 1),
+            "recommendations": recommendations
+        }), 200
     except Exception as e:
         logger.exception("Quality check failed")
         return jsonify({"error": str(e)}), 500

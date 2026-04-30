@@ -1224,12 +1224,16 @@ const StoryCard = React.memo(
                       // Clear existing content
                       setGeneratedContent((prev) => ({ ...prev, [p]: null }));
                       
-                      // Force regeneration by calling the API directly
+                      // Force regeneration by calling the API directly with force_regenerate flag
                       try {
                         const res = await apiFetch('/generate', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ article_id: story.id, platform: p }),
+                          body: JSON.stringify({ 
+                            article_id: story.id, 
+                            platform: p,
+                            force_regenerate: true  // Bypass LLM cache
+                          }),
                         });
                         if (!res.ok) throw new Error('Generation failed');
                         
