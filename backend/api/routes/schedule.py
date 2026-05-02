@@ -16,19 +16,32 @@ def get_schedule_list():
     """Get list of scheduled posts."""
     db = SessionLocal()
     try:
-        from backend.db.models import ProcessedArticle, RawArticle
+        from backend.db.models import ProcessedArticle, RawArticle, GeneratedContent
         posts = db.query(ScheduledPost).order_by(ScheduledPost.scheduled_time.asc()).limit(50).all()
         
         schedule_list = []
         for post in posts:
             # Join to get article title via ProcessedArticle → RawArticle
             article_title = f"Article #{post.article_id}"
+            platform_content = None
+            content_char_count = 0
+            
             try:
                 processed = db.query(ProcessedArticle).filter(ProcessedArticle.id == post.article_id).first()
                 if processed:
                     raw = db.query(RawArticle).filter(RawArticle.id == processed.raw_article_id).first()
                     if raw and raw.title:
                         article_title = raw.title
+                    
+                    # Get the platform-specific content that will be posted
+                    generated = db.query(GeneratedContent).filter(
+                        GeneratedContent.article_id == post.article_id,
+                        GeneratedContent.platform == post.platform
+                    ).first()
+                    
+                    if generated:
+                        platform_content = generated.content
+                        content_char_count = generated.char_count
             except Exception:
                 pass
 
@@ -37,6 +50,8 @@ def get_schedule_list():
                 "article_id": post.article_id,
                 "article_title": article_title,
                 "platform": post.platform,
+                "platform_content": platform_content,
+                "content_char_count": content_char_count,
                 "status": post.status,
                 "scheduled_time": post.scheduled_time.isoformat() if post.scheduled_time else None,
                 "error_message": getattr(post, 'error_message', None),

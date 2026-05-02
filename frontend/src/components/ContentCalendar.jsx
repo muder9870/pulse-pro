@@ -10,9 +10,10 @@ function PostDetailModal({ post, onClose, onDelete, onViewArticle }) {
   const d = new Date(post.scheduled_at || post.scheduled_time);
   const statusColor = post.status === 'posted' ? 'var(--green)' : post.status === 'failed' ? 'var(--red)' : 'var(--accent)';
   const statusBg = post.status === 'posted' ? 'var(--green-dim)' : post.status === 'failed' ? 'var(--red-dim)' : 'var(--accent-glow)';
+  
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={onClose}>
-      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 480, padding: '20px 24px' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 600, maxHeight: '80vh', overflow: 'auto', padding: '20px 24px' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -21,8 +22,9 @@ function PostDetailModal({ post, onClose, onDelete, onViewArticle }) {
             </div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3 }}>{post.article_title || post.title || 'Untitled'}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 18, lineHeight: 1 }}>x</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 18, lineHeight: 1 }}>×</button>
         </div>
+        
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }}>
             <Clock style={{ width: 14, height: 14, color: 'var(--text3)' }} />
@@ -31,8 +33,47 @@ function PostDetailModal({ post, onClose, onDelete, onViewArticle }) {
               <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
             </div>
           </div>
+          
+          {/* Platform Content Preview */}
+          {post.platform_content ? (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                Content to be posted ({post.content_char_count || post.platform_content.length} characters)
+              </div>
+              <div style={{ 
+                padding: '12px 14px', 
+                background: 'var(--surface)', 
+                border: '1px solid var(--border)', 
+                borderRadius: 8, 
+                fontSize: 13, 
+                color: 'var(--text)', 
+                lineHeight: 1.6,
+                maxHeight: '300px',
+                overflowY: 'auto',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}>
+                {post.platform_content}
+              </div>
+            </div>
+          ) : (
+            <div style={{ 
+              padding: '12px 14px', 
+              background: 'var(--surface)', 
+              border: '1px solid var(--border)', 
+              borderRadius: 8, 
+              fontSize: 12, 
+              color: 'var(--text3)',
+              fontStyle: 'italic',
+              textAlign: 'center'
+            }}>
+              No content generated for this platform yet
+            </div>
+          )}
+          
           {post.error_message && <div style={{ padding: '8px 12px', background: 'var(--red-dim)', border: '1px solid var(--red)', borderRadius: 8, fontSize: 11, color: 'var(--red)' }}>{post.error_message}</div>}
         </div>
+        
         <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
           <button onClick={(e) => onDelete(post.id, e)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--red)', background: 'var(--red-dim)', color: 'var(--red)', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
             <Trash2 style={{ width: 12, height: 12 }} /> Remove Schedule
