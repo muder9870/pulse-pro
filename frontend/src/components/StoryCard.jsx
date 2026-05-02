@@ -1309,9 +1309,24 @@ const StoryCard = React.memo(
                       <button
                         type="button"
                         onClick={() => {
+                          // Get platforms with valid content
+                          const validPlatforms = platforms.filter(p => {
+                            const content = generatedContent[p];
+                            return content && content.text && !content.text.startsWith('Error');
+                          });
+                          
+                          if (validPlatforms.length === 0) {
+                            alert('No valid content to schedule. Please generate content first.');
+                            return;
+                          }
+                          
                           window.dispatchEvent(
                             new CustomEvent('open-schedule-modal', {
-                              detail: { articleId: story.id, platforms },
+                              detail: { 
+                                articleId: story.id, 
+                                platforms: validPlatforms,
+                                mode: 'schedule-all'
+                              },
                             })
                           );
                         }}
@@ -1323,23 +1338,58 @@ const StoryCard = React.memo(
                         }}
                       >
                         <Calendar className="w-4 h-4" />
-                        Schedule All
+                        {(() => {
+                          const count = platforms.filter(p => {
+                            const content = generatedContent[p];
+                            return content && content.text && !content.text.startsWith('Error');
+                          }).length;
+                          return `Schedule All (${count})`;
+                        })()}
                       </button>
                       
                       {/* Post All Now Button */}
                       <button
                         type="button"
                         onClick={async () => {
+                          const validPlatforms = platforms.filter(p => {
+                            const content = generatedContent[p];
+                            return content && content.text && !content.text.startsWith('Error') && !content.posted;
+                          });
+                          
+                          if (validPlatforms.length === 0) {
+                            alert('No content to post. All platforms are either already posted or have no valid content.');
+                            return;
+                          }
+                          
+                          const confirmed = window.confirm(
+                            `Mark ${validPlatforms.length} platform${validPlatforms.length !== 1 ? 's' : ''} as posted?\n\n` +
+                            `Platforms: ${validPlatforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')}\n\n` +
+                            `Note: This only marks content as posted locally. Actual platform posting requires integration setup.`
+                          );
+                          
+                          if (!confirmed) return;
+                          
                           try {
-                            for (const platform of platforms) {
-                              const content = generatedContent[platform];
-                              if (content && content.text && !content.text.startsWith('Error') && !content.posted) {
+                            let successCount = 0;
+                            let errorCount = 0;
+                            
+                            for (const platform of validPlatforms) {
+                              try {
                                 await togglePosted(platform);
+                                successCount++;
+                              } catch (err) {
+                                console.error(`Failed to post ${platform}:`, err);
+                                errorCount++;
                               }
                             }
-                            alert('All content posted successfully!');
+                            
+                            if (errorCount === 0) {
+                              alert(`✅ Successfully marked ${successCount} platform${successCount !== 1 ? 's' : ''} as posted!`);
+                            } else {
+                              alert(`⚠️ Posted ${successCount} platform${successCount !== 1 ? 's' : ''}, but ${errorCount} failed. Check console for details.`);
+                            }
                           } catch (err) {
-                            alert(`Error posting: ${err.message}`);
+                            alert(`❌ Error posting: ${err.message}`);
                           }
                         }}
                         className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
@@ -1350,7 +1400,13 @@ const StoryCard = React.memo(
                         }}
                       >
                         <Send className="w-4 h-4" />
-                        Post All Now
+                        {(() => {
+                          const count = platforms.filter(p => {
+                            const content = generatedContent[p];
+                            return content && content.text && !content.text.startsWith('Error') && !content.posted;
+                          }).length;
+                          return `Post All Now (${count})`;
+                        })()}
                       </button>
                     </div>
                   </div>

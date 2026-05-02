@@ -322,11 +322,13 @@ def quality_check():
         return jsonify({
             "status": "success",
             "grade": grade,
-            "overall_score": round(metrics.overall_score, 1),
-            "readability_score": round(metrics.readability_score, 1),
-            "engagement_potential": round(metrics.engagement_potential, 1),
-            "clarity_score": round(metrics.clarity_score, 1),
-            "uniqueness_score": round(metrics.uniqueness_score, 1),
+            "metrics": {
+                "overall_score": round(metrics.overall_score, 1),
+                "readability_score": round(metrics.readability_score, 1),
+                "engagement_potential": round(metrics.engagement_potential, 1),
+                "clarity_score": round(metrics.clarity_score, 1),
+                "uniqueness_score": round(metrics.uniqueness_score, 1)
+            },
             "recommendations": recommendations
         }), 200
     except Exception as e:

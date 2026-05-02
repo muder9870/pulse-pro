@@ -20,6 +20,7 @@ import { useAppKeyboardShortcuts } from './hooks/useAppKeyboardShortcuts';
 import { BulkOperationsProvider } from './context/BulkOperationsContext';
 import { StoriesProvider } from './context/StoriesContext';
 import BulkConfirmationDialog from './components/BulkConfirmationDialog';
+import BulkScheduleModal from './components/BulkScheduleModal';
 // View components — lazy loaded per route to reduce initial bundle size
 const AnalyticsView = lazy(() => import('./views/AnalyticsView'));
 const CalendarView = lazy(() => import('./views/CalendarView'));
@@ -67,6 +68,8 @@ function AppContent() {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showPlatformScheduleModal, setShowPlatformScheduleModal] = useState(false);
+  const [platformScheduleData, setPlatformScheduleData] = useState(null);
   
   // Bulk confirmation dialog state (Requirements 1.1, 1.5)
   const [bulkConfirmation, setBulkConfirmation] = useState({
@@ -150,7 +153,16 @@ function AppContent() {
   // Handle schedule modal trigger from StoryCard
   useEffect(() => {
     const handleOpenSchedule = (e) => {
-      const { articleId } = e.detail;
+      const { articleId, platform, platforms, mode } = e.detail || {};
+      
+      // Handle per-platform scheduling (from StoryCard Review section)
+      if (platform || platforms || mode === 'schedule-all') {
+        setPlatformScheduleData(e.detail);
+        setShowPlatformScheduleModal(true);
+        return;
+      }
+      
+      // Handle article-level scheduling (from primary action button)
       // Pre-select the article and open schedule modal
       if (articleId && !selectedIds.has(articleId)) {
         toggleSelection(articleId);
@@ -798,6 +810,79 @@ function AppContent() {
         current: 0,
         total: 0
       });
+    }
+  };
+
+  // Handle per-platform scheduling from StoryCard
+  const handlePlatformSchedule = async (options) => {
+    if (!platformScheduleData) return;
+    
+    const { articleId, platform, platforms, mode } = platformScheduleData;
+    
+    // Validate inputs
+    if (!options.time) {
+      toast.error('Please select a date and time');
+      return;
+    }
+    
+    try {
+      if (mode === 'schedule-all' && platforms && platforms.length > 0) {
+        // Schedule all platforms
+        let successCount = 0;
+        for (const plat of platforms) {
+          try {
+            const response = await apiFetch('/schedule/queue', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                article_id: articleId,
+                platform: plat,
+                scheduled_time: options.time
+              })
+            });
+            
+            if (response.ok) {
+              successCount++;
+            }
+          } catch (error) {
+            console.error(`Failed to schedule ${plat}:`, error);
+          }
+        }
+        
+        if (successCount > 0) {
+          toast.success(`Scheduled ${successCount} platform${successCount > 1 ? 's' : ''} successfully!`);
+        } else {
+          toast.error('Failed to schedule platforms');
+        }
+      } else if (platform) {
+        // Schedule single platform
+        const response = await apiFetch('/schedule/queue', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            article_id: articleId,
+            platform: platform,
+            scheduled_time: options.time
+          })
+        });
+        
+        if (response.ok) {
+          toast.success(`Scheduled for ${platform} successfully!`);
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          toast.error(errorData.error || 'Failed to schedule');
+        }
+      }
+      
+      // Close modal and clear data
+      setShowPlatformScheduleModal(false);
+      setPlatformScheduleData(null);
+      
+      // Refresh stories to show updated schedule status
+      queryClient.invalidateQueries({ queryKey: ['stories'] });
+    } catch (error) {
+      console.error('Platform schedule error:', error);
+      toast.error(`Scheduling failed: ${error.message}`);
     }
   };
 
@@ -1743,6 +1828,19 @@ function AppContent() {
         itemCount={bulkConfirmation.itemCount}
         onConfirm={bulkConfirmation.onConfirm}
         onCancel={() => setBulkConfirmation({ isOpen: false, operationName: '', itemCount: 0, onConfirm: null })}
+      />
+
+      {/* Per-Platform Schedule Modal (from StoryCard) */}
+      <BulkScheduleModal
+        open={showPlatformScheduleModal}
+        onClose={() => {
+          setShowPlatformScheduleModal(false);
+          setPlatformScheduleData(null);
+        }}
+        onSchedule={handlePlatformSchedule}
+        selectedCount={1}
+        preselectedPlatform={platformScheduleData?.platform || null}
+        scheduleAllPlatforms={platformScheduleData?.platforms || []}
       />
 
       {/* Notification Panel */}

@@ -1,76 +1,90 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
 
 const ToastContainer = ({ toasts, onRemove }) => {
+  const getToastStyles = (type) => {
+    switch (type) {
+      case 'success':
+        return {
+          bg: 'bg-green-50 dark:bg-green-900/20',
+          border: 'border-green-500',
+          icon: CheckCircle,
+          iconColor: 'text-green-600 dark:text-green-400',
+          iconBg: 'bg-green-100 dark:bg-green-900/40',
+          textColor: 'text-green-900 dark:text-green-100'
+        };
+      case 'error':
+        return {
+          bg: 'bg-red-50 dark:bg-red-900/20',
+          border: 'border-red-500',
+          icon: XCircle,
+          iconColor: 'text-red-600 dark:text-red-400',
+          iconBg: 'bg-red-100 dark:bg-red-900/40',
+          textColor: 'text-red-900 dark:text-red-100'
+        };
+      case 'warning':
+        return {
+          bg: 'bg-yellow-50 dark:bg-yellow-900/20',
+          border: 'border-yellow-500',
+          icon: AlertTriangle,
+          iconColor: 'text-yellow-600 dark:text-yellow-400',
+          iconBg: 'bg-yellow-100 dark:bg-yellow-900/40',
+          textColor: 'text-yellow-900 dark:text-yellow-100'
+        };
+      default:
+        return {
+          bg: 'bg-blue-50 dark:bg-blue-900/20',
+          border: 'border-blue-500',
+          icon: Info,
+          iconColor: 'text-blue-600 dark:text-blue-400',
+          iconBg: 'bg-blue-100 dark:bg-blue-900/40',
+          textColor: 'text-blue-900 dark:text-blue-100'
+        };
+    }
+  };
+
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`
-            max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto
-            transform transition-all duration-300 ease-in-out
-            ${toast.type === 'success' ? 'border-green-500' : ''}
-            ${toast.type === 'error' ? 'border-red-500' : ''}
-            ${toast.type === 'warning' ? 'border-yellow-500' : ''}
-            ${toast.type === 'info' ? 'border-blue-500' : ''}
-          `}
-        >
-          <div className="p-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                {toast.type === 'success' && (
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 1.414l-8-8a1 1 0 00-1.414 1.414L10.586 9.172a1 1 0 001.414 1.414 1.414 0 002.828 2.828 0 00-1.414 1.414l-1.887 1.683c-.366.368-.825-.54-1.811-.657-.825-.72-1.811-.826-1.811-.368-.825.54-1.811.657-.825.72-1.811.826-1.811.368-.825.54-1.811.657-.825.72-1.811.826-1.811z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-                {toast.type === 'error' && (
-                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 11-16 0 8 8 0 018-8v-2a6 6 0 00-6 6h-2a6 6 0 00-6 6v2a8 8 0 0018 8z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-                {toast.type === 'warning' && (
-                  <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.279 1.545-1.451 1.683-1.811l1.568-1.887a1 1 0 001.414 1.414 1.414 0 002.828 2.828 0 00-1.414 1.414l-1.887 1.683c-.366.368-.825-.54-1.811-.657-.825-.72-1.811-.826-1.811.368-.825.54-1.811.657-.825.72-1.811.826-1.811.368-.825.54-1.811.657-.825.72-1.811.826-1.811z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-                {toast.type === 'info' && (
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0l-8-4v4l8-4v8a2 2 0 002 2h8a2 2 0 002-2v-8a2 2 0 002-2z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <div className="ml-3 w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  {toast.message}
-                </p>
-                {toast.description && (
-                  <p className="mt-1 text-sm text-gray-500">
-                    {toast.description}
+    <div className="fixed top-20 right-6 z-50 space-y-3 max-w-md w-96">
+      {toasts.map((toast) => {
+        const styles = getToastStyles(toast.type);
+        const Icon = styles.icon;
+        
+        return (
+          <div
+            key={toast.id}
+            className={`
+              w-full ${styles.bg} shadow-2xl rounded-xl border-l-4 ${styles.border}
+              transform transition-all duration-300 ease-in-out
+              animate-in slide-in-from-right-5 fade-in
+            `}
+          >
+            <div className="p-5">
+              <div className="flex items-start gap-4">
+                <div className={`flex-shrink-0 w-10 h-10 ${styles.iconBg} rounded-lg flex items-center justify-center`}>
+                  <Icon className={`w-5 h-5 ${styles.iconColor}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-base font-semibold ${styles.textColor} leading-snug`}>
+                    {toast.message}
                   </p>
-                )}
-              </div>
-              <div className="ml-4 flex-shrink-0">
+                  {toast.description && (
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      {toast.description}
+                    </p>
+                  )}
+                </div>
                 <button
                   onClick={() => onRemove(toast.id)}
-                  className="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="flex-shrink-0 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                  aria-label="Close notification"
                 >
-                  <span className="sr-only">Close</span>
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

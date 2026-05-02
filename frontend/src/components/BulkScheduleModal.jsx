@@ -44,32 +44,32 @@ const toLocalDatetimeValue = (date) => {
   return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-const BulkScheduleModal = ({ open, onClose, onSchedule, selectedCount }) => {
+const BulkScheduleModal = ({ open, onClose, onSchedule, selectedCount, preselectedPlatform = null, scheduleAllPlatforms = [] }) => {
   const [platform, setPlatform] = useState('twitter');
   const [scheduleTime, setScheduleTime] = useState('');
   const [error, setError] = useState('');
-  const [preselectedPlatform, setPreselectedPlatform] = useState(null);
 
-  // Listen for schedule modal events to get preselected platform
+  // Set platform from preselected when it changes
   React.useEffect(() => {
-    const handleScheduleEvent = (e) => {
-      const { platform: eventPlatform } = e.detail || {};
-      if (eventPlatform) {
-        setPreselectedPlatform(eventPlatform);
-        setPlatform(eventPlatform);
-      } else {
-        setPreselectedPlatform(null);
-      }
-    };
-    
-    window.addEventListener('open-schedule-modal', handleScheduleEvent);
-    return () => window.removeEventListener('open-schedule-modal', handleScheduleEvent);
-  }, []);
+    if (preselectedPlatform) {
+      setPlatform(preselectedPlatform);
+    }
+  }, [preselectedPlatform]);
+  
+  // Reset state when modal closes
+  React.useEffect(() => {
+    if (!open) {
+      setPlatform('twitter');
+      setScheduleTime('');
+      setError('');
+    }
+  }, [open]);
 
   if (!open) return null;
 
   const presets = getPresets();
   const isPlatformLocked = Boolean(preselectedPlatform);
+  const isScheduleAllMode = scheduleAllPlatforms && scheduleAllPlatforms.length > 0;
 
   const handlePreset = (date) => {
     setScheduleTime(toLocalDatetimeValue(date));
@@ -80,18 +80,26 @@ const BulkScheduleModal = ({ open, onClose, onSchedule, selectedCount }) => {
     if (!scheduleTime) { setError('Please select a date and time'); return; }
     const dt = new Date(scheduleTime);
     if (dt <= new Date()) { setError('Schedule time must be in the future'); return; }
-    onSchedule({ time: scheduleTime, platform });
+    
+    if (isScheduleAllMode) {
+      // Schedule all platforms - no need to check platform field
+      onSchedule({ time: scheduleTime, platforms: scheduleAllPlatforms });
+    } else {
+      // Schedule single platform - validate platform is selected
+      if (!platform) { setError('Please select a platform'); return; }
+      onSchedule({ time: scheduleTime, platform });
+    }
+    
+    // Reset state
     setPlatform('twitter');
     setScheduleTime('');
     setError('');
-    setPreselectedPlatform(null);
   };
 
   const handleClose = () => {
     setPlatform('twitter');
     setScheduleTime('');
     setError('');
-    setPreselectedPlatform(null);
     onClose();
   };
 
@@ -128,8 +136,8 @@ const BulkScheduleModal = ({ open, onClose, onSchedule, selectedCount }) => {
         {/* Body */}
         <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Platform - Only show if not locked */}
-          {!isPlatformLocked && (
+          {/* Platform - Only show if not locked and not schedule-all mode */}
+          {!isPlatformLocked && !isScheduleAllMode && (
             <div>
               <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
                 Platform
@@ -141,13 +149,29 @@ const BulkScheduleModal = ({ open, onClose, onSchedule, selectedCount }) => {
           )}
           
           {/* Platform - Show as locked/readonly if preselected */}
-          {isPlatformLocked && (
+          {isPlatformLocked && !isScheduleAllMode && (
             <div>
               <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
                 Platform
               </label>
               <div style={{ ...sel, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent-glow)', border: '1px solid var(--accent)', color: 'var(--accent)', fontWeight: 600 }}>
                 <span style={{ textTransform: 'capitalize' }}>{PLATFORMS.find(p => p.value === platform)?.label || platform}</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Schedule All Mode - Show platforms list */}
+          {isScheduleAllMode && (
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
+                Scheduling All Platforms
+              </label>
+              <div style={{ ...sel, display: 'flex', flexWrap: 'wrap', gap: 6, background: 'var(--accent-glow)', border: '1px solid var(--accent)', padding: '10px 12px' }}>
+                {scheduleAllPlatforms.map(p => (
+                  <span key={p} style={{ padding: '4px 10px', background: 'var(--accent)', color: '#fff', borderRadius: 6, fontSize: 11, fontWeight: 600, textTransform: 'capitalize' }}>
+                    {PLATFORMS.find(plat => plat.value === p)?.label || p}
+                  </span>
+                ))}
               </div>
             </div>
           )}
@@ -197,7 +221,11 @@ const BulkScheduleModal = ({ open, onClose, onSchedule, selectedCount }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: 8 }}>
               <Clock style={{ width: 13, height: 13, color: 'var(--accent)', flexShrink: 0 }} />
               <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}>
-                {selectedCount} article{selectedCount !== 1 ? 's' : ''} → <strong style={{ textTransform: 'capitalize' }}>{PLATFORMS.find(p => p.value === platform)?.label}</strong> · {new Date(scheduleTime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {selectedCount} article{selectedCount !== 1 ? 's' : ''} → {
+                  isScheduleAllMode 
+                    ? `${scheduleAllPlatforms.length} platforms` 
+                    : PLATFORMS.find(p => p.value === platform)?.label || platform
+                } · {new Date(scheduleTime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           )}
