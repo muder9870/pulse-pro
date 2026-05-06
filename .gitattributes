@@ -1,1 +1,5 @@
 ollama_data/models/blobs/* filter=lfs diff=lfs merge=lfs -text
+
+# Shell scripts must have LF line endings
+*.sh text eol=lf
+entrypoint.sh text eol=lf

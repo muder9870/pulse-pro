@@ -355,6 +355,7 @@ const StoryCard = React.memo(
     const [audioLoading] = useState(false);
     const [platformGenerating, setPlatformGenerating] = useState({});
     const [platformErrors, setPlatformErrors] = useState({});
+    const [attachedMedia, setAttachedMedia] = useState({}); // { platform: mediaId }
     const [workflowSections, setWorkflowSections] = useState({
       summary: true, // Expanded by default
       generate: false,
@@ -574,6 +575,13 @@ const StoryCard = React.memo(
       } catch (_e) {
         /* noop */
       }
+    };
+
+    const handleAttachMedia = (platform, mediaId) => {
+      setAttachedMedia((prev) => ({
+        ...prev,
+        [platform]: mediaId,
+      }));
     };
 
     const togglePosted = async (platform) => {
@@ -1213,6 +1221,9 @@ const StoryCard = React.memo(
                     qualityData={qualityData}
                     qualityLoading={qualityLoading[platform]}
                     hashtags={recommendedHashtags[platform]}
+                    media={media}
+                    attachedMediaId={attachedMedia[platform]}
+                    onAttachMedia={handleAttachMedia}
                     onTogglePosted={togglePosted}
                     onQualityCheck={fetchQualityCheck}
                     onEdit={(p) => {
@@ -1417,69 +1428,6 @@ const StoryCard = React.memo(
                   mediaLoading={mediaLoading}
                   audioAssets={audioAssets}
                   audioLoading={audioLoading}
-                  onGenerateImage={async () => {
-                    try {
-                      const res = await apiFetch('/media/generate-image', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          article_id: story.id,
-                          prompt: story.summary || story.title
-                        }),
-                      });
-                      const data = await res.json();
-                      if (res.ok) {
-                        alert('Image generated successfully!');
-                        fetchMedia();
-                      } else {
-                        alert(`Error: ${data.error || 'Image generation failed'}`);
-                      }
-                    } catch (err) {
-                      alert(`Error: ${err.message}`);
-                    }
-                  }}
-                  onGenerateQuoteCard={async () => {
-                    try {
-                      const res = await apiFetch('/media/generate-quote-card', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          article_id: story.id,
-                          text: story.summary || story.title,
-                          title: story.title
-                        }),
-                      });
-                      const data = await res.json();
-                      if (res.ok) {
-                        alert('Quote card generated successfully!');
-                        fetchMedia();
-                      } else {
-                        alert(`Error: ${data.error || 'Quote card generation failed'}`);
-                      }
-                    } catch (err) {
-                      alert(`Error: ${err.message}`);
-                    }
-                  }}
-                  onGenerateAudio={async () => {
-                    try {
-                      const res = await apiFetch('/generate/podcast', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          article_ids: [story.id]
-                        }),
-                      });
-                      const data = await res.json();
-                      if (res.ok) {
-                        alert('Podcast generated successfully!');
-                        fetchAudio();
-                      } else {
-                        alert(`Error: ${data.error || 'Podcast generation failed'}`);
-                      }
-                    } catch (err) {
-                      alert(`Error: ${err.message}`);
-                    }
-                  }}
                 />
               </div>
             </WorkflowSection>

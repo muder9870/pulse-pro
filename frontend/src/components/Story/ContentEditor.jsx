@@ -1,5 +1,5 @@
-import React from 'react';
-import { RefreshCw, Edit3, CheckCircle, XCircle, Sparkles, Calendar, Send } from 'lucide-react';
+import React, { useState } from 'react';
+import { RefreshCw, Edit3, CheckCircle, XCircle, Sparkles, Calendar, Send, Image as ImageIcon, X } from 'lucide-react';
 import Button from '../ui/Button';
 
 /**
@@ -12,6 +12,8 @@ import Button from '../ui/Button';
  * @param {Object} props.qualityData - Quality check data
  * @param {boolean} props.qualityLoading - Quality check loading state
  * @param {Array} props.hashtags - Recommended hashtags
+ * @param {Array} props.media - Available media assets
+ * @param {string} props.attachedMediaId - ID of currently attached media
  * @param {Function} props.onTogglePosted - Toggle posted status
  * @param {Function} props.onQualityCheck - Trigger quality check
  * @param {Function} props.onEdit - Open edit modal
@@ -22,6 +24,7 @@ import Button from '../ui/Button';
  * @param {Function} props.getGradeColor - Get grade color classes
  * @param {Function} props.onSchedule - Open schedule modal for this platform
  * @param {Function} props.onPostNow - Post now for this platform
+ * @param {Function} props.onAttachMedia - Attach media to this platform's post
  */
 const ContentEditor = ({
   platform,
@@ -29,6 +32,8 @@ const ContentEditor = ({
   qualityData,
   qualityLoading,
   hashtags,
+  media = [],
+  attachedMediaId,
   onTogglePosted,
   onQualityCheck,
   onEdit,
@@ -39,10 +44,13 @@ const ContentEditor = ({
   getGradeColor,
   onSchedule,
   onPostNow,
+  onAttachMedia,
 }) => {
+  const [showMediaSelector, setShowMediaSelector] = useState(false);
   const hasContent = content?.text && !content.text.startsWith('Error');
   const isPosted = content?.posted;
   const quality = qualityData?.[platform];
+  const attachedMedia = media.find(m => m.id === attachedMediaId);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
@@ -62,6 +70,17 @@ const ContentEditor = ({
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Media Attach Button */}
+          {hasContent && media.length > 0 && (
+            <button
+              onClick={() => setShowMediaSelector(!showMediaSelector)}
+              className={`p-2 rounded-lg transition-colors ${attachedMedia ? 'text-pink-600 bg-pink-50' : 'text-gray-500 hover:text-pink-600 hover:bg-pink-50'}`}
+              title={attachedMedia ? 'Change Media' : 'Attach Media'}
+            >
+              <ImageIcon className="w-4 h-4" />
+            </button>
+          )}
+          
           {/* Quality Check Button */}
           {hasContent && !quality && (
             <button
@@ -135,6 +154,88 @@ const ContentEditor = ({
         </div>
       </div>
 
+      {/* Media Selector Dropdown */}
+      {showMediaSelector && (
+        <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-gray-700">Select Media to Attach</span>
+            <button
+              onClick={() => setShowMediaSelector(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {/* None option */}
+            <button
+              onClick={() => {
+                onAttachMedia(platform, null);
+                setShowMediaSelector(false);
+              }}
+              className={`aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-medium transition-colors ${
+                !attachedMediaId 
+                  ? 'border-pink-500 bg-pink-50 text-pink-700' 
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+              }`}
+            >
+              None
+            </button>
+            
+            {/* Media options */}
+            {media.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  onAttachMedia(platform, item.id);
+                  setShowMediaSelector(false);
+                }}
+                className={`aspect-square rounded-lg border-2 overflow-hidden transition-colors ${
+                  attachedMediaId === item.id 
+                    ? 'border-pink-500 ring-2 ring-pink-200' 
+                    : 'border-gray-200 hover:border-pink-300'
+                }`}
+              >
+                <img 
+                  src={item.image_url || item.local_path || item.url} 
+                  alt={item.prompt || `Media ${item.id}`}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Attached Media Preview */}
+      {attachedMedia && (
+        <div className="px-5 py-3 bg-gradient-to-r from-pink-50 to-rose-50 border-b border-pink-100">
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-pink-200">
+              <img 
+                src={attachedMedia.image_url || attachedMedia.local_path || attachedMedia.url} 
+                alt="Attached media"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-pink-600" />
+                <span className="text-sm font-medium text-pink-900">Media Attached</span>
+              </div>
+              <p className="text-xs text-pink-700 mt-0.5">This image will be posted with your content</p>
+            </div>
+            <button
+              onClick={() => onAttachMedia(platform, null)}
+              className="p-1.5 text-pink-600 hover:text-pink-800 hover:bg-pink-100 rounded-lg transition-colors"
+              title="Remove media"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Content Display */}
       <div className="p-5">
         {!hasContent ? (
@@ -188,3 +289,5 @@ const ContentEditor = ({
 };
 
 export default ContentEditor;
+
+
