@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 
 media_bp = Blueprint('media', __name__)
 
+@media_bp.get("/api/media/images/<path:filename>")
+def serve_image(filename):
+    """Serve image files from the media directory."""
+    return send_from_directory(str(settings.MEDIA_DIR), filename)
+
 @media_bp.get("/api/media/audio/<path:filename>")
 def serve_audio(filename):
     """Serve audio files from the media/audio directory."""
@@ -66,13 +71,18 @@ def get_all_media_assets():
         # Combine into single assets array
         assets = []
         
+        from pathlib import Path
+        
         for img, article_title in images:
+            # Convert local_path to API URL if it exists
+            image_url = f"/api/media/images/{Path(str(img.local_path)).name}" if img.local_path else img.image_url
+            
             assets.append({
                 "asset_type": "image",
                 "id": img.id,
                 "article_id": img.article_id,
                 "article_title": article_title,
-                "image_url": img.image_url,
+                "image_url": image_url,
                 "local_path": img.local_path,
                 "media_type": img.media_type,
                 "prompt": img.prompt,
@@ -167,6 +177,7 @@ def generate_quote_card():
     try:
         data = request.json or {}
         article_id = data.get("article_id")
+        custom_quote_text = data.get("quote_text")  # Optional custom text
         
         if not article_id:
             return jsonify({"error": "article_id is required"}), 400
@@ -192,8 +203,11 @@ def generate_quote_card():
                 else:
                     return jsonify({"error": "Article not found or not processed"}), 404
             
-            # Use summary or viral_hook as quote text
-            text = processed.summary or processed.viral_hook or "No content available"
+            # Use custom quote text if provided, otherwise use summary or viral_hook
+            if custom_quote_text and custom_quote_text.strip():
+                text = custom_quote_text.strip()
+            else:
+                text = processed.summary or processed.viral_hook or "No content available"
             
         finally:
             db.close()
