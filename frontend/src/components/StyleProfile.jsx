@@ -1,22 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
-import { Sparkles, Brain, Info, RefreshCw, UserCheck } from 'lucide-react';
+import { Sparkles, Brain, Info, RefreshCw, UserCheck, Zap } from 'lucide-react';
 import Button from './ui/Button';
 
+const PLATFORM_ICONS = {
+    twitter: '𝕏',
+    linkedin: '💼',
+    instagram: '📸',
+    tiktok: '🎵',
+    youtube: '▶️',
+    medium: '📝',
+    reddit: '🔴',
+    facebook: 'f'
+};
+
+const PLATFORM_COLORS = {
+    twitter: '#1DA1F2',
+    linkedin: '#0A66C2',
+    instagram: '#E4405F',
+    tiktok: '#000000',
+    youtube: '#FF0000',
+    medium: '#000000',
+    reddit: '#FF4500',
+    facebook: '#1877F2'
+};
+
 export default function StyleProfile() {
-    const [styles, setStyles] = useState({});
+    const [platformStyles, setPlatformStyles] = useState({});
+    const [selectedPlatform, setSelectedPlatform] = useState('twitter');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const fetchStyles = async () => {
+    const fetchAllPlatformStyles = async () => {
         setLoading(true);
         try {
-            const res = await apiFetch('/personalization/style');
+            const res = await apiFetch('/personalization/all-platform-styles');
             const data = await res.json();
             if (res.ok) {
-                setStyles(data.style || {});
+                setPlatformStyles(data.platforms || {});
+                // Set default to first platform with learning, or twitter
+                const platformsWithLearning = Object.keys(data.platforms || {}).filter(p => data.platforms[p].learned);
+                if (platformsWithLearning.length > 0) {
+                    setSelectedPlatform(platformsWithLearning[0]);
+                }
             } else {
-                throw new Error(data.error || 'Failed to fetch style profile');
+                throw new Error(data.error || 'Failed to fetch platform styles');
             }
         } catch (err) {
             setError(err.message);
@@ -26,30 +54,14 @@ export default function StyleProfile() {
     };
 
     useEffect(() => {
-        fetchStyles();
+        fetchAllPlatformStyles();
     }, []);
-
-    const getStyleDescription = (key, value) => {
-        const descriptions = {
-            length_preference: {
-                concise: 'You prefer short, punchy content that gets straight to the point.',
-                detailed: 'You prefer comprehensive, in-depth posts with more context.',
-                balanced: 'You prefer a standard length that balances detail and brevity.'
-            },
-            emoji_usage: {
-                more_emojis: 'You like using emojis to add personality and visual interest.',
-                fewer_emojis: 'You prefer a clean, professional look with minimal emoji use.',
-                standard: 'You use an average amount of emojis for social engagement.'
-            }
-        };
-        return descriptions[key]?.[value] || `Your preferred setting for ${key} is "${value}".`;
-    };
 
     if (loading) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
                 <RefreshCw className="animate-spin" style={{ width: 32, height: 32, color: 'var(--accent)', marginBottom: 16 }} />
-                <p style={{ color: 'var(--text2)' }}>Analyzing your style preferences...</p>
+                <p style={{ color: 'var(--text2)' }}>Analyzing your platform-specific styles...</p>
             </div>
         );
     }
@@ -60,7 +72,7 @@ export default function StyleProfile() {
                 <h3 style={{ fontWeight: 700, marginBottom: 8 }}>Error loading style profile</h3>
                 <p>{error}</p>
                 <button
-                    onClick={fetchStyles}
+                    onClick={fetchAllPlatformStyles}
                     style={{
                         marginTop: 16, padding: '8px 16px', borderRadius: 8,
                         border: '1px solid var(--red)', background: 'var(--red)',
@@ -73,22 +85,24 @@ export default function StyleProfile() {
         );
     }
 
-    const hasStyles = Object.entries(styles).some(([k, v]) => k !== 'learned' && v !== null && v !== undefined);
+    const selectedStyleData = platformStyles[selectedPlatform] || { learned: false, rules: [] };
+    const hasAnyLearning = Object.values(platformStyles).some(p => p.learned);
 
     return (
-        <div style={{ maxWidth: 800, margin: '0 auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 32 }}>
+            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                     <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 12, lineHeight: 1.2 }}>
                         <Brain style={{ width: 32, height: 32, color: 'var(--accent)' }} />
-                        Style Profile
+                        Platform-Specific Style Profile
                     </h1>
                     <p style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>
-                        AI learns from your edits to mirror your writing style
+                        AI learns separate writing styles for each platform from your edits
                     </p>
                 </div>
                 <button
-                    onClick={fetchStyles}
+                    onClick={fetchAllPlatformStyles}
                     style={{
                         padding: 8, borderRadius: '50%',
                         border: '1px solid var(--border)', background: 'var(--surface2)',
@@ -102,79 +116,128 @@ export default function StyleProfile() {
                 </button>
             </div>
 
-            {!hasStyles ? (
+            {/* Platform Tabs */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {Object.keys(platformStyles).map(platform => {
+                    const isSelected = selectedPlatform === platform;
+                    const hasLearning = platformStyles[platform].learned;
+                    return (
+                        <button
+                            key={platform}
+                            onClick={() => setSelectedPlatform(platform)}
+                            style={{
+                                padding: '10px 16px',
+                                borderRadius: 'var(--radius-lg)',
+                                border: isSelected ? `2px solid ${PLATFORM_COLORS[platform]}` : '1px solid var(--border)',
+                                background: isSelected ? 'var(--surface2)' : 'var(--surface)',
+                                color: isSelected ? PLATFORM_COLORS[platform] : 'var(--text2)',
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                fontWeight: isSelected ? 600 : 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => !isSelected && (e.currentTarget.style.background = 'var(--bg3)')}
+                            onMouseLeave={(e) => !isSelected && (e.currentTarget.style.background = 'var(--surface)')}
+                        >
+                            <span style={{ fontSize: 16 }}>{PLATFORM_ICONS[platform]}</span>
+                            {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                            {hasLearning && <Zap style={{ width: 12, height: 12, color: PLATFORM_COLORS[platform] }} />}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Content */}
+            {!hasAnyLearning ? (
                 <div style={{ background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-lg)', padding: 32, textAlign: 'center' }}>
                     <Sparkles style={{ width: 48, height: 48, color: 'var(--accent)', margin: '0 auto 16px' }} />
-                    <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Starting Your Journey</h2>
+                    <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Start Your Learning Journey</h2>
                     <p style={{ fontSize: 12, color: 'var(--text2)', maxWidth: 400, margin: '0 auto' }}>
-                        I haven't learned enough about your style yet. Start by editing generated content
-                        or using the Thumbs Up/Down buttons on story cards!
+                        I haven't learned your style yet. Edit generated content or use Thumbs Up/Down on story cards to teach me your platform-specific voice!
                     </p>
                 </div>
+            ) : selectedStyleData.learned ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Platform Learning Status */}
+                    <div style={{ 
+                        background: 'var(--surface)',
+                        border: `2px solid ${PLATFORM_COLORS[selectedPlatform]}20`,
+                        borderRadius: 'var(--radius-lg)',
+                        padding: 20
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                            <div style={{ 
+                                padding: 8, 
+                                background: `${PLATFORM_COLORS[selectedPlatform]}20`,
+                                borderRadius: 8,
+                                color: PLATFORM_COLORS[selectedPlatform],
+                                fontSize: 20
+                            }}>
+                                {PLATFORM_ICONS[selectedPlatform]}
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                                    {selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1)} Style Rules
+                                </h3>
+                                <p style={{ fontSize: 12, color: 'var(--text2)' }}>
+                                    Based on your edits and feedback on this platform
+                                </p>
+                            </div>
+                        </div>
+
+                        {selectedStyleData.rules.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                {selectedStyleData.rules.map((rule, idx) => (
+                                    <div key={idx} style={{
+                                        background: 'var(--bg3)',
+                                        padding: 12,
+                                        borderRadius: 8,
+                                        borderLeft: `3px solid ${PLATFORM_COLORS[selectedPlatform]}`,
+                                        fontSize: 12,
+                                        color: 'var(--text)',
+                                        lineHeight: 1.5
+                                    }}>
+                                        <span style={{ fontWeight: 600, color: PLATFORM_COLORS[selectedPlatform] }}>Rule {idx + 1}:</span> {rule}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-                    {Object.entries(styles)
-                        .filter(([key, value]) => key !== 'learned' && value !== null && value !== undefined)
-                        .map(([key, value]) => {
-                            const displayValue = typeof value === 'boolean'
-                                ? (value ? 'Yes' : 'No')
-                                : String(value).replace(/_/g, ' ');
-                            const displayKey = String(key).replace(/_/g, ' ');
-                            return (
-                                <div key={key} style={{
-                                    background: 'var(--surface)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: 'var(--radius-lg)',
-                                    padding: 16
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                                        <div style={{ padding: 6, background: 'var(--accent-glow)', borderRadius: 8 }}>
-                                            <UserCheck style={{ width: 16, height: 16, color: 'var(--accent)' }} />
-                                        </div>
-                                        <h3 style={{ 
-                                            textTransform: 'uppercase', 
-                                            letterSpacing: '0.05em', 
-                                            marginBottom: 0,
-                                            fontSize: 11,
-                                            fontWeight: 700,
-                                            color: 'var(--text2)'
-                                        }}>
-                                            {displayKey}
-                                        </h3>
-                                    </div>
-                                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent2)', marginBottom: 6, textTransform: 'capitalize' }}>
-                                        {displayValue}
-                                    </div>
-                                    <p style={{ lineHeight: 1.5, fontSize: 12, color: 'var(--text2)' }}>
-                                        {getStyleDescription(key, String(value))}
-                                    </p>
-                                </div>
-                            );
-                        })}
+                <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 32, textAlign: 'center' }}>
+                    <p style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 16 }}>
+                        No learning data yet for <strong>{selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1)}</strong>
+                    </p>
+                    <p style={{ fontSize: 11, color: 'var(--text2)' }}>
+                        Start editing content or providing feedback for this platform to build a personalized style guide
+                    </p>
                 </div>
             )}
 
+            {/* Info Box */}
             <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
                     <div style={{ padding: 12, background: 'var(--surface2)', borderRadius: 12 }}>
                         <Info style={{ width: 24, height: 24, color: 'var(--teal)' }} />
                     </div>
                     <div>
-                        <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>How does personalization work?</h3>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Platform-Specific Learning</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, color: 'var(--text2)', fontSize: 11, lineHeight: 1.6 }}>
                             <p>
-                                <strong style={{ color: 'var(--text)' }}>Active Learning:</strong> Every time you click "Save" on an edit,
-                                Pulse Pro compares our initial draft with your final version to detect patterns in length,
-                                tone, and formatting.
+                                <strong style={{ color: 'var(--text)' }}>Per-Platform Analysis:</strong> Pulse Pro learns different styles for each platform. 
+                                Twitter content stays concise, while LinkedIn posts become more professional.
                             </p>
                             <p>
-                                <strong style={{ color: 'var(--text)' }}>Feedback Loop:</strong> Your Thumbs Up/Down feedback helps us
-                                prioritize style patterns that you align with.
+                                <strong style={{ color: 'var(--text)' }}>Feedback Integration:</strong> Your Thumbs Up/Down and content edits are analyzed 
+                                per-platform to build unique style guidelines for each network.
                             </p>
                             <p>
-                                <strong style={{ color: 'var(--text)' }}>Few-Shot Prompting:</strong> When generating new content, we
-                                inject your best past edits as examples into the AI's technical prompt, creating a
-                                personalized brand-voice mirror.
+                                <strong style={{ color: 'var(--text)' }}>Smart Regeneration:</strong> When you mark content as "helpful" or regenerate, 
+                                the system applies platform-specific rules learned from your previous edits.
                             </p>
                         </div>
                     </div>

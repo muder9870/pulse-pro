@@ -256,9 +256,14 @@ class UserStyle(Base):
     __tablename__ = "user_styles"
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    key: Mapped[str] = mapped_column(String, unique=True)
+    platform: Mapped[str] = mapped_column(String, default="generic", index=True)  # Platform-specific learning
+    key: Mapped[str] = mapped_column(String)
     value: Mapped[str] = mapped_column(String)
     last_updated: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    
+    __table_args__ = (
+        UniqueConstraint("platform", "key", name="uq_platform_key"),
+    )
 
 class ArticleImage(Base):
     __tablename__ = "article_images"

@@ -266,28 +266,70 @@ _STYLE_DEFAULTS = {
 
 @content_bp.get("/api/personalization/style")
 def get_personalization_style():
-    """Return the current learned writing style preferences."""
+    """
+    Return the current learned writing style preferences for a platform.
+    Query param: ?platform=twitter (defaults to 'generic' if not specified)
+    """
     db = SessionLocal()
     try:
         from backend.db.repositories.learning_repository import LearningRepository
+        from backend.processors.personalization_engine import personalization_engine
+        
+        # Get platform from query params (default to 'generic')
+        platform = request.args.get("platform", "generic").lower().strip()
+        
+        # Get platform-specific styles from personalization engine
+        style_context = personalization_engine.get_personalization_context(platform)
+        
         repo = LearningRepository(db)
-
-        # get_style_preferences returns a dict or None depending on implementation
         try:
             prefs = repo.get_style_preferences()
         except AttributeError:
-            # LearningRepository may not have this method yet — return defaults
             prefs = None
 
         if not prefs:
-            return jsonify({"status": "success", "style": _STYLE_DEFAULTS}), 200
+            response = {**_STYLE_DEFAULTS, "platform": platform, "context": style_context}
+            return jsonify({"status": "success", "style": response}), 200
 
-        # Merge with defaults so the frontend always gets all expected keys
-        merged = {**_STYLE_DEFAULTS, **prefs, "learned": True}
+        # Merge with defaults and add platform context
+        merged = {**_STYLE_DEFAULTS, **prefs, "platform": platform, "context": style_context, "learned": True}
         return jsonify({"status": "success", "style": merged}), 200
     except Exception as e:
         logger.error("Error fetching personalization style: %s", e)
-        return jsonify({"status": "success", "style": _STYLE_DEFAULTS}), 200
+        response = {**_STYLE_DEFAULTS, "platform": request.args.get("platform", "generic")}
+        return jsonify({"status": "success", "style": response}), 200
+    finally:
+        db.close()
+
+
+@content_bp.get("/api/personalization/all-platform-styles")
+def get_all_platform_styles():
+    """
+    Return style profiles for all platforms.
+    Used by Settings Hub / Style Profile component to display per-platform learning.
+    """
+    db = SessionLocal()
+    try:
+        from backend.processors.personalization_engine import personalization_engine
+        
+        all_platform_styles = personalization_engine.get_all_platform_styles()
+        
+        # Build response with all platforms
+        response = {}
+        for platform in ["twitter", "linkedin", "instagram", "tiktok", "youtube", "medium", "reddit", "facebook"]:
+            rules = all_platform_styles.get(platform, [])
+            response[platform] = {
+                "learned": len(rules) > 0,
+                "rules": rules,
+                "sample_count": 0  # Could be enhanced to show feedback count
+            }
+        
+        return jsonify({"status": "success", "platforms": response}), 200
+    except Exception as e:
+        logger.error("Error fetching all platform styles: %s", e)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
     finally:
         db.close()
 
