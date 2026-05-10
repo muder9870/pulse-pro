@@ -34,4 +34,5 @@ from .db.models import (
     LLMCache,
     VideoScript,
     IdempotencyLog,
+    RelevanceKeyword,
 )
