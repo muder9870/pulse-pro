@@ -316,7 +316,7 @@ def get_all_platform_styles():
         
         # Build response with all platforms
         response = {}
-        for platform in ["twitter", "linkedin", "instagram", "tiktok", "youtube", "medium", "reddit", "facebook"]:
+        for platform in ["twitter", "linkedin", "instagram", "threads", "youtube", "medium", "reddit", "facebook"]:
             rules = all_platform_styles.get(platform, [])
             response[platform] = {
                 "learned": len(rules) > 0,
@@ -328,8 +328,6 @@ def get_all_platform_styles():
     except Exception as e:
         logger.error("Error fetching all platform styles: %s", e)
         return jsonify({"error": str(e)}), 500
-    finally:
-        db.close()
     finally:
         db.close()
 

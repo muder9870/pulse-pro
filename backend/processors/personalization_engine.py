@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 # List of all supported platforms
 SUPPORTED_PLATFORMS = [
     "twitter",
-    "linkedin", 
+    "linkedin",
     "instagram",
-    "tiktok",
+    "threads",
     "youtube",
     "medium",
     "reddit",
