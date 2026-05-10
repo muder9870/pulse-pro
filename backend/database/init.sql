@@ -204,7 +204,10 @@ CREATE TABLE IF NOT EXISTS user_styles (
     platform VARCHAR(50) DEFAULT 'generic' NOT NULL,
     key VARCHAR NOT NULL,
     value VARCHAR NOT NULL,
+    confidence FLOAT DEFAULT 0.5 NOT NULL,
+    occurrences INTEGER DEFAULT 1 NOT NULL,
     last_updated TIMESTAMP DEFAULT NOW(),
+    last_seen TIMESTAMP DEFAULT NOW(),
     CONSTRAINT uq_platform_key UNIQUE (platform, key)
 );
 

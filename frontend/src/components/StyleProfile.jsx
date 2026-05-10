@@ -200,7 +200,15 @@ export default function StyleProfile() {
                                         color: 'var(--text)',
                                         lineHeight: 1.5
                                     }}>
-                                        <span style={{ fontWeight: 600, color: PLATFORM_COLORS[selectedPlatform] }}>Rule {idx + 1}:</span> {rule}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                                            <div style={{ flex: 1 }}>
+                                                <span style={{ fontWeight: 600, color: PLATFORM_COLORS[selectedPlatform] }}>Rule {idx + 1}:</span> {rule.rule}
+                                            </div>
+                                            <div style={{ fontSize: 10, color: 'var(--text2)', textAlign: 'right', minWidth: 60 }}>
+                                                <div>{Math.round(rule.confidence * 100)}% confidence</div>
+                                                <div>{rule.occurrences} samples</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
