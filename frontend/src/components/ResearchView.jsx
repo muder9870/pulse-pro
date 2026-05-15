@@ -24,6 +24,8 @@ function ResearchView() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
+  const [savedPapers, setSavedPapers] = useState(new Set());
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
 
   // T11: Use React Query for data fetching instead of manual state management
   const { data: papers = [], isLoading: loading, refetch: fetchPapers } = useQuery({
@@ -95,8 +97,11 @@ function ResearchView() {
 
   const filtered = papers.filter(p => {
     const matchSearch = !searchQuery || p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || p.summary?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchCat = activeCategory === 'All' || (activeCategory === 'High Score' ? (p.total_score || 0) >= 50 : (p.category || '').toUpperCase().includes(activeCategory.replace('.', '')));
-    return matchSearch && matchCat;
+    const matchCat = activeCategory === 'All' || 
+      (activeCategory === 'High Score' ? (p.total_score || 0) >= 50 : 
+      (p.category || '').toUpperCase() === activeCategory.toUpperCase());
+    const matchSaved = !showSavedOnly || savedPapers.has(p.id);
+    return matchSearch && matchCat && matchSaved;
   });
 
   const getScoreColor = (score) => score >= 50 ? 'var(--green)' : score >= 40 ? 'var(--amber)' : 'var(--text3)';
@@ -116,14 +121,19 @@ function ResearchView() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
+            onClick={() => setActiveCategory('All')}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border2)', background: 'transparent', color: 'var(--text2)', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
           >
             Filter ▾
           </button>
           <button
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border2)', background: 'transparent', color: 'var(--text2)', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
+            onClick={() => {
+              setShowSavedOnly(!showSavedOnly);
+              setActiveCategory('All');
+            }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: showSavedOnly ? '1px solid var(--accent)' : '1px solid var(--border2)', background: showSavedOnly ? 'var(--accent-glow)' : 'transparent', color: showSavedOnly ? 'var(--accent)' : 'var(--text2)', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
           >
-            📖 Saved ({papers.filter(p => p.has_deep_analysis).length})
+            📖 Saved ({savedPapers.size})
           </button>
         </div>
       </div>
@@ -220,16 +230,33 @@ function ResearchView() {
                     <FlaskConical style={{ width: 11, height: 11 }} /> Deep Dive →
                   </button>
                   <button
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      apiFetch('/api/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ article_id: paper.id, from_research: true })
+                      }).then(r => r.json()).then(d => {
+                        if (d.id) alert('Content generated! Check Articles view.');
+                        else alert(d.error || 'Generation failed');
+                      }).catch(() => alert('Failed to generate content'));
+                    }}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
                   >
                     Generate Post
                   </button>
                   <button
-                    onClick={(e) => e.stopPropagation()}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text2)', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (savedPapers.has(paper.id)) {
+                        setSavedPapers(new Set([...savedPapers].filter(id => id !== paper.id)));
+                      } else {
+                        setSavedPapers(new Set([...savedPapers, paper.id]));
+                      }
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, border: 'none', background: savedPapers.has(paper.id) ? 'rgba(255,183,77,0.1)' : 'transparent', color: savedPapers.has(paper.id) ? 'var(--amber)' : 'var(--text2)', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
                   >
-                    📖 Save
+                    📖 {savedPapers.has(paper.id) ? 'Saved' : 'Save'}
                   </button>
                   {paper.url && (
                     <a
