@@ -201,9 +201,23 @@ CREATE TABLE IF NOT EXISTS engagement_metrics (
 -- user_styles
 CREATE TABLE IF NOT EXISTS user_styles (
     id SERIAL PRIMARY KEY,
-    key VARCHAR UNIQUE NOT NULL,
+    platform VARCHAR(50) DEFAULT 'generic' NOT NULL,
+    key VARCHAR NOT NULL,
     value VARCHAR NOT NULL,
-    last_updated TIMESTAMP DEFAULT NOW()
+    confidence FLOAT DEFAULT 0.5 NOT NULL,
+    occurrences INTEGER DEFAULT 1 NOT NULL,
+    last_updated TIMESTAMP DEFAULT NOW(),
+    last_seen TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_platform_key UNIQUE (platform, key)
+);
+
+-- relevance_keywords
+CREATE TABLE IF NOT EXISTS relevance_keywords (
+    id SERIAL PRIMARY KEY,
+    keyword VARCHAR UNIQUE NOT NULL,
+    category VARCHAR,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- article_images
@@ -421,3 +435,5 @@ CREATE INDEX IF NOT EXISTS idx_affiliate_links_keyword ON affiliate_links(keywor
 CREATE INDEX IF NOT EXISTS idx_user_feedback_article ON user_feedback(article_id);
 CREATE INDEX IF NOT EXISTS idx_idempotency_created_at ON idempotency_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_video_scripts_article ON video_scripts(article_id);
+CREATE INDEX IF NOT EXISTS idx_relevance_keywords_keyword ON relevance_keywords(keyword);
+CREATE INDEX IF NOT EXISTS idx_user_styles_platform ON user_styles(platform);

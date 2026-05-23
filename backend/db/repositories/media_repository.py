@@ -18,7 +18,7 @@ class MediaRepository:
         return [{
             "id": img.id,
             "article_id": img.article_id,
-            "image_url": img.image_url,
+            "image_url": f"/api/media/images/{Path(str(img.local_path)).name}" if img.local_path else img.image_url,
             "local_path": img.local_path,
             "media_type": img.media_type,
             "prompt": img.prompt,
@@ -53,7 +53,9 @@ class MediaRepository:
                 "id": img.id,
                 "article_id": img.article_id,
                 "article_title": article_title,
-                "image_url": f"/media/{Path(str(img.local_path)).name}" if img.local_path else img.image_url,
+                "image_url": f"/api/media/images/{Path(str(img.local_path)).name}" if img.local_path else img.image_url,
+                "media_type": img.media_type,
+                "prompt": img.prompt,
                 "created_at": img.created_at.isoformat() if img.created_at else None,
             })
         for scr, article_title in scripts:

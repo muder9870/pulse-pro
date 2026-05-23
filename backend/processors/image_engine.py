@@ -157,45 +157,85 @@ class ImageEngine:
         return None
 
     def generate_quote_card(self, article_id: int, text: str, title: str) -> str | None:
-        """Generate a styled quote card using PIL — always works, no API needed."""
+        """Generate a professional quote card following industry best practices."""
         try:
-            width, height = 1200, 630
-            img = Image.new("RGB", (width, height), color=(30, 41, 59))  # slate-800
+            # Instagram-optimized square format (also works well for other platforms)
+            width, height = 1080, 1080
+            
+            # Modern gradient background (indigo to purple)
+            img = Image.new("RGB", (width, height))
             draw = ImageDraw.Draw(img)
-
-            font_title = _load_font(48)
-            font_text = _load_font(32)
-            font_brand = _load_font(20)
-
-            # Title
-            title_display = title[:70] + "…" if len(title) > 70 else title
-            draw.text((60, 60), title_display, font=font_title, fill=(248, 250, 252))
-
-            # Divider
-            draw.rectangle([(60, 130), (200, 134)], fill=(99, 102, 241))  # indigo-500
-
-            # Body text — word-wrap at ~65 chars
-            words = text.split()
+            
+            # Create gradient background
+            for y in range(height):
+                # Gradient from indigo-600 to purple-600
+                r = int(79 + (147 - 79) * (y / height))
+                g = int(70 + (51 - 70) * (y / height))
+                b = int(229 + (234 - 229) * (y / height))
+                draw.rectangle([(0, y), (width, y + 1)], fill=(r, g, b))
+            
+            # Load fonts - MUCH LARGER for readability
+            font_quote = _load_font(72)      # Main quote text - LARGE
+            font_title = _load_font(36)      # Title/source
+            font_brand = _load_font(24)      # Brand watermark
+            
+            # Add decorative quote mark
+            quote_mark_font = _load_font(180)
+            draw.text((80, 60), '"', font=quote_mark_font, fill=(255, 255, 255, 100))  # Semi-transparent
+            
+            # Prepare quote text - keep it SHORT (max 120 chars for readability)
+            quote_text = text[:120] + "..." if len(text) > 120 else text
+            
+            # Word wrap for quote - max 30 chars per line for large text
+            words = quote_text.split()
             lines, current = [], []
             for word in words:
                 current.append(word)
-                if len(" ".join(current)) > 65:
+                if len(" ".join(current)) > 30:
                     lines.append(" ".join(current[:-1]))
                     current = [word]
             if current:
                 lines.append(" ".join(current))
-
-            y = 160
-            for line in lines[:8]:
-                draw.text((60, y), line, font=font_text, fill=(203, 213, 225))
-                y += 48
-
-            # Brand watermark
-            draw.text((60, height - 50), "AI Pulse Pro", font=font_brand, fill=(99, 102, 241))
-
+            
+            # Draw quote text - centered vertically with padding
+            max_lines = 5  # Limit to 5 lines
+            total_text_height = len(lines[:max_lines]) * 90  # 90px per line (72px font + 18px spacing)
+            start_y = (height - total_text_height) // 2
+            
+            for i, line in enumerate(lines[:max_lines]):
+                # Center each line horizontally
+                bbox = draw.textbbox((0, 0), line, font=font_quote)
+                text_width = bbox[2] - bbox[0]
+                x = (width - text_width) // 2
+                y = start_y + (i * 90)
+                
+                # Draw text with subtle shadow for depth
+                draw.text((x + 3, y + 3), line, font=font_quote, fill=(0, 0, 0, 50))  # Shadow
+                draw.text((x, y), line, font=font_quote, fill=(255, 255, 255))  # Main text
+            
+            # Draw title/source at bottom
+            title_display = title[:60] + "..." if len(title) > 60 else title
+            title_bbox = draw.textbbox((0, 0), title_display, font=font_title)
+            title_width = title_bbox[2] - title_bbox[0]
+            title_x = (width - title_width) // 2
+            draw.text((title_x, height - 180), title_display, font=font_title, fill=(255, 255, 255, 230))
+            
+            # Decorative line above title
+            line_width = 100
+            line_x = (width - line_width) // 2
+            draw.rectangle([(line_x, height - 200), (line_x + line_width, height - 196)], fill=(255, 255, 255))
+            
+            # Brand watermark at bottom
+            brand_text = "AI Pulse Pro"
+            brand_bbox = draw.textbbox((0, 0), brand_text, font=font_brand)
+            brand_width = brand_bbox[2] - brand_bbox[0]
+            brand_x = (width - brand_width) // 2
+            draw.text((brand_x, height - 80), brand_text, font=font_brand, fill=(255, 255, 255, 180))
+            
+            # Save the image
             filename = f"article_{article_id}_quote_{os.urandom(4).hex()}.png"
             local_path = self.media_dir / filename
-            img.save(str(local_path))
+            img.save(str(local_path), quality=95, optimize=True)
             self._save_to_db(article_id, None, str(local_path), "quote-card", text[:200])
             logger.info("Quote card saved: %s", local_path)
             return str(local_path)

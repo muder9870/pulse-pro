@@ -387,3 +387,33 @@ def cleanup_stuck_articles():
     # Emit metrics
     metrics_instance = PipelineMetrics()
     metrics_instance.task_retries.labels(task_type='cleanup').inc(len(failed_ids))
+
+
+@celery_app.task(bind=True, max_retries=2)
+def learn_user_style(self, platform: str = None):
+    """
+    Async task to learn user style preferences from recent feedback.
+    This runs in background so API responses remain fast.
+    
+    Args:
+        platform: Optional specific platform to analyze. If None, analyzes all.
+    """
+    try:
+        logger.info(f"Starting style learning task for platform: {platform}")
+        
+        from backend.processors.personalization_engine import personalization_engine
+        from backend.db.session import SessionLocal
+        
+        db = SessionLocal()
+        try:
+            personalization_engine.analyze_user_style(db=db, platform=platform)
+            logger.info(f"Successfully completed style learning for platform: {platform}")
+        finally:
+            db.close()
+            
+    except Exception as exc:
+        logger.error(f"Style learning failed: {exc}", exc_info=True)
+        if self.request.retries < self.max_retries:
+            raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        else:
+            logger.error(f"Style learning permanently failed after {self.max_retries} retries")

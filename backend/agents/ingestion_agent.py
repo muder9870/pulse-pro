@@ -37,7 +37,7 @@ class IngestionAgent(BaseAgent):
                 try:
                     gmail = SmartGmailFetcher(email_addr=email_addr, app_password=app_pw)
                     gmail.connect()
-                    inserted = gmail.fetch_newsletters()
+                    inserted = gmail.fetch_newsletters(limit=settings.INGEST_CAP_PER_SOURCE)
                     gmail.close()
                     results["gmail"] = inserted
                     results["total"] += inserted

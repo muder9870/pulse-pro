@@ -57,7 +57,7 @@ export default function SystemHealth({ onBack }) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 16 }}>
                 <Activity className="animate-pulse" style={{ width: 32, height: 32, color: 'var(--accent)' }} />
-                <p style={{ color: 'var(--text2)', fontWeight: 500, fontSize: 13 }}>Monitoring system vitals...</p>
+                <p style={{ color: 'var(--text2)', fontWeight: 500, fontSize: 13 }}>Loading the last recorded backend system status...</p>
             </div>
         );
     }
@@ -118,6 +118,9 @@ export default function SystemHealth({ onBack }) {
                     </h1>
                     <p style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
                         Last updated: {health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : '—'}
+                    </p>
+                    <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, maxWidth: 520, lineHeight: 1.5 }}>
+                        This panel shows the last recorded backend service health and pipeline status from the system audit logs, not a real-time network ping.
                     </p>
                 </div>
                 <button

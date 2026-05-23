@@ -62,9 +62,9 @@ class LearningRepository:
             ))
         self.session.commit()
 
-    def get_latest_topic_trends(self, limit: int = 10) -> list[dict]:
-        trends = self.session.query(TopicTrend).order_by(
-            TopicTrend.detected_at.desc()
-        ).limit(limit).all()
-        return [{"topic": t.topic, "occurrence_count": t.occurrence_count,
-                 "avg_viral_score": t.avg_viral_score} for t in trends]
+    def get_feedback_count(self, platform: str = None) -> int:
+        """Get total feedback count for a platform."""
+        query = self.session.query(func.count(UserFeedback.id))
+        if platform:
+            query = query.filter(UserFeedback.platform == platform)
+        return query.scalar() or 0

@@ -256,9 +256,17 @@ class UserStyle(Base):
     __tablename__ = "user_styles"
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    key: Mapped[str] = mapped_column(String, unique=True)
+    platform: Mapped[str] = mapped_column(String, default="generic", index=True)  # Platform-specific learning
+    key: Mapped[str] = mapped_column(String)
     value: Mapped[str] = mapped_column(String)
+    confidence: Mapped[float] = mapped_column(Float, default=0.5)  # 0.0-1.0 score
+    occurrences: Mapped[int] = mapped_column(Integer, default=1)  # How many times observed
     last_updated: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    last_seen: Mapped[datetime] = mapped_column(DateTime, default=func.now())  # Most recent occurrence
+    
+    __table_args__ = (
+        UniqueConstraint("platform", "key", name="uq_platform_key"),
+    )
 
 class ArticleImage(Base):
     __tablename__ = "article_images"

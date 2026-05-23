@@ -27,6 +27,7 @@ export default function MediaGallery() {
   const [stories, setStories] = useState([]);
   const [selectedStoryId, setSelectedStoryId] = useState('');
   const [imagePrompt, setImagePrompt] = useState('');
+  const [quoteText, setQuoteText] = useState(''); // Custom quote text
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('gallery');
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -84,15 +85,22 @@ export default function MediaGallery() {
     if (!selectedStoryId) return;
     setIsGenerating(true);
     try {
+      const payload = { article_id: selectedStoryId };
+      // Include custom quote text if provided
+      if (quoteText.trim()) {
+        payload.quote_text = quoteText.trim();
+      }
+      
       const res = await apiFetch('/media/generate-quote-card', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ article_id: selectedStoryId })
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         toast.success('Quote card generated successfully!');
         await fetchAllAssets();
         setActiveTab('gallery');
+        setQuoteText(''); // Clear the quote text after generation
       } else { toast.error('Failed to generate quote card'); }
     } catch (err) { toast.error('Quote card generation failed: ' + err.message); }
     finally { setIsGenerating(false); }
@@ -314,10 +322,15 @@ export default function MediaGallery() {
 
             {/* Quote Card */}
             <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Sparkles style={{ width: 13, height: 13, color: 'var(--amber)' }} /> Quote Card
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text2)', marginBottom: 10 }}>Generate a styled quote card with article text. No API key required.</div>
+              <textarea
+                placeholder="Enter custom quote text (optional - uses article summary if empty)…"
+                value={quoteText}
+                onChange={e => setQuoteText(e.target.value)}
+                style={{ width: '100%', height: 80, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', color: 'var(--text)', fontSize: 11, fontFamily: 'var(--font-body)', resize: 'none', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }}
+              />
               <button
                 onClick={handleGenerateQuoteCard}
                 disabled={isGenerating || !selectedStoryId}

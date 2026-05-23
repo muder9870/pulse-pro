@@ -171,6 +171,8 @@ class SmartGmailFetcher:
         new_senders = 0
 
         label = settings.GMAIL_LABEL if hasattr(settings, "GMAIL_LABEL") and settings.GMAIL_LABEL else None
+        if label:
+            label = label.replace("\\", "/")
         folder = f'"{label}"' if label and " " in label else (label or "INBOX")
 
         status, _ = self.conn.select(folder)
@@ -231,7 +233,7 @@ class SmartGmailFetcher:
         self.log.info("Discovery complete: %d new senders found", new_senders)
         return new_senders
 
-    def fetch_newsletters(self, additional_senders: Iterable[str] | None = None) -> int:
+    def fetch_newsletters(self, additional_senders: Iterable[str] | None = None, limit: int | None = None) -> int:
         """Fetch newsletters from known senders + any additional senders."""
         if self.conn is None:
             raise RuntimeError("Not connected. Call connect() first.")
@@ -252,10 +254,13 @@ class SmartGmailFetcher:
         label = settings.GMAIL_LABEL if hasattr(settings, "GMAIL_LABEL") and settings.GMAIL_LABEL else None
 
         if label:
-            inserted_total += self._fetch_from_label(label)
+            label = label.replace("\\", "/")
+            inserted_total += self._fetch_from_label(label, limit=limit)
         else:
             self.conn.select("INBOX")
             for sender in known_senders:
+                if limit is not None and inserted_total >= limit:
+                    break
                 try:
                     search_criteria = f'(FROM "{sender}" UNSEEN)'
                     status, data = self.conn.search(None, search_criteria)
@@ -270,6 +275,8 @@ class SmartGmailFetcher:
                         continue
                     self.log.info("Processing %d messages from %s", len(msg_ids), sender)
                     for msg_id in msg_ids:
+                        if limit is not None and inserted_total >= limit:
+                            break
                         try:
                             status, msg_data = self.conn.fetch(msg_id, "(RFC822)")
                             if status != "OK" or not msg_data:
@@ -280,9 +287,16 @@ class SmartGmailFetcher:
                             if not subject:
                                 subject = f"Newsletter from {sender}"
                             body_html, body_text = self._extract_bodies(message)
-                            links_and_snippets = self._extract_links_and_snippets(body_html or body_text)
-                            inserted = self._save_links(subject, sender, links_and_snippets,
-                                                        body_html or body_text)
+                            body = body_html or body_text or ""
+
+                            # AI relevance check
+                            if not self._is_ai_related(subject, body):
+                                self.log.info("Skipping email '%s' from %s - not AI related", subject, sender)
+                                self.conn.store(msg_id, '+FLAGS', '\\Seen')
+                                continue
+
+                            links_and_snippets = self._extract_links_and_snippets(body)
+                            inserted = self._save_links(subject, sender, links_and_snippets, body)
                             inserted_total += inserted
                             self.conn.store(msg_id, '+FLAGS', '\\Seen')
                         except (imaplib.IMAP4.abort, OSError) as e:
@@ -361,10 +375,35 @@ class SmartGmailFetcher:
         for a in soup.find_all("a", href=True):
             href = a["href"].strip()
             text = a.get_text(strip=True) or None
-            if any(pattern in href.lower() for pattern in ["unsubscribe", "manage", "preferences"]):
-                continue
             if not href.startswith("http"):
                 continue
+
+            href_lower = href.lower()
+            text_lower = (text or "").lower()
+
+            # Filter unsubscribe/manage links
+            if any(pattern in href_lower for pattern in ["unsubscribe", "manage", "preferences", "optout", "opt-out"]):
+                continue
+
+            # Exclude utility pages based on exact or near-exact anchor text matches
+            utility_texts = {
+                "privacy", "privacy policy", "terms", "terms of service", "terms of use", 
+                "terms & conditions", "contact", "contact us", "about", "about us", 
+                "careers", "jobs", "help", "support", "faq", "faqs", "login", "sign in", 
+                "signup", "sign up", "register", "subscribe", "feedback", "cookies", "settings"
+            }
+            if text_lower in utility_texts:
+                continue
+
+            # Also exclude common utility path endings or patterns in URLs
+            utility_url_patterns = [
+                "/privacy", "/terms", "/contact", "/about", "/careers", "/help", "/support", 
+                "/faq", "/login", "/signup", "/register", "/cookies", "/settings", 
+                "facebook.com/share", "twitter.com/intent", "linkedin.com/share"
+            ]
+            if any(pat in href_lower for pat in utility_url_patterns):
+                continue
+
             links.append((href, text))
 
         return links
@@ -421,7 +460,7 @@ class SmartGmailFetcher:
             session.commit()
         return inserted
 
-    def _fetch_from_label(self, label: str) -> int:
+    def _fetch_from_label(self, label: str, limit: int | None = None) -> int:
         """Fetch all unread emails from a Gmail label and its sub-labels."""
         inserted_total = 0
 
@@ -443,6 +482,8 @@ class SmartGmailFetcher:
             folders_to_fetch = [label]
 
         for folder in folders_to_fetch:
+            if limit is not None and inserted_total >= limit:
+                break
             try:
                 select_name = f'"{folder}"' if " " in folder else folder
                 status, _ = self.conn.select(select_name)
@@ -459,6 +500,8 @@ class SmartGmailFetcher:
                 self.log.info("Processing %d messages from folder: %s", len(msg_ids), folder)
 
                 for msg_id in msg_ids:
+                    if limit is not None and inserted_total >= limit:
+                        break
                     try:
                         status, msg_data = self.conn.fetch(msg_id, "(RFC822)")
                         if status != "OK" or not msg_data:
@@ -470,7 +513,14 @@ class SmartGmailFetcher:
                         if not subject:
                             subject = f"Newsletter from {sender}"
                         body_html, body_text = self._extract_bodies(message)
-                        body = body_html or body_text
+                        body = body_html or body_text or ""
+
+                        # AI relevance check
+                        if not self._is_ai_related(subject, body):
+                            self.log.info("Skipping email '%s' from %s - not AI related", subject, sender)
+                            self.conn.store(msg_id, '+FLAGS', '\\Seen')
+                            continue
+
                         links_and_snippets = self._extract_links_and_snippets(body)
                         inserted_total += self._save_links(subject, sender, links_and_snippets, body)
                         self.conn.store(msg_id, '+FLAGS', '\\Seen')
