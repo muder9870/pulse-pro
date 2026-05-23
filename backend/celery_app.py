@@ -1,6 +1,7 @@
 import os
 
 from celery import Celery
+from kombu import Queue
 from backend.config import settings
 
 celery_app = Celery(
@@ -27,9 +28,15 @@ celery_app.conf.update(
     task_default_rate_limit='10/m',
     # Dead-letter queue
     task_reject_on_worker_lost=True,
+    task_queues=(
+        Queue('default', routing_key='default'),
+        Queue('article_processing', routing_key='article_processing'),
+        Queue('article_retry', routing_key='article_retry'),
+        Queue('content_generation', routing_key='content_generation'),
+    ),
     task_routes={
-        'backend.tasks.process_article': {'queue': 'article_processing'},
-        'backend.tasks.generate_content': {'queue': 'content_generation'},
+        'backend.tasks.process_article': {'queue': 'article_processing', 'routing_key': 'article_processing'},
+        'backend.tasks.generate_content': {'queue': 'content_generation', 'routing_key': 'content_generation'},
     },
     task_default_queue='default',
     task_default_exchange='default',

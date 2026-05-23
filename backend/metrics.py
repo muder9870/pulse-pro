@@ -25,6 +25,11 @@ class PipelineMetrics:
         self.llm_calls_cost = Counter('llm_calls_cost_total', 'Total LLM calls for cost tracking', ['model', 'call_type'], registry=self.registry)
         self.llm_tokens_total = Counter('llm_tokens_total', 'Total tokens consumed', ['model'], registry=self.registry)
         self.llm_retries_total = Counter('llm_retries_total', 'LLM retry attempts', ['model'], registry=self.registry)
+        self.llm_provider_calls = Counter('llm_provider_calls_total', 'Total LLM provider calls', ['provider'], registry=self.registry)
+        self.llm_provider_success = Counter('llm_provider_success_total', 'Total successful LLM provider calls', ['provider'], registry=self.registry)
+        self.llm_provider_failure = Counter('llm_provider_failure_total', 'Total failed LLM provider calls', ['provider'], registry=self.registry)
+        self.llm_provider_fallback = Counter('llm_provider_fallback_total', 'Total LLM fallback provider calls', ['provider'], registry=self.registry)
+        self.llm_provider_retry = Counter('llm_provider_retry_total', 'Total LLM provider retries or failover events', ['provider', 'reason'], registry=self.registry)
         
         # Redis eviction monitoring gauges
         self.redis_evicted_keys = Gauge('redis_evicted_keys_total', 'Cumulative number of keys evicted by Redis due to maxmemory policy', registry=self.registry)
@@ -42,6 +47,7 @@ class PipelineMetrics:
         self.task_duration = Histogram('task_duration_seconds', 'Task duration', ['task_type'], registry=self.registry)
         self.llm_call_duration = Histogram('llm_call_duration_seconds', 'LLM call duration', ['provider'], registry=self.registry)
         self.llm_latency = Histogram('llm_latency_seconds', 'LLM call latency', ['model'], registry=self.registry)
+        self.task_queue_wait = Histogram('task_queue_wait_seconds', 'Task queue wait time before worker execution', ['queue'], registry=self.registry)
         
         # Legacy stats for backward compatibility
         self.stats = {
@@ -80,6 +86,16 @@ class PipelineMetrics:
                 self.task_retries.labels(**labels).inc(count)
             elif metric == 'llm_calls_total' and labels:
                 self.llm_calls_cost.labels(**labels).inc(count)
+            elif metric == 'llm_provider_calls_total' and labels:
+                self.llm_provider_calls.labels(**labels).inc(count)
+            elif metric == 'llm_provider_success_total' and labels:
+                self.llm_provider_success.labels(**labels).inc(count)
+            elif metric == 'llm_provider_failure_total' and labels:
+                self.llm_provider_failure.labels(**labels).inc(count)
+            elif metric == 'llm_provider_fallback_total' and labels:
+                self.llm_provider_fallback.labels(**labels).inc(count)
+            elif metric == 'llm_provider_retry_total' and labels:
+                self.llm_provider_retry.labels(**labels).inc(count)
             elif metric == 'cache_hits_total' and labels:
                 self.cache_hits.labels(**labels).inc(count)
 
@@ -90,6 +106,8 @@ class PipelineMetrics:
             self.llm_call_duration.labels(**labels).observe(value)
         elif metric == 'llm_latency_seconds' and labels:
             self.llm_latency.labels(**labels).observe(value)
+        elif metric == 'task_queue_wait_seconds' and labels:
+            self.task_queue_wait.labels(**labels).observe(value)
 
     def set_gauge(self, metric: str, value: float, labels: Dict[str, str] = None):
         if metric == 'active_workers':

@@ -13,6 +13,7 @@ from .clients.mistral_client import MistralClient
 from .clients.pollinations_text_client import PollinationsTextClient
 from .circuit_breaker import CircuitBreaker
 from backend.config import settings
+from backend.metrics import metrics
 import hashlib
 import redis
 from pybreaker import CircuitBreaker as PyBreaker
@@ -50,6 +51,7 @@ class LLMResponse:
         self.provider = provider
         self.status = status
         self.error = error
+        self.fallback = False
     
     def to_dict(self) -> Dict:
         return {
@@ -145,6 +147,7 @@ class SmartLLMRouter:
                 errors.append(error_msg)
                 continue
                 
+            metrics.increment('llm_provider_calls_total', labels={'provider': provider})
             start_time = time.monotonic()
             try:
                 self.log.info(f"Trying {provider} for task {task.value}")
@@ -159,24 +162,37 @@ class SmartLLMRouter:
                 
                 duration = time.monotonic() - start_time
                 self.log.info(f"Success with {provider} for task {task.value} in {duration:.2f}s")
+                metrics.increment('llm_provider_success_total', labels={'provider': provider})
+                metrics.observe('llm_call_duration_seconds', duration, labels={'provider': provider})
                 
                 # Cache the result
                 if self.cache:
                     access_count = self.cache.incr(f"access:{cache_key}")
                     ttl = min(86400, 3600 * (1 + access_count))
                     self.cache.setex(cache_key, ttl, result)
-                
-                return LLMResponse(content=result, provider=provider)
+                # Mark as fallback if provider is not the first in the chain
+                is_fallback = provider != provider_chain[0]
+                if is_fallback:
+                    metrics.increment('llm_provider_fallback_total', labels={'provider': provider})
+                resp = LLMResponse(content=result, provider=provider)
+                resp.fallback = is_fallback
+                return resp
                 
             except Exception as e:
                 duration = time.monotonic() - start_time
                 error_msg = f"{provider} failed for task {task.value} in {duration:.2f}s: {str(e)}"
                 self.log.warning(error_msg)
+                metrics.increment('llm_provider_failure_total', labels={'provider': provider})
+                metrics.observe('llm_call_duration_seconds', duration, labels={'provider': provider})
                 errors.append(error_msg)
+                if provider != provider_chain[-1]:
+                    metrics.increment('llm_provider_retry_total', labels={'provider': provider, 'reason': 'failover'})
                 continue
         
         # All providers failed - Try local Ollama as last resort before giving up
         if "local" in self.clients and "local" not in provider_chain:
+            metrics.increment('llm_provider_calls_total', labels={'provider': 'local_fallback'})
+            start_time = time.monotonic()
             try:
                 self.log.info(f"All preferred providers failed. Trying local Ollama as last resort for task {task.value}")
                 result = self._call_with_timeout(
@@ -185,9 +201,18 @@ class SmartLLMRouter:
                     prompt, max_tokens=max_tokens,
                     timeout=timeout
                 )
-                return LLMResponse(content=result, provider="local_fallback")
+                duration = time.monotonic() - start_time
+                metrics.increment('llm_provider_success_total', labels={'provider': 'local_fallback'})
+                metrics.increment('llm_provider_fallback_total', labels={'provider': 'local_fallback'})
+                metrics.observe('llm_call_duration_seconds', duration, labels={'provider': 'local_fallback'})
+                resp = LLMResponse(content=result, provider="local_fallback")
+                resp.fallback = True
+                return resp
             except Exception as e:
+                duration = time.monotonic() - start_time
                 self.log.error(f"Local Ollama fallback also failed: {e}")
+                metrics.increment('llm_provider_failure_total', labels={'provider': 'local_fallback'})
+                metrics.observe('llm_call_duration_seconds', duration, labels={'provider': 'local_fallback'})
         
         # Still failing? Return a very basic fallback string instead of crashing the pipeline
         if task in (Task.ANALYSIS, Task.TAGGING, Task.RESEARCH, Task.DEEP_ANALYSIS):

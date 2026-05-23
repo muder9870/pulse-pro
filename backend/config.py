@@ -58,6 +58,10 @@ class Settings:
     # ── Cerebras AI ──────────────────────────────────────────────────────
     CEREBRAS_API_KEY: str | None = os.getenv("CEREBRAS_API_KEY")
     CEREBRAS_MODEL: str = os.getenv("CEREBRAS_MODEL", "llama3.1-8b")
+    CEREBRAS_RATE_LIMIT_MAX_CALLS: int = int(os.getenv("CEREBRAS_RATE_LIMIT_MAX_CALLS", "30"))
+    CEREBRAS_RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("CEREBRAS_RATE_LIMIT_WINDOW_SECONDS", "60"))
+    CEREBRAS_MAX_INFLIGHT_CALLS: int = int(os.getenv("CEREBRAS_MAX_INFLIGHT_CALLS", "3"))
+    CEREBRAS_INFLIGHT_TIMEOUT_SECONDS: int = int(os.getenv("CEREBRAS_INFLIGHT_TIMEOUT_SECONDS", "120"))
     
     # ── OpenRouter ───────────────────────────────────────────────────────
     OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")
@@ -71,8 +75,9 @@ class Settings:
     MISTRAL_API_KEY: str | None = os.getenv("MISTRAL_API_KEY")
     MISTRAL_MODEL: str = os.getenv("MISTRAL_MODEL", "mistral-small-latest")
 
-    # ── Pollinations.ai text (no key required) ────────────────────────────
+    # ── Pollinations.ai (get key at enter.pollinations.ai) ─────────────────
     POLLINATIONS_TEXT_ENABLED: bool = os.getenv("POLLINATIONS_TEXT_ENABLED", "true").lower() == "true"
+    POLLINATIONS_API_KEY: str | None = os.getenv("POLLINATIONS_API_KEY")
 
     # ── HuggingFace image model ───────────────────────────────────────────
     HF_IMAGE_MODEL: str = os.getenv("HF_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0")

@@ -7,13 +7,23 @@ from backend.config import settings
 import logging
 import json
 import os
+import time
 
 logger = logging.getLogger(__name__)
 
 @celery_app.task(bind=True, max_retries=3, acks_late=True)
-def process_article(self, article_id: int, correlation_id: str):
+def process_article(self, article_id: int, correlation_id: str, queued_at: float | None = None):
     """Process a single article through analysis stage with production-grade atomic idempotency."""
     
+    # Measure queue wait time if the enqueue timestamp was provided
+    try:
+        from backend.metrics import metrics
+        if queued_at is not None:
+            wait_seconds = max(0.0, time.time() - queued_at)
+            metrics.observe('task_queue_wait_seconds', wait_seconds, labels={'queue': 'article_processing'})
+    except Exception:
+        pass
+
     # ADD THIS AT VERY START
     if not get_db_health():
         raise self.retry(countdown=2 ** self.request.retries)
@@ -164,7 +174,7 @@ def process_article(self, article_id: int, correlation_id: str):
             import random
             base_delay = 60 * (2 ** self.request.retries)
             jitter = random.uniform(0.1, 0.3) * base_delay
-            raise self.retry(countdown=base_delay + jitter, exc=exc)
+            raise self.retry(countdown=base_delay + jitter, queue='article_retry', exc=exc)
 
 @celery_app.task(bind=True, max_retries=2)
 def generate_content(self, article_id: int, correlation_id: str):
@@ -249,7 +259,7 @@ def reconcile_stuck_tasks(self):
                         if check_and_set_idempotency(idempotency_key, article.id):
                             skipped += 1
                             continue
-                        process_article.delay(article.id, idempotency_key)
+                        process_article.delay(article.id, idempotency_key, time.time())
                         reconciled += 1
                     except Exception as e:
                         logger.error(f"reconcile failed for article {article.id}: {e}")

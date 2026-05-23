@@ -107,13 +107,21 @@ class ImageEngine:
         return None
 
     def generate_pollinations_image(self, article_id: int, prompt: str) -> str | None:
-        """Generate image via Pollinations.ai — free, no API key required."""
+        """Generate image via Pollinations.ai — API key required (get from enter.pollinations.ai)."""
         encoded = urllib.parse.quote(prompt[:500])
         url = (
             f"https://image.pollinations.ai/prompt/{encoded}"
             f"?width=1024&height=1024&model=flux&nologo=true&seed={article_id}"
         )
-        response = requests.get(url, timeout=60)
+        
+        # Add API key if available
+        api_key = getattr(settings, "POLLINATIONS_API_KEY", None)
+        headers = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+            url += f"&key={api_key}"
+        
+        response = requests.get(url, headers=headers, timeout=60)
         if response.status_code == 200 and "image" in response.headers.get("Content-Type", ""):
             filename = f"article_{article_id}_pollinations_{os.urandom(4).hex()}.jpg"
             local_path = self.media_dir / filename

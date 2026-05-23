@@ -157,7 +157,7 @@ class ArticleAnalyzer:
                 from backend.tasks import process_article
                 import uuid
                 correlation_id = str(uuid.uuid4())
-                process_article.delay(row.id, correlation_id)
+                process_article.delay(row.id, correlation_id, time.time())
                 enqueued += 1
             except Exception as exc:
                 self.log.error("enqueue_error article_id=%s %s", row.id, exc)
@@ -291,10 +291,12 @@ class ArticleAnalyzer:
                 llm_out = self.router.generate(prompt, max_tokens=512, task=Task.ANALYSIS)
                 raw_output = llm_out.content
                 provider = llm_out.provider
-                
+
                 # Validation Phase
                 result = self._validate_and_parse(raw_output)
                 result["provider"] = provider
+                # Mark whether this response was produced by a fallback provider
+                result["_fallback"] = bool(getattr(llm_out, "fallback", False))
                 
                 # Step 2: Self-Critique Loop (Phase 3)
                 res_data = result["result"]
@@ -310,7 +312,9 @@ class ArticleAnalyzer:
                     )
                     try:
                         refined_llm = self.router.generate(critique_prompt, max_tokens=512, task=Task.ANALYSIS)
-                        return self._validate_and_parse(refined_llm.content)
+                        refined_parsed = self._validate_and_parse(refined_llm.content)
+                        refined_parsed["_fallback"] = bool(getattr(refined_llm, "fallback", False))
+                        return refined_parsed
                     except Exception as e:
                         self.log.warning("self_critique_failed error=%s — using original result", e)
                         return result
@@ -357,6 +361,15 @@ class ArticleAnalyzer:
     def _validate_and_parse(self, output_text: str) -> Dict[str, Any]:
         """Helper to parse JSON and validate against Pydantic schema."""
         parsed_dict = self._parse_json(output_text)
+        
+        CATEGORY_MAP = {
+            "General": "General AI",
+            "AI": "General AI",
+            "General Artificial Intelligence": "General AI",
+        }
+        if isinstance(parsed_dict.get("category"), str):
+            parsed_dict["category"] = CATEGORY_MAP.get(parsed_dict["category"], parsed_dict["category"])
+        
         # ArticleAnalysis will throw ValidationError if structure is wrong
         validated = ArticleAnalysis.model_validate(parsed_dict)
         return {
