@@ -4,6 +4,7 @@ import random
 import redis
 from typing import Optional
 from dataclasses import dataclass
+from enum import Enum
 from backend.config import settings
 from backend.processors.health_monitor import health_monitor
 from backend.metrics import metrics
@@ -31,17 +32,58 @@ class RetryLaterError(RuntimeError):
     retry_after: Optional[float] = None
 
 
+class ProviderHealthState(Enum):
+    HEALTHY = "HEALTHY"
+    DEGRADED = "DEGRADED"
+    RATE_LIMITED = "RATE_LIMITED"
+    OPEN = "OPEN"
+    DISABLED = "DISABLED"
+
+
 class BaseLLMProvider:
     """Base class for all LLM providers to standardize behavior."""
 
     def __init__(self, provider_name: str):
         self.provider_name = provider_name
         self.redis_client = None
+        self.health_key = f"provider_health:{provider_name}"
+        self.cooldown_key = f"provider_cooldown:{provider_name}"
         if getattr(settings, "REDIS_URL", None):
             try:
                 self.redis_client = redis.from_url(settings.REDIS_URL)
             except Exception:
                 self.redis_client = None
+
+    def get_health_state(self) -> ProviderHealthState:
+        """Get the current health state of the provider."""
+        if not self.redis_client:
+            return ProviderHealthState.HEALTHY
+        state = self.redis_client.get(self.health_key)
+        if state:
+            return ProviderHealthState(state.decode())
+        return ProviderHealthState.HEALTHY
+
+    def set_health_state(self, state: ProviderHealthState, ttl_seconds: Optional[int] = None) -> None:
+        """Set the health state of the provider (with optional TTL)."""
+        if not self.redis_client:
+            return
+        if ttl_seconds:
+            self.redis_client.setex(self.health_key, ttl_seconds, state.value)
+        else:
+            self.redis_client.set(self.health_key, state.value)
+
+    def is_in_cooldown(self) -> bool:
+        """Check if provider is in a cooldown window."""
+        if not self.redis_client:
+            return False
+        return self.redis_client.exists(self.cooldown_key) > 0
+
+    def start_cooldown(self, duration_seconds: int) -> None:
+        """Start a cooldown window for the provider."""
+        if not self.redis_client:
+            return
+        self.redis_client.setex(self.cooldown_key, duration_seconds, "1")
+        self.set_health_state(ProviderHealthState.OPEN, duration_seconds)
 
     def generate(self, prompt: str, max_tokens: int = 512, timeout: int = None) -> str:
         """
@@ -49,6 +91,13 @@ class BaseLLMProvider:
         Must be implemented by subclasses.
         Should raise RateLimitError or ProviderError on failure.
         """
+        # Check health state before attempting request
+        health_state = self.get_health_state()
+        if health_state in (ProviderHealthState.OPEN, ProviderHealthState.DISABLED):
+            raise ProviderError(f"Provider {self.provider_name} is in {health_state.value} state.")
+        if self.is_in_cooldown():
+            raise ProviderError(f"Provider {self.provider_name} is in cooldown.")
+        
         raise NotImplementedError("Subclasses must implement generate()")
 
     def _check_global_rate_limit(
@@ -75,6 +124,7 @@ class BaseLLMProvider:
                 'provider': self.provider_name,
                 'reason': 'rate_limited'
             })
+            self.set_health_state(ProviderHealthState.RATE_LIMITED, window_seconds)
             raise RateLimitError(
                 f"{self.provider_name} global rate limit exceeded ({max_calls} calls per {window_seconds}s)."
             )
@@ -153,11 +203,21 @@ return current
             return None
 
     def _log_success(self, start_time: float) -> None:
-        """Log a successful request to health_monitor and metrics."""
+        """Log a successful request to health_monitor and metrics, reset health state."""
         duration_ms = int((time.monotonic() - start_time) * 1000)
         health_monitor.log_success(f"llm_{self.provider_name}", duration_ms)
+        self.set_health_state(ProviderHealthState.HEALTHY)
 
     def _log_failure(self, start_time: float, exception: Exception) -> None:
-        """Log a failed request to health_monitor and metrics."""
+        """Log a failed request to health_monitor and metrics, update health state."""
         duration_ms = int((time.monotonic() - start_time) * 1000)
         health_monitor.log_failure(f"llm_{self.provider_name}", exception)
+        
+        # If it's a RateLimitError or RetryLaterError, set appropriate state
+        if isinstance(exception, RateLimitError):
+            if exception.retry_after:
+                self.start_cooldown(int(exception.retry_after))
+            else:
+                self.set_health_state(ProviderHealthState.RATE_LIMITED, 60)
+        else:
+            self.set_health_state(ProviderHealthState.DEGRADED, 30)

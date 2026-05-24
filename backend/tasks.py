@@ -122,7 +122,9 @@ def process_article(self, article_id: int, correlation_id: str, queued_at: float
         
         # STEP 5: LLM processing outside transaction (to avoid long-running transactions)
         analyzer = ArticleAnalyzer()
-        processed_id = analyzer.process_single_article(article_id)
+        # For first 1 Celery retries, prefer primary provider; then use fallback
+        prefer_primary_retry = self.request.retries < 2
+        processed_id = analyzer.process_single_article(article_id, prefer_primary_retry=prefer_primary_retry)
         
         # STEP 6: Update final state in separate transaction
         with get_session() as session:

@@ -6,18 +6,21 @@ Use as last-resort fallback before system_fallback.
 import logging
 import urllib.parse
 import requests
+import time
 from dataclasses import dataclass
 from backend.config import settings
+from backend.llm.base_provider import BaseLLMProvider, RateLimitError
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class PollinationsTextClient:
+class PollinationsTextClient(BaseLLMProvider):
     model: str = "openai"  # GPT-5 Nano via Pollinations
     api_key: str | None = None
 
     def __post_init__(self):
+        super().__init__(provider_name="pollinations_text")
         # Check if explicitly disabled
         enabled = getattr(settings, "POLLINATIONS_TEXT_ENABLED", True)
         if not enabled:
@@ -30,6 +33,7 @@ class PollinationsTextClient:
 
     def generate(self, prompt: str, max_tokens: int = 512, timeout: int = None) -> str:
         effective_timeout = timeout or 30
+        start_time = time.monotonic()
         # Truncate prompt to avoid URL length issues
         truncated = prompt[:3000]
         encoded = urllib.parse.quote(truncated)
@@ -46,14 +50,20 @@ class PollinationsTextClient:
             
             response = requests.get(url, headers=headers, timeout=effective_timeout)
             if response.status_code == 429:
-                raise RuntimeError("Pollinations text rate limited")
+                retry_after = self._parse_retry_after(response)
+                raise RateLimitError(
+                    message="Pollinations text rate limited",
+                    retry_after=retry_after
+                )
             if response.status_code == 401:
                 raise RuntimeError("Pollinations API unauthorized - check your POLLINATIONS_API_KEY")
             response.raise_for_status()
             content = response.text.strip()
             if not content:
                 raise ValueError("Empty response from Pollinations text")
+            self._log_success(start_time)
             return content
         except Exception as e:
+            self._log_failure(start_time, e)
             logger.warning("Pollinations text failed: %s", e)
-            raise RuntimeError(f"Pollinations text API failed: {e}") from e
+            raise

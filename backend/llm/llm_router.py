@@ -117,10 +117,11 @@ class SmartLLMRouter:
             except Exception as e:
                 self.log.warning(f"Failed to initialize {name}: {e}")
 
-    def generate(self, prompt: str, max_tokens: int = 512, task: Task = Task.SOCIAL_SHORT, timeout: int = 10) -> LLMResponse:
+    def generate(self, prompt: str, max_tokens: int = 512, task: Task = Task.SOCIAL_SHORT, timeout: int = 10, prefer_primary_retry: bool = False) -> LLMResponse:
         """
         Generate response with task-aware routing and automatic fallback.
         Always returns LLMResponse so callers can use .content and .provider consistently.
+        If prefer_primary_retry is True, only try primary provider and raise RetryLaterError if it fails.
         """
         # Validate inputs
         self._validate_inputs(prompt, max_tokens)
@@ -138,18 +139,47 @@ class SmartLLMRouter:
                 return LLMResponse(content=cached.decode(), provider="redis_cache")
         
         provider_chain = TASK_ROUTING.get(task, ["groq", "cerebras", "openrouter"])
-        self.log.info(f"Starting generation for task {task.value}, prompt length: {len(prompt)} chars")
+        self.log.info(f"Starting generation for task {task.value}, prompt length: {len(prompt)} chars, prefer_primary_retry=%s", prefer_primary_retry)
         self.log.debug(f"Prompt preview: {prompt[:200]}...")
         
         errors = []
         last_rate_limit_retry_after = None
         
-        for provider in provider_chain:
+        for i, provider in enumerate(provider_chain):
             if provider not in self.clients:
                 error_msg = f"Provider {provider} not initialized"
                 self.log.warning(error_msg)
                 errors.append(error_msg)
+                # If prefer_primary_retry is True and it's primary, then break after first failed, then raise!
+                if prefer_primary_retry and i == 0:
+                    break
                 continue
+
+            # Check provider health state before trying
+            client = self.clients[provider]
+            if hasattr(client, "get_health_state"):
+                from backend.llm.base_provider import ProviderHealthState
+                health_state = client.get_health_state()
+                if health_state in (ProviderHealthState.OPEN, ProviderHealthState.DISABLED):
+                    self.log.warning(f"Skipping provider {provider} in {health_state.value} state")
+                    errors.append(f"Provider {provider} in {health_state.value} state")
+                    if prefer_primary_retry and i == 0:
+                        from backend.llm.base_provider import RetryLaterError
+                        raise RetryLaterError(
+                            message=f"Primary provider {provider} is in {health_state.value} state",
+                            retry_after=60
+                        )
+                    continue
+                if hasattr(client, "is_in_cooldown") and client.is_in_cooldown():
+                    self.log.warning(f"Skipping provider {provider} in cooldown")
+                    errors.append(f"Provider {provider} in cooldown")
+                    if prefer_primary_retry and i == 0:
+                        from backend.llm.base_provider import RetryLaterError
+                        raise RetryLaterError(
+                            message=f"Primary provider {provider} is in cooldown",
+                            retry_after=60
+                        )
+                    continue
                 
             metrics.increment('llm_provider_calls_total', labels={'provider': provider})
             start_time = time.monotonic()
@@ -203,6 +233,15 @@ class SmartLLMRouter:
                 metrics.increment('llm_provider_failure_total', labels={'provider': provider})
                 metrics.observe('llm_call_duration_seconds', duration, labels={'provider': provider})
                 errors.append(error_msg)
+                
+                # If prefer_primary_retry and it's the first provider, raise RetryLaterError instead of continuing
+                if prefer_primary_retry and i == 0:
+                    from backend.llm.base_provider import RetryLaterError
+                    raise RetryLaterError(
+                        message=f"Primary provider {provider} failed, preferring retry over fallback",
+                        retry_after=last_rate_limit_retry_after or 60.0
+                    )
+                
                 if provider != provider_chain[-1]:
                     metrics.increment('llm_provider_retry_total', labels={'provider': provider, 'reason': 'failover'})
                 continue

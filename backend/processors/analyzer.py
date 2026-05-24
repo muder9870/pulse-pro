@@ -165,10 +165,10 @@ class ArticleAnalyzer:
         self.log.info("analyzer_enqueued total=%d", enqueued)
         return enqueued, raw_ids
 
-    def process_single_article(self, row_id: int) -> int | None:
+    def process_single_article(self, row_id: int, prefer_primary_retry: bool = False) -> int | None:
         """Analyze a single article on demand. Returns ProcessedArticle.id."""
         correlation_id = str(uuid.uuid4())
-        self.log.info("process_start article_id=%s correlation_id=%s", row_id, correlation_id)
+        self.log.info("process_start article_id=%s correlation_id=%s prefer_primary_retry=%s", row_id, correlation_id, prefer_primary_retry)
         with get_session() as session:
             # Get article for processing (rely on idempotency for locking)
             raw = session.query(RawArticle).filter(RawArticle.id == row_id).first()
@@ -194,7 +194,7 @@ class ArticleAnalyzer:
         # ── LLM Call (no DB connection held) ──
         start = time.monotonic()
         try:
-            analysis_data = self._analyze_single_article_with_timeout(title, raw_content or "")
+            analysis_data = self._analyze_single_article_with_timeout(title, raw_content or "", prefer_primary_retry=prefer_primary_retry)
             result = analysis_data["result"]
             raw_out = analysis_data["raw_output"]
             val_err = analysis_data["validation_error"]
@@ -248,7 +248,7 @@ class ArticleAnalyzer:
             raise
 
     def _analyze_single_article_with_timeout(
-        self, title: str, raw_content: str
+        self, title: str, raw_content: str, prefer_primary_retry: bool = False
     ) -> Dict[str, Any]:
         """Call LLM with a wall-clock timeout guard."""
         import threading
@@ -258,7 +258,7 @@ class ArticleAnalyzer:
 
         def target() -> None:
             try:
-                result_box.append(self._analyze_single_article(title, raw_content))
+                result_box.append(self._analyze_single_article(title, raw_content, prefer_primary_retry=prefer_primary_retry))
             except Exception as exc:
                 error_box.append(exc)
 
@@ -285,7 +285,7 @@ class ArticleAnalyzer:
 
         return result_box[0]
 
-    def _analyze_single_article(self, title: str, raw_content: str) -> Dict[str, Any]:
+    def _analyze_single_article(self, title: str, raw_content: str, prefer_primary_retry: bool = False) -> Dict[str, Any]:
         """Call LLM, parse, validate, and optionally repair with retries."""
         text = raw_content or ""
         if not text:
@@ -298,7 +298,7 @@ class ArticleAnalyzer:
         # Retry LLM call up to 3 times if validation fails
         for attempt in range(3):
             try:
-                llm_out = self.router.generate(prompt, max_tokens=512, task=Task.ANALYSIS)
+                llm_out = self.router.generate(prompt, max_tokens=512, task=Task.ANALYSIS, prefer_primary_retry=prefer_primary_retry)
                 
                 if hasattr(llm_out, "retry_after") and llm_out.retry_after is not None:
                     raise RetryLaterError(

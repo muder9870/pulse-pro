@@ -51,13 +51,13 @@ This file lists the tasks to bring all LLM providers up to the same production-g
 - [x] Migrate to BaseLLMProvider
 
 ### 4. (Optional) Bring Other Providers Up to Standard
-- [ ] Gemini: Migrate to BaseLLMProvider
-- [ ] Pollinations Text: Migrate to BaseLLMProvider
-- [ ] Ollama (Local): Migrate to BaseLLMProvider (no rate limiting needed)
+- [x] Gemini: Migrate to BaseLLMProvider
+- [x] Pollinations Text: Migrate to BaseLLMProvider
+- [x] Ollama (Local): Migrate to BaseLLMProvider (no rate limiting needed)
 
 ### 5. Add Deferred Retry Support
 - [x] Support Celery countdown retries using Retry-After headers
-- [ ] Allow preferred provider retry before immediate fallback
+- [x] Allow preferred provider retry before immediate fallback
 - [ ] Prevent retry storms during provider outages
 
 ### 6. Provider Health State Tracking

@@ -3,13 +3,16 @@ import requests
 import time
 from dataclasses import dataclass
 from backend.config import settings
-from backend.processors.health_monitor import health_monitor
+from backend.llm.base_provider import BaseLLMProvider
+
+logger = logging.getLogger(__name__)
 
 @dataclass
-class LocalOllamaClient:
+class LocalOllamaClient(BaseLLMProvider):
     model: str = None
 
     def __post_init__(self):
+        super().__init__(provider_name="ollama")
         if self.model is None:
             self.model = getattr(settings, "OLLAMA_MODEL", "llama3")
 
@@ -35,10 +38,10 @@ class LocalOllamaClient:
             r.raise_for_status()
             data = r.json()
             response = data.get("response", "")
-            
-            duration_ms = int((time.monotonic() - start_time) * 1000)
-            health_monitor.log_success("llm", duration_ms=duration_ms)
+            if not response or not response.strip():
+                raise ValueError("Empty response from Ollama")
+            self._log_success(start_time)
             return response
         except Exception as e:
-            health_monitor.log_failure("llm", e)
-            raise e
+            self._log_failure(start_time, e)
+            raise
