@@ -297,9 +297,9 @@ class ArticleAnalyzer:
         
         # Retry only for TRANSIENT validation errors (NOT for provider errors, rate limits, or circuit breaker)
         validation_retry_count = 0
-        MAX_VALIDATION_RETRIES = 1  # Only retry once for validation errors
+        MAX_VALIDATION_RETRIES = 1  # Only retry once for validation errors (total attempts: 2)
         
-        while validation_retry_count <= MAX_VALIDATION_RETRIES:
+        while validation_retry_count < MAX_VALIDATION_RETRIES:
             try:
                 llm_out = self.router.generate(prompt, max_tokens=512, task=Task.ANALYSIS, prefer_primary_retry=prefer_primary_retry)
                 
