@@ -22,6 +22,30 @@ class CircuitBreaker:
             except Exception:
                 self.redis_client = None
 
+    def is_open(self) -> bool:
+        """Check if circuit breaker is currently open (in cooldown)."""
+        fail_rate = health_monitor.get_failure_rate(
+            self.service_name, 
+            window=getattr(settings, "CIRCUIT_BREAKER_WINDOW", 50)
+        )
+        threshold = getattr(settings, "CIRCUIT_BREAKER_THRESHOLD", 0.75)
+        
+        if fail_rate < threshold:
+            return False
+            
+        now = time.monotonic()
+        last_ts = None
+        if self.redis_client:
+            try:
+                v = self.redis_client.get(f"circuit:{self.service_name}:last_failure")
+                if v:
+                    last_ts = float(v.decode() if isinstance(v, bytes) else v)
+            except Exception:
+                last_ts = None
+
+        time_since_failure = now - (last_ts if last_ts is not None else self.last_failure_time)
+        return time_since_failure < self.cooldown_period
+
     def call(self, func, *args, **kwargs):
         fail_rate = health_monitor.get_failure_rate(
             self.service_name, 

@@ -155,6 +155,13 @@ class SmartLLMRouter:
                     break
                 continue
 
+            # Check circuit breaker first!
+            if self.circuit_breakers[provider].is_open():
+                self.log.warning(f"Skipping provider {provider} because circuit breaker is open")
+                errors.append(f"Provider {provider} circuit breaker is open")
+                # If primary and prefer_primary_retry, still go to fallback (since circuit breaker is open)
+                continue
+                
             # Check provider health state before trying
             client = self.clients[provider]
             if hasattr(client, "get_health_state"):
@@ -163,22 +170,12 @@ class SmartLLMRouter:
                 if health_state in (ProviderHealthState.OPEN, ProviderHealthState.DISABLED):
                     self.log.warning(f"Skipping provider {provider} in {health_state.value} state")
                     errors.append(f"Provider {provider} in {health_state.value} state")
-                    if prefer_primary_retry and i == 0:
-                        from backend.llm.base_provider import RetryLaterError
-                        raise RetryLaterError(
-                            message=f"Primary provider {provider} is in {health_state.value} state",
-                            retry_after=60
-                        )
+                    # If primary and prefer_primary_retry, go to fallback (since it's OPEN/DISABLED)
                     continue
                 if hasattr(client, "is_in_cooldown") and client.is_in_cooldown():
                     self.log.warning(f"Skipping provider {provider} in cooldown")
                     errors.append(f"Provider {provider} in cooldown")
-                    if prefer_primary_retry and i == 0:
-                        from backend.llm.base_provider import RetryLaterError
-                        raise RetryLaterError(
-                            message=f"Primary provider {provider} is in cooldown",
-                            retry_after=60
-                        )
+                    # If primary and prefer_primary_retry, go to fallback (since it's in cooldown)
                     continue
                 
             metrics.increment('llm_provider_calls_total', labels={'provider': provider})
@@ -222,8 +219,7 @@ class SmartLLMRouter:
                 errors.append(error_msg)
                 if provider == provider_chain[0]:
                     last_rate_limit_retry_after = e.retry_after
-                if provider != provider_chain[-1]:
-                    metrics.increment('llm_provider_retry_total', labels={'provider': provider, 'reason': 'rate_limited'})
+                # On RateLimitError, go directly to next provider (no retries of same)
                 continue
                 
             except Exception as e:
@@ -234,16 +230,20 @@ class SmartLLMRouter:
                 metrics.observe('llm_call_duration_seconds', duration, labels={'provider': provider})
                 errors.append(error_msg)
                 
-                # If prefer_primary_retry and it's the first provider, raise RetryLaterError instead of continuing
+                # If prefer_primary_retry and it's first provider, and it's NOT a RateLimitError or circuit breaker error, maybe defer retry
+                # But for now, let's be safe: if we hit RateLimitError OR circuit breaker, go to fallback!
+                # Also, NEVER retry the same provider multiple times in a single generate call!
                 if prefer_primary_retry and i == 0:
-                    from backend.llm.base_provider import RetryLaterError
-                    raise RetryLaterError(
-                        message=f"Primary provider {provider} failed, preferring retry over fallback",
-                        retry_after=last_rate_limit_retry_after or 60.0
-                    )
-                
-                if provider != provider_chain[-1]:
-                    metrics.increment('llm_provider_retry_total', labels={'provider': provider, 'reason': 'failover'})
+                    # Only raise RetryLaterError if it's a transient error (not rate limit or circuit breaker)
+                    # Check if it's a circuit breaker error
+                    is_circuit_breaker_error = "circuit" in str(e).lower() or "breaker" in str(e).lower()
+                    if not is_circuit_breaker_error and not isinstance(e, RateLimitError):
+                        from backend.llm.base_provider import RetryLaterError
+                        raise RetryLaterError(
+                            message=f"Primary provider {provider} failed (transient error), preferring retry over fallback",
+                            retry_after=last_rate_limit_retry_after or 60.0
+                        )
+                # Otherwise, just go to next provider
                 continue
         
         # All providers failed - Try local Ollama as last resort before giving up
