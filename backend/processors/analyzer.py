@@ -295,8 +295,11 @@ class ArticleAnalyzer:
 
         prompt = ANALYSIS_PROMPT_TEMPLATE.format(title=title, text=text)
         
-        # Retry LLM call up to 3 times if validation fails
-        for attempt in range(3):
+        # Retry only for TRANSIENT validation errors (NOT for provider errors, rate limits, or circuit breaker)
+        validation_retry_count = 0
+        MAX_VALIDATION_RETRIES = 1  # Only retry once for validation errors
+        
+        while validation_retry_count <= MAX_VALIDATION_RETRIES:
             try:
                 llm_out = self.router.generate(prompt, max_tokens=512, task=Task.ANALYSIS, prefer_primary_retry=prefer_primary_retry)
                 
@@ -338,16 +341,41 @@ class ArticleAnalyzer:
                 
                 return result
             except Exception as e:
-                self.log.warning("llm_attempt_failed attempt=%d error=%s", attempt + 1, e)
-                if attempt == 2:
-                    # After 3 attempts, use fallback
+                from backend.llm.base_provider import RateLimitError, ProviderError, RetryLaterError
+                from backend.llm.circuit_breaker import CircuitBreakerError
+                
+                # Check if this is a PROVIDER error (not a validation error)
+                is_provider_error = (
+                    isinstance(e, (RateLimitError, ProviderError, RetryLaterError, CircuitBreakerError))
+                    or "rate limit" in str(e).lower()
+                    or "circuit" in str(e).lower()
+                    or "timeout" in str(e).lower()
+                )
+                
+                # If it's a provider error → DO NOT RETRY, use fallback immediately!
+                if is_provider_error:
+                    self.log.warning("llm_provider_error error=%s — using fallback immediately", e)
                     fallback = dict(FALLBACK_RESULT)
                     fallback["_fallback"] = True
                     return {
                         "result": fallback,
-                        "raw_output": f"LLM failed after 3 attempts: {str(e)}",
+                        "raw_output": f"LLM provider error: {str(e)}",
                         "validation_error": str(e)
                     }
+                
+                # Otherwise, it's a VALIDATION error → only retry up to MAX_VALIDATION_RETRIES
+                self.log.warning("llm_validation_attempt_failed attempt=%d error=%s", validation_retry_count + 1, e)
+                if validation_retry_count >= MAX_VALIDATION_RETRIES:
+                    # After max validation retries, use fallback
+                    fallback = dict(FALLBACK_RESULT)
+                    fallback["_fallback"] = True
+                    return {
+                        "result": fallback,
+                        "raw_output": f"LLM validation failed after {MAX_VALIDATION_RETRIES + 1} attempts: {str(e)}",
+                        "validation_error": str(e)
+                    }
+                
+                validation_retry_count += 1
 
     def _mark_for_retry(self, row_id: int, error_type: str) -> None:
         """Increment retry count and schedule next attempt with backoff."""
