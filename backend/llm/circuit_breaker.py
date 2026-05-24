@@ -86,18 +86,8 @@ class CircuitBreaker:
             # On success in half-open or closed, we don't reset history here 
             # (health_monitor handles it), but we could.
             return result
-        except TimeoutError as e:
-            self.last_failure_time = time.monotonic()
-            if self.redis_client:
-                try:
-                    self.redis_client.set(f"circuit:{self.service_name}:last_failure", str(self.last_failure_time))
-                except Exception:
-                    pass
-            duration_ms = int((time.monotonic() - start_time) * 1000)
-            self.log.warning(f"Circuit breaker: {self.service_name} timeout after {duration_ms}ms: {e}")
-            health_monitor.log_failure(self.service_name, e)
-            raise e
         except Exception as e:
+            from backend.llm.base_provider import RateLimitError
             self.last_failure_time = time.monotonic()
             if self.redis_client:
                 try:
@@ -105,6 +95,11 @@ class CircuitBreaker:
                 except Exception:
                     pass
             duration_ms = int((time.monotonic() - start_time) * 1000)
-            self.log.error(f"Circuit breaker: {self.service_name} failed in {duration_ms}ms: {e}")
+            if isinstance(e, RateLimitError):
+                self.log.warning(f"Circuit breaker: {self.service_name} hit RateLimitError, opening immediately: {e}")
+            elif isinstance(e, TimeoutError):
+                self.log.warning(f"Circuit breaker: {self.service_name} timeout after {duration_ms}ms: {e}")
+            else:
+                self.log.error(f"Circuit breaker: {self.service_name} failed in {duration_ms}ms: {e}")
             health_monitor.log_failure(self.service_name, e)
             raise e

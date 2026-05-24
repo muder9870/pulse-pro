@@ -379,13 +379,31 @@ class ArticleAnalyzer:
         """Helper to parse JSON and validate against Pydantic schema."""
         parsed_dict = self._parse_json(output_text)
         
+        # Enhanced category sanitization
+        VALID_CATEGORIES = {"LLM", "Computer Vision", "NLP", "Robotics", "General AI", "Other"}
         CATEGORY_MAP = {
             "General": "General AI",
             "AI": "General AI",
             "General Artificial Intelligence": "General AI",
+            "Large Language Model": "LLM",
+            "Computer vision": "Computer Vision",
         }
         if isinstance(parsed_dict.get("category"), str):
-            parsed_dict["category"] = CATEGORY_MAP.get(parsed_dict["category"], parsed_dict["category"])
+            category = parsed_dict["category"].strip()
+            # First check direct map
+            if category in CATEGORY_MAP:
+                category = CATEGORY_MAP[category]
+            # If not valid, try to match prefix
+            if category not in VALID_CATEGORIES:
+                # Check if any valid category is a prefix/suffix
+                for valid_cat in VALID_CATEGORIES:
+                    if valid_cat.lower() in category.lower():
+                        category = valid_cat
+                        break
+                # If still not valid, default to "Other"
+                if category not in VALID_CATEGORIES:
+                    category = "Other"
+            parsed_dict["category"] = category
         
         # ArticleAnalysis will throw ValidationError if structure is wrong
         validated = ArticleAnalysis.model_validate(parsed_dict)
