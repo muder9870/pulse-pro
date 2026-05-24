@@ -3,7 +3,7 @@ import time
 import concurrent.futures
 from enum import Enum
 from typing import List, Dict, Optional
-from .clients.groq_client import GroqClient, GroqRateLimitError
+from .clients.groq_client import GroqClient
 from .clients.ollama_client import LocalOllamaClient
 from .clients.paid_client import PaidApiLLMClient
 from .clients.cerebras_client import CerebrasClient
@@ -12,6 +12,7 @@ from .clients.gemini_client import GeminiClient
 from .clients.mistral_client import MistralClient
 from .clients.pollinations_text_client import PollinationsTextClient
 from .circuit_breaker import CircuitBreaker
+from .base_provider import RateLimitError
 from backend.config import settings
 from backend.metrics import metrics
 import hashlib
@@ -46,19 +47,21 @@ TASK_ROUTING: Dict[Task, List[str]] = {
 
 # Response format for consistency
 class LLMResponse:
-    def __init__(self, content: str, provider: str, status: str = "success", error: str = None):
+    def __init__(self, content: str, provider: str, status: str = "success", error: str = None, retry_after: Optional[float] = None):
         self.content = content or ""
         self.provider = provider
         self.status = status
         self.error = error
         self.fallback = False
+        self.retry_after = retry_after
     
     def to_dict(self) -> Dict:
         return {
             "content": self.content,
             "provider": self.provider,
             "status": self.status,
-            "error": self.error
+            "error": self.error,
+            "retry_after": self.retry_after
         }
 
     def __str__(self) -> str:
@@ -139,6 +142,7 @@ class SmartLLMRouter:
         self.log.debug(f"Prompt preview: {prompt[:200]}...")
         
         errors = []
+        last_rate_limit_retry_after = None
         
         for provider in provider_chain:
             if provider not in self.clients:
@@ -176,7 +180,21 @@ class SmartLLMRouter:
                     metrics.increment('llm_provider_fallback_total', labels={'provider': provider})
                 resp = LLMResponse(content=result, provider=provider)
                 resp.fallback = is_fallback
+                resp.retry_after = None
                 return resp
+                
+            except RateLimitError as e:
+                duration = time.monotonic() - start_time
+                error_msg = f"{provider} failed for task {task.value} in {duration:.2f}s: {str(e)}"
+                self.log.warning(error_msg)
+                metrics.increment('llm_provider_failure_total', labels={'provider': provider})
+                metrics.observe('llm_call_duration_seconds', duration, labels={'provider': provider})
+                errors.append(error_msg)
+                if provider == provider_chain[0]:
+                    last_rate_limit_retry_after = e.retry_after
+                if provider != provider_chain[-1]:
+                    metrics.increment('llm_provider_retry_total', labels={'provider': provider, 'reason': 'rate_limited'})
+                continue
                 
             except Exception as e:
                 duration = time.monotonic() - start_time
@@ -225,7 +243,7 @@ class SmartLLMRouter:
             elif task == Task.RESEARCH:
                 fallback_json = '{"relevance": 0, "impact": 0, "summary": "N/A"}'
                 
-            return LLMResponse(content=fallback_json, provider="system_fallback", status="error")
+            return LLMResponse(content=fallback_json, provider="system_fallback", status="error", retry_after=last_rate_limit_retry_after)
         
         final_error = f"All LLM providers failed for task {task.value}. Errors: {'; '.join(errors)}"
         self.log.error(final_error)
@@ -235,8 +253,9 @@ class SmartLLMRouter:
                 content="Content generation unavailable at the moment.",
                 provider="system_fallback",
                 status="error",
+                retry_after=last_rate_limit_retry_after
             )
-        return LLMResponse(content="Content generation unavailable.", provider="system_fallback", status="error")
+        return LLMResponse(content="Content generation unavailable.", provider="system_fallback", status="error", retry_after=last_rate_limit_retry_after)
 
     def _validate_inputs(self, prompt: str, max_tokens: int):
         """Validate input parameters."""

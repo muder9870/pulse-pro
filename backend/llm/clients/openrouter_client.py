@@ -1,10 +1,10 @@
 import logging
-import requests
 import time
+import requests
 from dataclasses import dataclass
 from typing import Optional
 from backend.config import settings
-from backend.processors.health_monitor import health_monitor
+from backend.llm.base_provider import BaseLLMProvider, RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +17,11 @@ class OpenRouterConfig:
     max_tokens: int = 4096
     temperature: float = 0.7
     timeout: int = 30
-    max_retries: int = 3
 
 
-class OpenRouterClient:
+class OpenRouterClient(BaseLLMProvider):
     def __init__(self):
+        super().__init__(provider_name="openrouter")
         self.config = OpenRouterConfig(
             api_key=getattr(settings, "OPENROUTER_API_KEY", ""),
             model=getattr(settings, "OPENROUTER_MODEL", "anthropic/claude-3-haiku"),
@@ -46,35 +46,38 @@ class OpenRouterClient:
             "max_tokens": min(max_tokens, self.config.max_tokens),
             "temperature": self.config.temperature,
         }
-        start = time.monotonic()
-        for attempt in range(self.config.max_retries):
-            try:
-                response = self.session.post(
-                    self.config.base_url, json=payload, timeout=effective_timeout
-                )
-                if response.status_code == 429:
-                    wait = min(2 ** attempt, 8)
-                    logger.warning("OpenRouter rate limited, retrying in %ds", wait)
-                    time.sleep(wait)
-                    continue
-                response.raise_for_status()
-                data = response.json()
-                content = (
-                    data.get("choices", [{}])[0]
-                    .get("message", {})
-                    .get("content", "")
-                )
-                if not content:
-                    raise ValueError("Empty response from OpenRouter")
-                health_monitor.log_success("llm_openrouter", int((time.monotonic() - start) * 1000))
-                return content
-            except requests.exceptions.Timeout:
-                logger.warning("OpenRouter timeout on attempt %d", attempt + 1)
-                health_monitor.log_failure("llm_openrouter", TimeoutError("OpenRouter timeout"))
-            except Exception as e:
-                logger.error("OpenRouter request failed: %s", e)
-                health_monitor.log_failure("llm_openrouter", e)
-            if attempt < self.config.max_retries - 1:
-                time.sleep(min(2 ** attempt, 8))
+        start_time = time.monotonic()
 
-        raise RuntimeError("OpenRouter API failed after retries")
+        try:
+            response = self.session.post(
+                self.config.base_url, json=payload, timeout=effective_timeout
+            )
+
+            if response.status_code == 429:
+                retry_after = self._parse_retry_after(response)
+                raise RateLimitError(
+                    message="OpenRouter rate limit exceeded",
+                    retry_after=retry_after
+                )
+
+            response.raise_for_status()
+            data = response.json()
+            content = (
+                data.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+            )
+            if not content:
+                raise ValueError("Empty response from OpenRouter")
+
+            self._log_success(start_time)
+            return content
+
+        except requests.exceptions.Timeout as e:
+            logger.warning("OpenRouter timeout")
+            self._log_failure(start_time, TimeoutError("OpenRouter timeout"))
+            raise e
+        except Exception as e:
+            logger.error("OpenRouter request failed: %s", e)
+            self._log_failure(start_time, e)
+            raise e

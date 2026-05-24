@@ -150,31 +150,47 @@ def process_article(self, article_id: int, correlation_id: str, queued_at: float
         }))
         
     except Exception as exc:
-        # STEP 9: Mark as failed in Redis to allow retries
-        redis_client.setex(idempotency_key, 300, "failed")  # 5 min TTL for failed state
-        
-        # Clean up partial DB state
-        with get_session() as session:
-            raw = session.get(RawArticle, article_id)
-            if raw and raw.state == 'analyzing':
-                raw.state = 'analysis_failed'
-                session.commit()
-        
-        logger.error(json.dumps({
-            "correlation_id": correlation_id,
-            "article_id": article_id,
-            "stage": "analysis",
-            "action": "error",
-            "error": str(exc),
-            "retry_count": self.request.retries
-        }))
-        
-        # STEP 10: RETRY WITH JITTER (anti-thundering herd)
-        if self.request.retries < 3:
-            import random
-            base_delay = 60 * (2 ** self.request.retries)
-            jitter = random.uniform(0.1, 0.3) * base_delay
-            raise self.retry(countdown=base_delay + jitter, queue='article_retry', exc=exc)
+            # STEP 9: Mark as failed in Redis to allow retries
+            redis_client.setex(idempotency_key, 300, "failed")  # 5 min TTL for failed state
+            
+            # Clean up partial DB state
+            with get_session() as session:
+                raw = session.get(RawArticle, article_id)
+                if raw and raw.state == 'analyzing':
+                    raw.state = 'analysis_failed'
+                    session.commit()
+            
+            logger.error(json.dumps({
+                "correlation_id": correlation_id,
+                "article_id": article_id,
+                "stage": "analysis",
+                "action": "error",
+                "error": str(exc),
+                "retry_count": self.request.retries
+            }))
+            
+            # STEP 10: RETRY WITH JITTER (anti-thundering herd)
+            countdown = None
+            # Check if exception has retry_after
+            if hasattr(exc, "retry_after") and exc.retry_after is not None:
+                try:
+                    base_delay = float(exc.retry_after)
+                    import random
+                    jitter = random.uniform(0.0, 0.5) * base_delay
+                    countdown = base_delay + jitter
+                except (ValueError, TypeError):
+                    countdown = None
+            
+            if countdown is None:
+                if self.request.retries < 3:
+                    import random
+                    base_delay = 60 * (2 ** self.request.retries)
+                    jitter = random.uniform(0.1, 0.3) * base_delay
+                    countdown = base_delay + jitter
+            
+            if countdown is not None:
+                raise self.retry(countdown=countdown, queue='article_retry', exc=exc)
+            raise
 
 @celery_app.task(bind=True, max_retries=2)
 def generate_content(self, article_id: int, correlation_id: str):

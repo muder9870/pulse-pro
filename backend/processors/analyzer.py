@@ -13,7 +13,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from backend.db.session import get_session
 from backend.llm.llm_router import smart_router, Task
-from backend.llm.clients.groq_client import GroqRateLimitError
+from backend.llm.base_provider import RateLimitError, RetryLaterError
 from backend.llm.circuit_breaker import CircuitBreakerError
 from ..models import RawArticle, ProcessedArticle
 from ..schemas import ArticleAnalysis
@@ -221,8 +221,18 @@ class ArticleAnalyzer:
             )
             return p_id
             
-        except GroqRateLimitError as exc:
-            self.log.warning("groq_rate_limit article_id=%s correlation_id=%s — backing off", row_id, correlation_id)
+        except RetryLaterError as exc:
+            self.log.warning(
+                "retry_later article_id=%s correlation_id=%s retry_after=%s",
+                row_id, correlation_id, exc.retry_after
+            )
+            self._mark_for_retry(row_id, "retry_later")
+            raise
+        except RateLimitError as exc:
+            self.log.warning(
+                "rate_limit article_id=%s correlation_id=%s retry_after=%s",
+                row_id, correlation_id, exc.retry_after
+            )
             self._mark_for_retry(row_id, "rate_limit")
             raise
         except CircuitBreakerError as exc:
@@ -289,6 +299,13 @@ class ArticleAnalyzer:
         for attempt in range(3):
             try:
                 llm_out = self.router.generate(prompt, max_tokens=512, task=Task.ANALYSIS)
+                
+                if hasattr(llm_out, "retry_after") and llm_out.retry_after is not None:
+                    raise RetryLaterError(
+                        message="Retry later per provider instructions",
+                        retry_after=llm_out.retry_after
+                    )
+
                 raw_output = llm_out.content
                 provider = llm_out.provider
 
