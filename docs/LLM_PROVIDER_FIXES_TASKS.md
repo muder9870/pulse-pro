@@ -58,21 +58,21 @@ This file lists the tasks to bring all LLM providers up to the same production-g
 ### 5. Add Deferred Retry Support
 - [x] Support Celery countdown retries using Retry-After headers
 - [x] Allow preferred provider retry before immediate fallback
-- [x] Prevent retry storms during provider outages (via health state tracking & cooldowns)
+- [ ] Prevent retry storms during provider outages
 
 ### 6. Provider Health State Tracking
-- [x] Add shared provider health states (HEALTHY, DEGRADED, RATE_LIMITED, OPEN, DISABLED)
-- [x] Add cooldown windows
-- [x] Skip providers in OPEN state
-- [x] Track provider recovery automatically
+- [ ] Add shared provider health states (HEALTHY, DEGRADED, RATE_LIMITED, OPEN, DISABLED)
+- [ ] Add cooldown windows
+- [ ] Skip providers in OPEN state
+- [ ] Track provider recovery automatically
 
 ### 7. Metrics & Observability
-- [x] Provider success/failure counters (already implemented)
-- [x] Rate limit counters (already implemented)
-- [x] Fallback usage metrics (already implemented)
-- [x] Queue wait time metrics (already implemented)
-- [ ] Worker utilization metrics (nice-to-have)
-- [x] p95/p99 latency tracking (already implemented)
+- [ ] Provider success/failure counters (already partially implemented)
+- [ ] Rate limit counters
+- [ ] Fallback usage metrics
+- [ ] Queue wait time metrics (already implemented)
+- [ ] Worker utilization metrics
+- [ ] p95/p99 latency tracking (already implemented)
 
 ---
 
