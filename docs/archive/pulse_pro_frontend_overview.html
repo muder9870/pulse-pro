@@ -1,0 +1,146 @@
+
+<style>
+  .section { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+  .section-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .badge-high { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .badge-med { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .badge-low { background: var(--color-background-success); color: var(--color-text-success); }
+  .badge-info { background: var(--color-background-info); color: var(--color-text-info); }
+  .items { margin-top: 10px; display: none; }
+  .items.open { display: block; }
+  .item { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-top: 0.5px solid var(--color-border-tertiary); font-size: 13px; color: var(--color-text-secondary); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .dot-danger { background: #E24B4A; }
+  .dot-warning { background: #EF9F27; }
+  .dot-success { background: #639922; }
+  .dot-info { background: #378ADD; }
+  .chevron { font-size: 11px; color: var(--color-text-tertiary); transition: transform 0.15s; }
+  .chevron.open { transform: rotate(90deg); }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin-bottom: 14px; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+  .metric-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .metric-lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+</style>
+
+<div style="padding: 0.5rem 0">
+  <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0 0 12px;">Click any section to expand. Priority reflects impact on user experience and dev velocity.</p>
+  <div class="summary-grid">
+    <div class="metric"><div class="metric-val">20</div><div class="metric-lbl">Sections</div></div>
+    <div class="metric"><div class="metric-val">100+</div><div class="metric-lbl">Action items</div></div>
+    <div class="metric"><div class="metric-val">8</div><div class="metric-lbl">Milestones</div></div>
+    <div class="metric"><div class="metric-val">7</div><div class="metric-lbl">Route views</div></div>
+  </div>
+
+  <div id="sections"></div>
+</div>
+
+<script>
+const data = [
+  {
+    title: "🔴 Critical / Ship blockers",
+    priority: "high",
+    items: [
+      { dot: "danger", text: "Design token fragmentation — CSS variables vs hard-coded Tailwind colors used inconsistently throughout (§2.1, §2.2)" },
+      { dot: "danger", text: "Sidebar missing Podcast route — nav link exists in App.jsx but not in Sidebar.jsx (§5.1)" },
+      { dot: "danger", text: "No aria-current='page' on active nav items — basic a11y failure (§5.4)" },
+      { dot: "danger", text: "Modals likely missing focus traps and ESC handling — §7.9, §13.5" },
+      { dot: "danger", text: "dangerouslySetInnerHTML without HTML sanitization — security risk (§18.1)" },
+      { dot: "danger", text: "ThemeProvider tests failing — default theme expectation mismatch (§16.1)" },
+    ]
+  },
+  {
+    title: "🟡 High priority UX gaps",
+    priority: "med",
+    items: [
+      { dot: "warning", text: "No skip link to main content — a11y (§13.1)" },
+      { dot: "warning", text: "Pipeline long-running job gives no progress feedback (§7.5)" },
+      { dot: "warning", text: "Settings tabs don't persist in URL — ?tab= sync missing (§6)" },
+      { dot: "warning", text: "EmptyFeed / EmptyStates inconsistent across views — no shared illustration set (§9)" },
+      { dot: "warning", text: "FilterBar has no visible reset or mobile collapse (§7.2)" },
+      { dot: "warning", text: "font-black overused — reserved for H1 but used at section level (§3.1)" },
+      { dot: "warning", text: "Light mode hover states dark-centric (hover:bg-slate-800/50) — broken in light mode (§5.8)" },
+      { dot: "warning", text: "Source folder name truncation missing tooltip (§5.6)" },
+    ]
+  },
+  {
+    title: "🔵 Architecture / state",
+    priority: "info",
+    items: [
+      { dot: "info", text: "PipelineContext may duplicate React Query cache — consolidate (§12)" },
+      { dot: "info", text: "appStore persist policy undocumented — what survives a reload? (§12)" },
+      { dot: "info", text: "pathToView URL sync — possible state drift from router (§4.1)" },
+      { dot: "info", text: "API error shape not normalized — inconsistent toast/error handling (§11.3)" },
+      { dot: "info", text: "usePipeline polling has no backoff on error (§11.5)" },
+      { dot: "info", text: "Multiple nested error boundaries (ErrorBoundary, FeatureErrorBoundary, NetworkErrorBoundary, AsyncErrorBoundary) — mapping unclear (§15.1)" },
+    ]
+  },
+  {
+    title: "🟢 Polish & consistency",
+    priority: "low",
+    items: [
+      { dot: "success", text: "Product name inconsistency — 'Pulse Pro' vs 'AI Pulse Pro' throughout copy (§19.1)" },
+      { dot: "success", text: "Footer version hardcoded 'V2.4.0' — should be env/package.json driven (§5.7)" },
+      { dot: "success", text: "Button copy vague in places — 'Submit' should be 'Save', 'Run pipeline', etc. (§19.2)" },
+      { dot: "success", text: "ThemeExample.jsx ships in prod bundle — move to Storybook or dev-only route (§10)" },
+      { dot: "success", text: "External links missing rel='noopener noreferrer' (§18.2)" },
+      { dot: "success", text: "Charts need table fallback or aria-label summary for screen readers (§13.4)" },
+    ]
+  },
+  {
+    title: "⚙️ Performance & testing",
+    priority: "info",
+    items: [
+      { dot: "info", text: "Route lazy-loading in place but chunk names unverified in build output (§14.1)" },
+      { dot: "info", text: "preservation.test.js requires built dist/assets — won't pass in CI without build step (§16.2)" },
+      { dot: "info", text: "Sidebar, Modal, critical hooks all under-covered (§16.3)" },
+      { dot: "info", text: "Recharts renders when tab is hidden — should pause (§14.4)" },
+      { dot: "info", text: "Story list needs virtualization at 100+ items — not yet implemented (§7.6)" },
+    ]
+  },
+  {
+    title: "📐 Suggested milestone order",
+    priority: "low",
+    items: [
+      { dot: "success", text: "1. Wayfinding — Sidebar podcast link, aria-current, light-mode hover fixes" },
+      { dot: "success", text: "2. Tokens — Migrate hard-coded colors to CSS variables" },
+      { dot: "success", text: "3. Typography — Establish scale, reduce font-black" },
+      { dot: "success", text: "4. Pipeline UX — Progress feedback for long-running jobs" },
+      { dot: "success", text: "5. Settings — URL tab sync + mobile layout" },
+      { dot: "success", text: "6. Research modal — Loading states, deep dive polish" },
+      { dot: "success", text: "7. Tests & CI — Fix theme tests, wire preservation test to build" },
+      { dot: "success", text: "8. Cleanup — Gate internal-only components from default nav" },
+    ]
+  }
+];
+
+const badgeClass = { high: 'badge-high', med: 'badge-med', low: 'badge-low', info: 'badge-info' };
+const badgeLabel = { high: 'Critical', med: 'High', low: 'Polish', info: 'Arch' };
+
+const container = document.getElementById('sections');
+data.forEach((sec, i) => {
+  const div = document.createElement('div');
+  div.className = 'section';
+  div.innerHTML = `
+    <div class="section-header" onclick="toggle(${i})">
+      <span class="section-title">${sec.title}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="badge ${badgeClass[sec.priority]}">${badgeLabel[sec.priority]}</span>
+        <span class="chevron" id="chev-${i}">▶</span>
+      </div>
+    </div>
+    <div class="items" id="items-${i}">
+      ${sec.items.map(it => `<div class="item"><div class="dot dot-${it.dot}"></div><span>${it.text}</span></div>`).join('')}
+    </div>
+  `;
+  container.appendChild(div);
+});
+
+function toggle(i) {
+  const items = document.getElementById('items-'+i);
+  const chev = document.getElementById('chev-'+i);
+  items.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+</script>
