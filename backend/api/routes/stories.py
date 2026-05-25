@@ -89,6 +89,7 @@ def get_stories():
         page          = max(int(request.args.get("page", "1") or "1"), 1)
         source_filter = request.args.get("source")
         sort          = request.args.get("sort", "score")
+        state_filter  = request.args.get("state")
 
         # Hard cap — never allow unlimited dumps to the frontend.
         # The old `limit=all` path was causing 1MB+ responses on every poll.
@@ -105,7 +106,7 @@ def get_stories():
 
         repo   = ArticleRepository(db)
         result = repo.get_top_stories(
-            limit=limit, offset=offset, sort=sort, source=source_filter
+            limit=limit, offset=offset, sort=sort, source=source_filter, state=state_filter
         )
         return jsonify(result), 200
     except Exception as e:

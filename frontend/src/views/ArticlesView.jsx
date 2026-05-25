@@ -20,6 +20,7 @@ const ArticlesView = ({
   handleRunPipeline,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [analyticsStats, setAnalyticsStats] = React.useState(null);
   
   // Get data from context (T10 refactoring)
   const {
@@ -207,9 +208,35 @@ const ArticlesView = ({
           </div>
         </div>
 
+        {/* ── State Filter Tabs ── */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {stateTabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setActiveState(tab.key);
+                if (tab.key === 'archived') {
+                  setSearchParams({ filter: 'archived' }, { replace: true });
+                } else {
+                  setSearchParams({}, { replace: true });
+                }
+              }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 500,
+                cursor: 'pointer', transition: 'all 0.15s',
+                background: activeState === tab.key ? tab.bg : 'transparent',
+                border: `1px solid ${activeState === tab.key ? tab.border : 'var(--border)'}`,
+                color: activeState === tab.key ? tab.color : 'var(--text2)',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
         {/* ── Score Filter Tabs ── */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-          {scoreTabs.map(tab => (
+          {activeState !== 'archived' && scoreTabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setScoreFilter(tab.key)}

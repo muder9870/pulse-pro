@@ -9,6 +9,7 @@ class AnalyticsRepository:
 
     def get_dashboard_stats(self) -> dict:
         total_articles = self.session.query(func.count(RawArticle.id)).scalar() or 0
+        archived_articles = self.session.query(func.count(RawArticle.id)).filter(RawArticle.state == "archived").scalar() or 0
         processed_articles = self.session.query(func.count(ProcessedArticle.id)).scalar() or 0
         generated_content = self.session.query(func.count(GeneratedContent.id)).scalar() or 0
         deep_dive_analyzed = self.session.query(func.count(PaperAnalysis.article_id)).scalar() or 0
@@ -65,6 +66,7 @@ class AnalyticsRepository:
         content_by_platform = {p: count for p, count in platforms_query}
         
         return {
+            "archived_articles": archived_articles,
             "total_articles": total_articles,
             "processed_articles": processed_articles,
             "generated_content": generated_content,

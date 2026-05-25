@@ -10,17 +10,18 @@ import { api } from '../api/client';
 const PAGE_SIZE = 20;
 
 export const useStories = (options = {}) => {
-  const { sort, source } = options;
+  const { sort, source, state } = options;
   const sourceKey = typeof source === 'string' ? source : source?.name || null;
 
   return useInfiniteQuery({
-    queryKey: ['stories', sort ?? null, sourceKey],
+    queryKey: ['stories', sort ?? null, sourceKey, state ?? null],
     queryFn: async ({ pageParam = 1 }) => {
       const params = new URLSearchParams();
       params.set('limit', String(PAGE_SIZE));
       params.set('page', String(pageParam));
       if (sort) params.set('sort', sort);
       if (sourceKey) params.set('source', sourceKey);
+      if (state) params.set('state', state);
       const data = await api.get(`/stories?${params.toString()}`);
       if (Array.isArray(data)) return data;
       if (data && Array.isArray(data.data)) return data.data;

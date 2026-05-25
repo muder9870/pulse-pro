@@ -7,7 +7,7 @@ class ArticleRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def get_top_stories(self, limit: int | None = 10, offset: int = 0, sort: str = "score", source: str | None = None) -> list[dict]:
+    def get_top_stories(self, limit: int | None = 10, offset: int = 0, sort: str = "score", source: str | None = None, state: str | None = None) -> list[dict]:
         # Use selectinload (not joinedload) for to-many collections.
         # joinedload on collections produces a cartesian-product JOIN that
         # inflates result rows by N×M — selectinload runs separate IN queries
@@ -21,6 +21,11 @@ class ArticleRepository:
                 selectinload(RawArticle.processed_entry).selectinload(ProcessedArticle.tags),
             )
         )
+        
+        if state == "archived":
+            query = query.filter(RawArticle.state == "archived")
+        else:
+            query = query.filter(RawArticle.state != "archived")
 
         # Filter by source if provided
         if source:

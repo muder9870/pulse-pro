@@ -86,6 +86,8 @@ function AppContent() {
   const filters = useAppStore((s) => s.filters);
   const setFilters = useAppStore((s) => s.setFilters);
 
+  // Track state for archived filter
+  const [storyState, setStoryState] = useState(null);
   // 2. Data fetching hooks that depend on the state above
   const {
     data: storiesData,
@@ -95,7 +97,8 @@ function AppContent() {
     isFetchingNextPage,
   } = useStories({
     sort: 'score',
-    source: activeSource
+    source: activeSource,
+    state: storyState
   });
   // Flatten all pages into a single array
   const stories = storiesData?.pages?.flat() ?? [];
@@ -398,7 +401,7 @@ function AppContent() {
 
     filtered.sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
     return filtered;
-  }, [stories, searchQuery, activeSource, filters]);
+  }, [stories, searchQuery, activeSource, filters, storyState]);
 
   const uniqueSources = React.useMemo(() => 
     fetchedSources.length > 0 ? fetchedSources : [...new Set(stories.map(s => s.source))].filter(Boolean),

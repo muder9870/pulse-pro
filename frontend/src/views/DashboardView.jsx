@@ -207,6 +207,7 @@ const DashboardView = ({ handleRunPipeline }) => {
               onClick={() => {
                 if (item.action === 'articles') navigate('/articles');
                 else if (item.action === 'analyzed') navigate('/articles?filter=analyzed');
+                else if (item.action === 'archived') navigate('/articles?filter=archived');
                 else if (item.action === 'scores') navigate('/articles');
                 else if (item.action === 'ready') navigate('/articles?filter=ready');
               }}
