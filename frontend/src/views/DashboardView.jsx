@@ -98,6 +98,7 @@ const DashboardView = ({ handleRunPipeline }) => {
           const data = await res.json();
           setAnalyticsStats({
             total: data.total_articles || 0,
+            archived: data.archived_articles || 0,
             analyzed: data.processed_articles || 0,
             avgScore: Math.round(data.avg_viral_score || 0),
             withContent: Object.values(data.content_generation?.by_platform || {}).reduce((a, b) => a + b, 0)
