@@ -66,6 +66,12 @@ const ArticlesView = ({
   const [scoreFilter, setScoreFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('score'); // 'score' | 'date'
   const [showFilters, setShowFilters] = useState(false);
+  const [activeState, setActiveState] = useState('all');
+  
+  const stateTabs = [
+    { key: 'all',  label: 'All',  color: 'var(--text)',   bg: 'var(--surface2)',  border: 'var(--border2)' },
+    { key: 'archived', label: 'Archived',  color: 'var(--text2)',  bg: 'var(--surface2)',  border: 'var(--border)' }
+  ];
 
   // Deep linking: Handle URL parameters for story navigation
   const storyRefs = useRef({});
@@ -100,7 +106,11 @@ const ArticlesView = ({
         setFilters(prev => ({ ...prev, hasContent: true }));
       } else if (filterParam === 'pending') {
         setFilters(prev => ({ ...prev, hasAnalysis: false, hasContent: false }));
+      } else if (filterParam === 'archived') {
+        setActiveState('archived');
       }
+    } else {
+      setActiveState('all');
     }
   }, [searchParams, setFilters]);
 

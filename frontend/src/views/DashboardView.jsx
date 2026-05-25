@@ -188,10 +188,11 @@ const DashboardView = ({ handleRunPipeline }) => {
         </div>
 
         {/* ── KPI Cards (Primary Metrics) - Matching Analytics Page ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 14, marginBottom: 20 }}>
           {[
             { label: 'Intelligence Base', value: totalArticles,       trend: '↑ +12 today',   trendUp: true,  sub: 'Live feed', action: 'articles' },
             { label: 'AI Processed',      value: analyzed,    trend: `↑ ${qualityPct}% coverage`, trendUp: true, sub: 'High accuracy', action: 'analyzed' },
+            { label: 'Archived',          value: analyticsStats?.archived || 0, trend: 'Cleaned up', trendUp: true,  sub: 'Old/dup articles', action: 'archived' },
             { label: 'Quality Index',     value: `${qualityPct}%`, trend: qualityPct < 50 ? '↓ Run pipeline to improve' : '↑ Good', trendUp: qualityPct >= 50, sub: '', action: 'scores' },
             { label: 'Content Ready',     value: contentReady, trend: '↑ +5 today',    trendUp: true,  sub: 'Generation ready', action: 'ready' },
           ].map((item, i) => (
